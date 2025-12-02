@@ -6,6 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		49A3C0FF2EDBAF5300FF0505 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 49A3C0FE2EDBAF5300FF0505 /* Auth */; };
+		49A3C1012EDBAF5300FF0505 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 49A3C1002EDBAF5300FF0505 /* Functions */; };
+		49A3C1032EDBAF5300FF0505 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 49A3C1022EDBAF5300FF0505 /* PostgREST */; };
+		49A3C1052EDBAF5300FF0505 /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = 49A3C1042EDBAF5300FF0505 /* Realtime */; };
+		49A3C1072EDBAF5300FF0505 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 49A3C1062EDBAF5300FF0505 /* Storage */; };
+		49A3C1092EDBAF5300FF0505 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 49A3C1082EDBAF5300FF0505 /* Supabase */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		49A3C0DC2EDBADF900FF0505 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -29,9 +38,22 @@
 		49A3C0E52EDBADF900FF0505 /* Smart parkingUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Smart parkingUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		494882DD2EDE48E8002C267C /* Exceptions for "Smart parking" folder in "Smart parking" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Smart-parking-Info.plist",
+			);
+			target = 49A3C0CD2EDBADF600FF0505 /* Smart parking */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		49A3C0D02EDBADF600FF0505 /* Smart parking */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				494882DD2EDE48E8002C267C /* Exceptions for "Smart parking" folder in "Smart parking" target */,
+			);
 			path = "Smart parking";
 			sourceTree = "<group>";
 		};
@@ -52,6 +74,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				49A3C1032EDBAF5300FF0505 /* PostgREST in Frameworks */,
+				49A3C1012EDBAF5300FF0505 /* Functions in Frameworks */,
+				49A3C1092EDBAF5300FF0505 /* Supabase in Frameworks */,
+				49A3C0FF2EDBAF5300FF0505 /* Auth in Frameworks */,
+				49A3C1072EDBAF5300FF0505 /* Storage in Frameworks */,
+				49A3C1052EDBAF5300FF0505 /* Realtime in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +140,12 @@
 			);
 			name = "Smart parking";
 			packageProductDependencies = (
+				49A3C0FE2EDBAF5300FF0505 /* Auth */,
+				49A3C1002EDBAF5300FF0505 /* Functions */,
+				49A3C1022EDBAF5300FF0505 /* PostgREST */,
+				49A3C1042EDBAF5300FF0505 /* Realtime */,
+				49A3C1062EDBAF5300FF0505 /* Storage */,
+				49A3C1082EDBAF5300FF0505 /* Supabase */,
 			);
 			productName = "Smart parking";
 			productReference = 49A3C0CE2EDBADF600FF0505 /* Smart parking.app */;
@@ -195,6 +229,9 @@
 			);
 			mainGroup = 49A3C0C52EDBADF600FF0505;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				49A3C0FD2EDBAF5300FF0505 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 49A3C0CF2EDBADF600FF0505 /* Products */;
 			projectDirPath = "";
@@ -393,10 +430,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Smart parking/Smart parking.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XD59PG7AUF;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Smart-parking-Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -424,10 +464,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Smart parking/Smart parking.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XD59PG7AUF;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Smart-parking-Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -570,6 +613,50 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		49A3C0FD2EDBAF5300FF0505 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		49A3C0FE2EDBAF5300FF0505 /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49A3C0FD2EDBAF5300FF0505 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		49A3C1002EDBAF5300FF0505 /* Functions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49A3C0FD2EDBAF5300FF0505 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Functions;
+		};
+		49A3C1022EDBAF5300FF0505 /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49A3C0FD2EDBAF5300FF0505 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		49A3C1042EDBAF5300FF0505 /* Realtime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49A3C0FD2EDBAF5300FF0505 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Realtime;
+		};
+		49A3C1062EDBAF5300FF0505 /* Storage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49A3C0FD2EDBAF5300FF0505 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Storage;
+		};
+		49A3C1082EDBAF5300FF0505 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49A3C0FD2EDBAF5300FF0505 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 49A3C0C62EDBADF600FF0505 /* Project object */;
 }

@@ -6,12 +6,15 @@
 //
 
 import SwiftUI
+import Supabase
 
 @main
 struct Smart_parkingApp: App {
+    @State private var authManager = AuthManager()
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(authManager)
         }
     }
 }
