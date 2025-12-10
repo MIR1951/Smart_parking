@@ -38,22 +38,9 @@
 		49A3C0E52EDBADF900FF0505 /* Smart parkingUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Smart parkingUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		494882DD2EDE48E8002C267C /* Exceptions for "Smart parking" folder in "Smart parking" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"Smart-parking-Info.plist",
-			);
-			target = 49A3C0CD2EDBADF600FF0505 /* Smart parking */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		49A3C0D02EDBADF600FF0505 /* Smart parking */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				494882DD2EDE48E8002C267C /* Exceptions for "Smart parking" folder in "Smart parking" target */,
-			);
 			path = "Smart parking";
 			sourceTree = "<group>";
 		};

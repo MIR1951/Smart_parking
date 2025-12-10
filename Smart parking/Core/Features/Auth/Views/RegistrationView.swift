@@ -10,7 +10,7 @@ import SwiftUI
 struct RegistrationView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthManager.self) private var authManager
-    @State private var name: String = ""
+    @State private var username: String = ""
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var agreedToTerms: Bool = false
@@ -38,7 +38,7 @@ struct RegistrationView: View {
                     .font(.subheadline)
                     .fontWeight(.medium)
                 
-                TextField("Ex. John Doe", text: $name)
+                TextField("Ex. John Doe", text: $username)
                     .padding()
                     .background(Color(.systemGray6))
                     .cornerRadius(10)
@@ -165,7 +165,7 @@ struct CheckboxToggleStyle: ToggleStyle {
 
 private extension RegistrationView {
     func signUp(){
-        Task{await authManager.signUp(email: email, password: password)}
+        Task{await authManager.signUp(email: email, password: password, username: username)}
     }
 }
 

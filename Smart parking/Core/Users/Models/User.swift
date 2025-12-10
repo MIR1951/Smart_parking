@@ -7,8 +7,13 @@
 
 import Foundation
 
-struct User :Identifiable{
+struct User :Identifiable, Codable{
     let id: String
     let email: String
+    let username: String
+    let createdAt: Date
+    let profileImageURL: String? = nil
+    
+    
     
 }

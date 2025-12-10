@@ -13,14 +13,14 @@ import Observation
 class AuthManager {
     private let authService : SupabaseAuthService
     
-    var currentUser : User?
+    var currentUserID : String?
     init(authService: SupabaseAuthService = SupabaseAuthService()) {
         self.authService = authService
     }
     
-    func signUp(email: String, password: String) async  {
+    func signUp(email: String, password: String, username: String) async  {
         do {
-            self.currentUser = try await authService.signUp(email: email, password: password)
+            self.currentUserID = try await authService.signUp(email: email, password: password, username: username)
         } catch{
             print("DEBUG: signUp error: \(error.localizedDescription)")
         }
@@ -28,7 +28,7 @@ class AuthManager {
     
     func signIn(email: String, password: String) async {
         do {
-            self.currentUser = try await authService.signIn(email: email, password: password)
+            self.currentUserID = try await authService.signIn(email: email, password: password)
         } catch{
             print("DEBUG: signIn error: \(error.localizedDescription)")
         }
@@ -36,7 +36,7 @@ class AuthManager {
     func signOut() async {
         do {
             try await authService.signOut()
-            currentUser = nil
+            currentUserID = nil
         } catch{
             print("DEBUG: signOut error: \(error.localizedDescription)")
         }
@@ -44,10 +44,10 @@ class AuthManager {
     
     func refreshUser() async {
         do {
-            self.currentUser = try await authService.getCurrentUser()
+            self.currentUserID = try await authService.getCurrentUserSession()
         } catch {
             print("Refresh user failed: \(error.localizedDescription)")
-            currentUser = nil
+            currentUserID = nil
         }
     }
 }
