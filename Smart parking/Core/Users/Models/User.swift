@@ -12,7 +12,7 @@ struct User :Identifiable, Codable{
     let email: String
     let username: String
     let createdAt: Date
-    let profileImageURL: String? = nil
+    var profileImageURL: String? = nil
     
     
     
