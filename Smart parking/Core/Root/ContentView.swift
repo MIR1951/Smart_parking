@@ -14,7 +14,7 @@ struct ContentView: View {
     var body: some View {
         Group{
             if let currentUserID = authManager.currentUserID {
-               HomeView()
+               MainTabView()
             }
             else {
                 LoginView()

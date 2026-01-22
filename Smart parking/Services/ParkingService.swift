@@ -25,8 +25,9 @@ final class ParkingService {
                 price_per_hour,
                 thumbnail_url,
                 total_spots,
-                parking_live_stats ( live_occupancy )
-                description
+                parking_live_stats ( live_occupancy ),
+                description,
+                is_popular
             """)
             .execute()
 
@@ -41,6 +42,7 @@ final class ParkingService {
             let total_spots: Int
             let parking_live_stats: LiveStats?
             var description: String?
+            let is_popular: Bool?
         }
 
         struct LiveStats: Codable {
@@ -65,7 +67,8 @@ final class ParkingService {
                 thumbnail_url: item.thumbnail_url,
                 total_spots: item.total_spots,
                 live_occupancy: item.parking_live_stats?.live_occupancy,
-                description: item.description
+                description: item.description,
+                is_popular: item.is_popular ?? false
             )
         }
 

@@ -1,12 +1,4 @@
-//
-//  NearbyParkingCard.swift
-//  Smart parking
-//
-//  Created by Kenjaboy Xajiyev on 12/12/25.
-//
-
 import SwiftUI
-
 
 struct NearbyParkingCard: View {
 
@@ -19,13 +11,36 @@ struct NearbyParkingCard: View {
     var body: some View {
         HStack(spacing: 15) {
 
-            AsyncImage(url: URL(string: parking.thumbnail_url ?? "")) { img in
-                img.resizable().scaledToFill()
-            } placeholder: {
-                Rectangle().fill(Color.gray.opacity(0.2))
+            // ✅ Safe AsyncImage (timeout bo‘lsa ham UI buzilmaydi)
+            AsyncImage(url: URL(string: parking.thumbnail_url ?? "")) { phase in
+                switch phase {
+                case .empty:
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+
+                case .success(let img):
+                    img
+                        .resizable()
+                        .scaledToFill()
+
+                case .failure:
+                    ZStack {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.2))
+
+                        Image(systemName: "photo")
+                            .font(.system(size: 24, weight: .medium))
+                            .foregroundColor(.gray.opacity(0.8))
+                    }
+
+                @unknown default:
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+                }
             }
             .frame(width: 90, height: 90)
             .cornerRadius(15)
+            .clipped()
 
             VStack(alignment: .leading, spacing: 4) {
 

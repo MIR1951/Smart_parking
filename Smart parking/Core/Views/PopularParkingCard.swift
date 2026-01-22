@@ -8,6 +8,8 @@
 import SwiftUI
 
 
+import SwiftUI
+
 struct PopularParkingCard: View {
 
     let parking: Parking
@@ -21,10 +23,33 @@ struct PopularParkingCard: View {
 
             ZStack(alignment: .topLeading) {
 
-                AsyncImage(url: URL(string: parking.thumbnail_url ?? "")) { img in
-                    img.resizable().scaledToFill()
-                } placeholder: {
-                    Rectangle().fill(Color.gray.opacity(0.2))
+                AsyncImage(url: URL(string: parking.thumbnail_url ?? "")) { phase in
+                    switch phase {
+                    case .empty:
+                        // loading placeholder (xuddi oldingidek)
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.2))
+
+                    case .success(let img):
+                        img
+                            .resizable()
+                            .scaledToFill()
+
+                    case .failure:
+                        // fallback (timeout bo‘lsa ham chiroyli)
+                        ZStack {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.2))
+
+                            Image(systemName: "photo")
+                                .font(.system(size: 26, weight: .medium))
+                                .foregroundColor(.gray.opacity(0.8))
+                        }
+
+                    @unknown default:
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.2))
+                    }
                 }
                 .frame(width: 220, height: 140)
                 .clipped()
@@ -73,3 +98,4 @@ struct PopularParkingCard: View {
         .shadow(radius: 3)
     }
 }
+

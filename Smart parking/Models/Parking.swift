@@ -17,4 +17,5 @@ struct Parking: Identifiable, Codable {
     let total_spots: Int
     var live_occupancy: Int?
     var description: String?
+    let is_popular: Bool?
 }
