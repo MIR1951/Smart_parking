@@ -16,8 +16,8 @@ struct MainTabView: View {
 
             ExploreView()
                 .tabItem { Label("Explore", systemImage: "location") }
-
             FavoriteView()
+               
                 .tabItem { Label("Favorite", systemImage: "heart") }
 
             BookingsView()

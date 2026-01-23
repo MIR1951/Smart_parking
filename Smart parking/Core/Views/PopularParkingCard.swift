@@ -60,7 +60,7 @@ struct PopularParkingCard: View {
                 HStack {
                     Image(systemName: "star.fill")
                         .foregroundColor(.yellow)
-                    Text("4.9")
+                    Text("\(parking.rating ?? 1.0, specifier: "%.1f")")
                         .foregroundColor(.white)
                         .font(.caption)
                 }

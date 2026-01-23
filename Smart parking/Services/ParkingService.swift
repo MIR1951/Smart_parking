@@ -23,11 +23,13 @@ final class ParkingService {
                 latitude,
                 longitude,
                 price_per_hour,
+                rating,
                 thumbnail_url,
                 total_spots,
                 parking_live_stats ( live_occupancy ),
                 description,
                 is_popular
+               
             """)
             .execute()
 
@@ -38,11 +40,13 @@ final class ParkingService {
             let latitude: Double
             let longitude: Double
             let price_per_hour: Double
+            let rating:Double?
             let thumbnail_url: String?
             let total_spots: Int
             let parking_live_stats: LiveStats?
             var description: String?
             let is_popular: Bool?
+           
         }
 
         struct LiveStats: Codable {
@@ -64,11 +68,13 @@ final class ParkingService {
                 latitude: item.latitude,
                 longitude: item.longitude,
                 price_per_hour: item.price_per_hour,
+                rating: item.rating ?? 0,
                 thumbnail_url: item.thumbnail_url,
                 total_spots: item.total_spots,
                 live_occupancy: item.parking_live_stats?.live_occupancy,
                 description: item.description,
                 is_popular: item.is_popular ?? false
+                
             )
         }
 

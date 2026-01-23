@@ -1,46 +1,30 @@
 import SwiftUI
 
 struct HomeView: View {
-   // @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
 
-    @StateObject private var vm = ParkingViewModel()
+    @EnvironmentObject var parkings: ParkingsStore
+    @EnvironmentObject var favorites: FavoritesStore
+    @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
+
+
     @State private var search = ""
     @StateObject private var locationManager = LocationManager()
-    @State private var hasLoaded = false
-    @State private var didInitialLoad = false
     @State private var didRequestLocation = false
-    @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
+
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-
                 VStack(alignment: .leading, spacing: 20) {
-
-                    // HEADER
                     headerSection
-
-                    // SEARCH
                     searchSection
-
-                    // POPULAR PARKING
                     popularSection
-
-                    // NEARBY PARKING
                     nearbySection
                 }
                 .padding(.vertical)
             }
-            
-            // ✅ Pull-to-refresh
-            .refreshable {
-                print(vm.loadParkings(userLocation: locationManager.location))
-                vm.loadParkings(userLocation: locationManager.location, force: true)
-                   availabilityStore.initialLoad(force: true)
-                
-            }
-            // ✅ Loading overlay (dizayn saqlanadi)
+          
             .overlay {
-                if vm.isLoading && vm.popularParkings.isEmpty && vm.nearbyParkings.isEmpty {
+                if parkings.isLoading && parkings.all.isEmpty {
                     ZStack {
                         Color.black.opacity(0.08).ignoresSafeArea()
                         ProgressView("Loading...")
@@ -50,68 +34,56 @@ struct HomeView: View {
                     }
                 }
             }
+            .id(parkings.reloadToken)
+
             .onAppear {
                 if !didRequestLocation {
                     didRequestLocation = true
                     locationManager.requestPermission()
                 }
             }
-            .task(id: locationManager.location) {
-                vm.loadParkings(userLocation: locationManager.location)
-                print(vm.loadParkings(userLocation: locationManager.location).self)
+            .onChange(of: locationManager.location) { loc in
+                guard !parkings.isLoading else { return }
+                parkings.load(userLocation: loc)
             }
 
-
-            .onChange(of: availabilityStore.available) { _ in
-            print("✅ availability changed:", availabilityStore.available.count)
-        }
-            .id(vm.reloadToken)
+            .refreshable {
+                await parkings.refresh(userLocation: locationManager.location)
+                availabilityStore.initialLoad(force: true)
+                
+            }
         }
     }
 
-    // MARK: - Sections
+    // MARK: - UI sections (sizning oldingi dizayn)
 
     private var headerSection: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Location")
-                    .foregroundColor(.gray)
-                    .font(.caption)
-
+                Text("Location").foregroundColor(.gray).font(.caption)
                 HStack {
-                    Image(systemName: "location.fill")
-                        .foregroundColor(.primary)
-
+                    Image(systemName: "location.fill").foregroundColor(.primary)
                     Text(locationManager.placeName)
                         .font(.headline)
                         .foregroundColor(.black)
-
                     Image(systemName: "chevron.down")
                         .font(.caption)
                         .foregroundColor(.gray)
                 }
             }
-
             Spacer()
-
             Circle()
                 .fill(Color.primary.opacity(0.15))
                 .frame(width: 40, height: 40)
-                .overlay(
-                    Image(systemName: "bell")
-                        .foregroundColor(.primary)
-                )
+                .overlay(Image(systemName: "bell").foregroundColor(.primary))
         }
         .padding(.horizontal)
     }
 
     private var searchSection: some View {
         HStack {
-            Image(systemName: "magnifyingglass")
-                .foregroundColor(.gray)
-
-            TextField("Search Parking", text: $search)
-                .autocorrectionDisabled()
+            Image(systemName: "magnifyingglass").foregroundColor(.gray)
+            TextField("Search Parking", text: $search).autocorrectionDisabled()
         }
         .padding()
         .background(Color.bgLight)
@@ -121,27 +93,35 @@ struct HomeView: View {
 
     private var popularSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-
             HStack {
-                Text("Popular Parking")
-                    .font(.title3)
-                    .fontWeight(.semibold)
-
+                Text("Popular Parking").font(.title3).fontWeight(.semibold)
                 Spacer()
-
-                Text("See All")
-                    .foregroundColor(.primary)
-                    .font(.subheadline)
+                Text("See All").foregroundColor(.primary).font(.subheadline)
             }
             .padding(.horizontal)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
-                    ForEach(vm.popularParkings) { parking in
-                        NavigationLink {
-                            ParkingDetailView(parking: parking)
-                        } label: {
-                            PopularParkingCard(parking: parking)
+                    ForEach(parkings.popular) { parking in
+                        ZStack(alignment: .topTrailing) {
+
+                            NavigationLink {
+                                ParkingDetailView(parking: parking)
+                            } label: {
+                                PopularParkingCard(parking: parking)
+                            }
+
+                            Button {
+                                favorites.toggle(parking.id)
+                            } label: {
+                                Image(systemName: favorites.isFavorite(parking.id) ? "heart.fill" : "heart")
+                                    .foregroundColor(favorites.isFavorite(parking.id) ? .red : .white)
+                                    .padding(10)
+                                    .background(Color.black.opacity(0.35))
+                                    .clipShape(Circle())
+                            }
+                            .buttonStyle(.plain)
+                            .padding(14)
                         }
                     }
                 }
@@ -152,32 +132,39 @@ struct HomeView: View {
 
     private var nearbySection: some View {
         VStack(alignment: .leading, spacing: 12) {
-
             HStack {
-                Text("Nearby Parking")
-                    .font(.title3)
-                    .fontWeight(.semibold)
-
+                Text("Nearby Parking").font(.title3).fontWeight(.semibold)
                 Spacer()
-
-                Text("See All")
-                    .foregroundColor(.primary)
-                    .font(.subheadline)
+                Text("See All").foregroundColor(.primary).font(.subheadline)
             }
             .padding(.horizontal)
 
             VStack(spacing: 16) {
-                ForEach(vm.nearbyParkings) { parking in
-                    NavigationLink {
-                        ParkingDetailView(parking: parking)
-                    } label: {
-                        NearbyParkingCard(parking: parking)
+                ForEach(parkings.nearby) { parking in
+                    ZStack(alignment: .topTrailing) {
+
+                        NavigationLink {
+                            ParkingDetailView(parking: parking)
+                        } label: {
+                            NearbyParkingCard(parking: parking)
+                        }
+
+                        Button {
+                            favorites.toggle(parking.id)
+                        } label: {
+                            Image(systemName: favorites.isFavorite(parking.id) ? "heart.fill" : "heart")
+                                .foregroundColor(favorites.isFavorite(parking.id) ? .red : .gray)
+                                .padding(9)
+                                .background(Color.white)
+                                .clipShape(Circle())
+                                .shadow(radius: 2)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(18)
                     }
                 }
             }
             .padding(.horizontal)
         }
-        
     }
-      
 }

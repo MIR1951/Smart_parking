@@ -10,13 +10,22 @@ import SwiftUI
 struct ContentView: View {
     
     @Environment(AuthManager.self) private var authManager
-   @StateObject private var availabilityStore = ParkingAvailabilityStore()
+    @StateObject private var availabilityStore = ParkingAvailabilityStore()
+    @StateObject private var parkingsStore = ParkingsStore()
+    @StateObject private var favoritesStore = FavoritesStore()
+    
     @State private var didStart = false
     var body: some View {
         Group{
             if let currentUserID = authManager.currentUserID {
-               MainTabView()
+               
+
+                // MainTabView chaqiriladigan joyda:
+                MainTabView()
+                    .environmentObject(parkingsStore)
+                    .environmentObject(favoritesStore)
                     .environmentObject(availabilityStore)
+
                     .onAppear {
                                             guard !didStart else { return }
                                             didStart = true

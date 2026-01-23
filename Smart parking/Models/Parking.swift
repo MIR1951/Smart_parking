@@ -13,9 +13,11 @@ struct Parking: Identifiable, Codable {
     let latitude: Double
     let longitude: Double
     let price_per_hour: Double
+    let rating: Double?
     let thumbnail_url: String?
     let total_spots: Int
     var live_occupancy: Int?
     var description: String?
     let is_popular: Bool?
+    
 }
