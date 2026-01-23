@@ -57,13 +57,14 @@ final class BookingViewModel: ObservableObject {
                 isProcessing = false
                 alertMessage = "Reservation failed: \(error.localizedDescription)"
                 showAlert = true
+                print(alertMessage)
             }
         }
     }
 
     // Demo only: payment success
     private func simulatePaymentSuccess() async -> (Bool) {
-        try? await Task.sleep(nanoseconds: 900_000_000)
+        try? await Task.sleep(nanoseconds: 100_000_000)
         return (true)
     }
 }

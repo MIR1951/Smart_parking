@@ -10,13 +10,19 @@ import SwiftUI
 struct ContentView: View {
     
     @Environment(AuthManager.self) private var authManager
- //   @StateObject private var availabilityStore = ParkingAvailabilityStore()
+   @StateObject private var availabilityStore = ParkingAvailabilityStore()
+    @State private var didStart = false
     var body: some View {
         Group{
             if let currentUserID = authManager.currentUserID {
                MainTabView()
-//                    .environmentObject(availabilityStore)
-//                    .onAppear { availabilityStore.start() }
+                    .environmentObject(availabilityStore)
+                    .onAppear {
+                                            guard !didStart else { return }
+                                            didStart = true
+                                            availabilityStore.initialLoad() // ✅ 1 marta
+                                                  // ✅ 1 marta
+                                        }
             }
             else {
                 LoginView()

@@ -9,7 +9,7 @@ struct HomeView: View {
     @State private var hasLoaded = false
     @State private var didInitialLoad = false
     @State private var didRequestLocation = false
-
+    @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
@@ -30,8 +30,14 @@ struct HomeView: View {
                 }
                 .padding(.vertical)
             }
+            
             // ✅ Pull-to-refresh
-          
+            .refreshable {
+                print(vm.loadParkings(userLocation: locationManager.location))
+                vm.loadParkings(userLocation: locationManager.location, force: true)
+                   availabilityStore.initialLoad(force: true)
+                
+            }
             // ✅ Loading overlay (dizayn saqlanadi)
             .overlay {
                 if vm.isLoading && vm.popularParkings.isEmpty && vm.nearbyParkings.isEmpty {
@@ -52,11 +58,14 @@ struct HomeView: View {
             }
             .task(id: locationManager.location) {
                 vm.loadParkings(userLocation: locationManager.location)
+                print(vm.loadParkings(userLocation: locationManager.location).self)
             }
 
-            .refreshable {
-                vm.loadParkings(userLocation: locationManager.location,force:true)
-            }
+
+            .onChange(of: availabilityStore.available) { _ in
+            print("✅ availability changed:", availabilityStore.available.count)
+        }
+            .id(vm.reloadToken)
         }
     }
 
@@ -168,5 +177,7 @@ struct HomeView: View {
             }
             .padding(.horizontal)
         }
+        
     }
+      
 }

@@ -10,6 +10,7 @@ final class ParkingViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var hasLoadedOnce = false
+    @Published var reloadToken = UUID()
 
     private let service = ParkingService()
     private var loadTask: Task<Void, Never>?
@@ -36,6 +37,8 @@ final class ParkingViewModel: ObservableObject {
 
         do {
             let all = try await service.fetchParkings()
+            print("✅ fetched:", all.count, "at", Date())
+            reloadToken = UUID()
             hasLoadedOnce = true
 
             // Popular
