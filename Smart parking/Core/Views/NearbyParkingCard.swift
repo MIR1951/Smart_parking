@@ -4,9 +4,7 @@ struct NearbyParkingCard: View {
 
     let parking: Parking
 
-    var availableSpots: Int {
-        max(parking.total_spots - (parking.live_occupancy ?? 0), 0)
-    }
+    
 
     var body: some View {
         HStack(spacing: 15) {
@@ -68,7 +66,7 @@ struct NearbyParkingCard: View {
                 HStack {
                     Label("5 mins", systemImage: "clock")
                     Spacer()
-                    Label("\(availableSpots) Spots", systemImage: "car.fill")
+                    Label("\(parking.total_spots) Spots", systemImage: "car.fill")
                 }
                 .foregroundColor(.gray)
                 .font(.caption)

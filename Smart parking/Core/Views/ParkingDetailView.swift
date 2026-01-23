@@ -3,6 +3,7 @@ import SwiftUI
 struct ParkingDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let parking: Parking
+    @State private var showBooking = false
     
     @State private var selectedTab: DetailTab = .about
     
@@ -36,15 +37,18 @@ struct ParkingDetailView: View {
                     .padding(.horizontal)
                     .padding(.top, 12)
                     
-                    Spacer().frame(height: 120) // Book button markazga urilishmasligi uchun
+                    Spacer().frame(height: 24) // Book button markazga urilishmasligi uchun
                 }
             }
             
-        } .overlay(alignment: .bottomTrailing) {
+        }
+        .safeAreaInset(edge: .bottom) {               // ✅ book bar pastda
             bottomBookingBar
-    }
+                .background(.white)                   // xohlasang bgLight qil
+        }
         .ignoresSafeArea(edges: .top)
         .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .tabBar)
     }
     
 }
@@ -251,7 +255,6 @@ extension ParkingDetailView {
     
     // MARK: Bottom Booking Bar
     private var bottomBookingBar: some View {
-       
         HStack {
             VStack(alignment: .leading) {
                 Text("Total Price")
@@ -262,22 +265,25 @@ extension ParkingDetailView {
                     .fontWeight(.bold)
             }
             Spacer()
-            
-            Button(action: {}) {
+
+            Button(action: { showBooking = true }) {
                 Text("Book Slot")
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
-                    .padding()
-                    .frame(width: 160)
+                    .frame(width: 160, height: 48)
                     .background(Color.purple)
                     .cornerRadius(14)
             }
+            .sheet(isPresented: $showBooking) {
+                BookingDurationView(parking: parking)
+            }
         }
-        .padding(.top)
-        .background(Color.bgLight)
         .padding(.horizontal)
-//        .safeAreaInset(edge: .bottom) { EmptyView() }
+        .padding(.top, 12)
+        .padding(.bottom, 12)          // ✅ safe area bilan chiroyli
+        .background(Color.bgLight)
     }
+
     
     
     // MARK: Button UI

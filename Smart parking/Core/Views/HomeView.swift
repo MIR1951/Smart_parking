@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct HomeView: View {
+   // @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
 
     @StateObject private var vm = ParkingViewModel()
     @State private var search = ""
