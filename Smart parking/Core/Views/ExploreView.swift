@@ -1,44 +1,61 @@
-//
-//  ExploreView.swift
-//  Smart parking
-//
-//  Created by Kenjaboy Xajiyev on 23/01/26.
-//
-
-
 import SwiftUI
 import MapKit
+import CoreLocation
 
 struct ExploreView: View {
+
+    @EnvironmentObject var parkings: ParkingsStore
+    @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
+
     @State private var search = ""
-    @StateObject private var vm = ParkingViewModel()
+    @StateObject private var locationManager = LocationManager()
 
     @State private var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 41.3117, longitude: 69.2797),
         span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
     )
 
+    @State private var didRequestLocation = false
+
+    private var filtered: [Parking] {
+        let base = parkings.nearby
+        let q = search.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !q.isEmpty else { return base }
+
+        return base.filter {
+            $0.name.lowercased().contains(q) ||
+            ($0.address ?? "").lowercased().contains(q)
+        }
+    }
+
     var body: some View {
-        ZStack(alignment: .top) {
-            Map(coordinateRegion: $region, annotationItems: vm.nearbyParkings) { p in
+        NavigationStack {
+            Map(coordinateRegion: $region, annotationItems: filtered) { p in
                 MapAnnotation(coordinate: .init(latitude: p.latitude, longitude: p.longitude)) {
-                    Circle().fill(Color.primary).frame(width: 12, height: 12)
+                    Circle()
+                        .fill(Color.primary)
+                        .frame(width: 12, height: 12)
                 }
             }
             .ignoresSafeArea()
 
-            VStack(spacing: 10) {
+            // TOP SEARCH BAR (rasmdagidek yuqorida)
+            .safeAreaInset(edge: .top) {
                 HStack(spacing: 12) {
-                    HStack {
-                        Image(systemName: "magnifyingglass").foregroundColor(.gray)
+                    HStack(spacing: 10) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(.gray)
+
                         TextField("Search Parking", text: $search)
+                            .autocorrectionDisabled()
                     }
-                    .padding()
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
                     .background(.white)
                     .cornerRadius(14)
 
                     Button {
-                        // filter sheet
+                        // filter sheet (keyin qo‘shamiz)
                     } label: {
                         Image(systemName: "slider.horizontal.3")
                             .foregroundColor(.white)
@@ -48,27 +65,53 @@ struct ExploreView: View {
                     }
                 }
                 .padding(.horizontal)
-                .padding(.top, 10)
+                .padding(.top, 8)
+                .padding(.bottom, 8)
+            }
 
-                Spacer()
-
+            // BOTTOM CARDS (TabBar ustida, balandroq)
+            .safeAreaInset(edge: .bottom) {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
-                        ForEach(vm.nearbyParkings.prefix(10)) { parking in
+                        ForEach(filtered.prefix(10)) { parking in
                             NavigationLink {
                                 ParkingDetailView(parking: parking)
                             } label: {
                                 PopularParkingCard(parking: parking)
                             }
+                            .buttonStyle(.plain)   // ✅ navigation ishlaydi
                         }
                     }
                     .padding(.horizontal)
-                    .padding(.bottom, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 12)
+                }
+                .background(Color.clear)
+            }
+
+            .task {
+                // availability realtime (agar root’da start qilmagan bo‘lsangiz)
+                availabilityStore.initialLoad()
+                availabilityStore.startRealtime()
+
+                if !didRequestLocation {
+                    didRequestLocation = true
+                    locationManager.requestPermission()
+                }
+
+                // parkings yo'q bo'lsa yuklash
+                if parkings.all.isEmpty && !parkings.isLoading {
+                    parkings.load(userLocation: locationManager.location)
                 }
             }
-        }
-        .task {
-            vm.loadParkings(userLocation: nil, force: true)
+            .onChange(of: locationManager.location) { loc in
+                if let loc {
+                    withAnimation {
+                        region.center = loc.coordinate
+                    }
+                }
+                parkings.load(userLocation: loc, force: true)
+            }
         }
     }
 }

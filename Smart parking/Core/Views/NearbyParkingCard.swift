@@ -2,84 +2,123 @@ import SwiftUI
 
 struct NearbyParkingCard: View {
 
+    @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
     let parking: Parking
+    let onHeartTap: (() -> Void)?
 
-    
+    private var availableSpots: Int {
+        availabilityStore.availability(for: parking.id)?.availableSpots
+        ?? availabilityStore.available[parking.id]
+        ?? max(parking.total_spots - (parking.live_occupancy ?? 0), 0)
+    }
 
     var body: some View {
         HStack(spacing: 15) {
 
-            // ✅ Safe AsyncImage (timeout bo‘lsa ham UI buzilmaydi)
-            AsyncImage(url: URL(string: parking.thumbnail_url ?? "")) { phase in
-                switch phase {
-                case .empty:
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.2))
+            // ✅ Image + heart overlay (rasm ustida)
+            ZStack(alignment: .topTrailing) {
+                AsyncImage(url: URL(string: parking.thumbnail_url ?? "")) { phase in
+                    switch phase {
+                    case .empty:
+                        Rectangle().fill(Color.gray.opacity(0.2))
 
-                case .success(let img):
-                    img
-                        .resizable()
-                        .scaledToFill()
+                    case .success(let img):
+                        img.resizable().scaledToFill()
 
-                case .failure:
-                    ZStack {
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.2))
+                    case .failure:
+                        ZStack {
+                            Rectangle().fill(Color.gray.opacity(0.2))
+                            Image(systemName: "photo")
+                                .font(.system(size: 24, weight: .medium))
+                                .foregroundColor(.gray.opacity(0.8))
+                        }
 
-                        Image(systemName: "photo")
-                            .font(.system(size: 24, weight: .medium))
-                            .foregroundColor(.gray.opacity(0.8))
+                    @unknown default:
+                        Rectangle().fill(Color.gray.opacity(0.2))
                     }
+                }
+                .frame(width: 90, height: 90)
+                .cornerRadius(15)
+                .clipped()
 
-                @unknown default:
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.2))
+                if let onHeartTap {
+                    Button(action: onHeartTap) {
+                        Image(systemName: "heart.fill")
+                            .foregroundColor(.red)
+                            .padding(8)
+                            .background(Color.white)
+                            .clipShape(Circle())
+                            .shadow(radius: 2)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(6) // ✅ image ichida joylashadi
                 }
             }
-            .frame(width: 90, height: 90)
-            .cornerRadius(15)
-            .clipped()
 
             VStack(alignment: .leading, spacing: 4) {
 
-                Text("Car Parking")
-                    .foregroundColor(.primary)
-                    .font(.caption)
+                HStack {
+                    Text("Car Parking")
+                        .font(.caption)
+                        .foregroundColor(.purple)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.purple.opacity(0.10))
+                        .clipShape(Capsule())
+
+                    Spacer()
+
+                    HStack(spacing: 4) {
+                        Image(systemName: "star.fill")
+                            .font(.caption)
+                            .foregroundColor(.yellow)
+                        Text(String(format: "%.1f", parking.rating ?? 5))
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                }
 
                 Text(parking.name)
                     .font(.headline)
+                    .foregroundColor(.black)
+                    .lineLimit(1)
 
-                HStack {
+                HStack(spacing: 6) {
                     Image(systemName: "mappin.and.ellipse")
-                    Text(parking.address ?? "")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                    Text(parking.address ?? "Unknown")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                        .lineLimit(1)
                 }
-                .foregroundColor(.gray)
-                .font(.caption)
 
-                HStack {
+                HStack(spacing: 4) {
                     Text("$\(parking.price_per_hour, specifier: "%.2f")")
-                        .foregroundColor(.primary)
+                        .font(.headline)
+                        .foregroundColor(.purple)
                     Text("/hr")
+                        .font(.caption)
                         .foregroundColor(.gray)
                 }
 
                 HStack {
-                    Label("5 mins", systemImage: "clock")
+                    Label("04 Mins", systemImage: "clock")
+                        .foregroundColor(.purple)
+
                     Spacer()
-                    Label("\(parking.total_spots) Spots", systemImage: "car.fill")
+
+                    Label("\(availableSpots) Spots", systemImage: "car.fill")
+                        .foregroundColor(.purple)
                 }
-                .foregroundColor(.gray)
                 .font(.caption)
             }
 
             Spacer()
-
-            Image(systemName: "heart")
-                .foregroundColor(.gray)
         }
-        .padding()
+        .padding(14)
         .background(Color.white)
-        .cornerRadius(20)
-        .shadow(radius: 2)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
     }
 }

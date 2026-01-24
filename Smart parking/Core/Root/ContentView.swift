@@ -6,11 +6,13 @@
 //
 
 import SwiftUI
+import Supabase
+internal import Combine
 
 struct ContentView: View {
     
     @Environment(AuthManager.self) private var authManager
-    @StateObject private var availabilityStore = ParkingAvailabilityStore()
+    @StateObject private var availabilityStore = ParkingAvailabilityStore(client: SupabaseClient(supabaseURL:URL( string: Constants.projectURLString)!, supabaseKey: Constants.projectAPIKey))
     @StateObject private var parkingsStore = ParkingsStore()
     @StateObject private var favoritesStore = FavoritesStore()
     

@@ -13,13 +13,15 @@ import SwiftUI
 struct PopularParkingCard: View {
    @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
     let parking: Parking
+    
 
-   var availableSpots: Int {
-    availabilityStore.available[parking.id]
-    ?? max(parking.total_spots - (parking.live_occupancy ?? 0), 0) // fallback
-}
+//   var availableSpots: Int {
+//    availabilityStore.available[parking.id]
+//    ?? max(parking.total_spots - (parking.live_occupancy ?? 0), 0) // fallback
+//}
 
     var body: some View {
+        let a = availabilityStore.availability(for: parking.id)
         VStack(alignment: .leading, spacing: 8) {
 
             ZStack(alignment: .topLeading) {
@@ -87,7 +89,7 @@ struct PopularParkingCard: View {
             HStack {
                 Label("5 mins", systemImage: "clock")
                 Spacer()
-                Label("\(availableSpots) Spots", systemImage: "car.fill")
+                Label("\(a?.availableSpots ?? 0) Spots", systemImage: "car.fill")
             }
             .foregroundColor(.gray)
             .font(.caption)

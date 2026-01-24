@@ -1,15 +1,9 @@
-//
-//  FavoriteView.swift
-//  Smart parking
-//
-//  Created by Kenjaboy Xajiyev on 23/01/26.
-//
-
-
 import SwiftUI
 
+// MARK: - FavoriteView
 
 struct FavoriteView: View {
+
     @EnvironmentObject var favorites: FavoritesStore
     @EnvironmentObject var parkings: ParkingsStore
     @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
@@ -24,14 +18,19 @@ struct FavoriteView: View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 16) {
-                    ForEach(favoriteParkings) { p in
-                        FavoriteCard(
-                            parking: p,
-                            spots: availabilityStore.available[p.id]
-                                ?? max(p.total_spots - (p.live_occupancy ?? 0), 0)
-                        ) {
-                            selectedToRemove = p
+                    ForEach(favoriteParkings) { parking in
+                        NavigationLink {
+                            ParkingDetailView(parking: parking)
+                        } label: {
+                            NearbyParkingCard(
+                                availabilityStore: _availabilityStore,
+                                parking: parking,
+                                onHeartTap: {
+                                    selectedToRemove = parking
+                                }
+                            )
                         }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal)
@@ -41,6 +40,13 @@ struct FavoriteView: View {
             .background(Color.bgLight.ignoresSafeArea())
             .navigationTitle("Favorite")
             .navigationBarTitleDisplayMode(.inline)
+
+            // Realtime + initial load (agar root’da start qilingan bo‘lsa ham zarar qilmaydi)
+            .task {
+                availabilityStore.initialLoad()
+                availabilityStore.startRealtime()
+            }
+
             .sheet(item: $selectedToRemove) { p in
                 RemoveFavoriteSheet(
                     parking: p,
@@ -54,102 +60,6 @@ struct FavoriteView: View {
                 .presentationDragIndicator(.visible)
             }
         }
-    }
-}
-
-struct FavoriteCard: View {
-    let parking: Parking
-    let spots: Int
-    let onHeartTap: () -> Void
-
-    var body: some View {
-        VStack(spacing: 12) {
-            HStack(alignment: .top, spacing: 12) {
-
-                ZStack(alignment: .topTrailing) {
-                    AsyncImage(url: URL(string: parking.thumbnail_url ?? "")) { phase in
-                        switch phase {
-                        case .success(let img):
-                            img.resizable().scaledToFill()
-                        default:
-                            Rectangle().fill(Color.gray.opacity(0.2))
-                        }
-                    }
-                    .frame(width: 110, height: 90)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-
-                    Button(action: onHeartTap) {
-                        Image(systemName: "heart.fill")
-                            .foregroundColor(.red)
-                            .padding(8)
-                            .background(Color.white)
-                            .clipShape(Circle())
-                            .shadow(radius: 2)
-                    }
-                    .padding(8)
-                }
-
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Text("Car Parking")
-                            .font(.caption)
-                            .foregroundColor(.purple)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(Color.purple.opacity(0.10))
-                            .clipShape(Capsule())
-
-                        Spacer()
-
-                        HStack(spacing: 4) {
-                            Image(systemName: "star.fill")
-                                .font(.caption)
-                                .foregroundColor(.yellow)
-                            Text(String(format: "%.1f", parking.rating ?? 5))
-                                .font(.caption)
-                                .foregroundColor(.gray)
-                        }
-                    }
-
-                    Text(parking.name)
-                        .font(.headline)
-                        .foregroundColor(.black)
-                        .lineLimit(1)
-
-                    HStack(spacing: 6) {
-                        Image(systemName: "mappin.and.ellipse")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                        Text(parking.address ?? "Unknown")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                            .lineLimit(1)
-                    }
-
-                    HStack(spacing: 4) {
-                        Text("$\(parking.price_per_hour, specifier: "%.2f")")
-                            .font(.headline)
-                            .foregroundColor(.purple)
-                        Text("/hr")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                    }
-                }
-            }
-
-            HStack {
-                Label("04 Mins", systemImage: "clock")
-                    .foregroundColor(.purple)
-                Spacer()
-                Label("\(spots) Spots", systemImage: "car.fill")
-                    .foregroundColor(.purple)
-            }
-            .font(.caption)
-        }
-        .padding(14)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
     }
 }
 struct RemoveFavoriteSheet: View {
@@ -178,7 +88,9 @@ struct RemoveFavoriteSheet: View {
                         Text("Car Parking")
                             .font(.caption)
                             .foregroundColor(.purple)
+
                         Spacer()
+
                         HStack(spacing: 4) {
                             Image(systemName: "star.fill")
                                 .font(.caption)
@@ -233,4 +145,3 @@ struct RemoveFavoriteSheet: View {
         .background(Color.white)
     }
 }
-
