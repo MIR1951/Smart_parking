@@ -30,11 +30,11 @@ struct UserProfileView: View {
                             }
                             
                             else if let profileImageURL = userManager.currentUser?.profileImageURL {
-                                AsyncImage(url: URL(string: profileImageURL)!){ image in
+                                CachedAsyncImage(url: URL(string: profileImageURL)) { image in
                                     image
                                         .resizable()
                                         .clipShape(.circle)
-                                } placeholder :{
+                                } placeholder: {
                                     ProgressView()
                                 }
                                 

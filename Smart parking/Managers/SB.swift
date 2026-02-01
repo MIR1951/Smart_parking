@@ -10,8 +10,14 @@ import Supabase
 import Foundation
 
 final class SB {
-    static let client = SupabaseClient(
-        supabaseURL: URL(string: Constants.projectURLString)!,
-        supabaseKey: Constants.projectAPIKey
-    )
+    static let shared = SB()
+    
+    let client: SupabaseClient
+    
+    private init() {
+        self.client = SupabaseClient(
+            supabaseURL: URL(string: Constants.projectURLString)!,
+            supabaseKey: Constants.projectAPIKey
+        )
+    }
 }

@@ -1,7 +1,8 @@
-import Foundation
 internal import Combine
+import Foundation
 internal import PostgREST
 import Supabase
+
 @MainActor
 final class BookingsVM: ObservableObject {
     @Published var items: [BookingItem] = []
@@ -16,28 +17,29 @@ final class BookingsVM: ObservableObject {
         do {
             // ✅ Supabase join (reservations -> parkings)
             // FK: reservations.parking_id -> parkings.id
-            let rows: [BookingItem] = try await SB.client
+            let rows: [BookingItem] = try await SB.shared.client
                 .from("reservations")
-                .select("""
-                    id,
-                    status,
-                    start_time,
-                    end_time,
-                    actual_start_time,
-                    actual_end_time,
-                    parking:parkings(
+                .select(
+                    """
                         id,
-                        name,
-                        address,
-                        thumbnail_url,
-                        price_per_hour,
-                        rating
-                    )
-                """)
+                        status,
+                        start_time,
+                        end_time,
+                        actual_start_time,
+                        actual_end_time,
+                        parking:parkings(
+                            id,
+                            name,
+                            address,
+                            thumbnail_url,
+                            price_per_hour,
+                            rating
+                        )
+                    """
+                )
                 .order("created_at", ascending: false)
                 .execute()
                 .value
-
 
             self.items = rows
         } catch {
@@ -78,7 +80,7 @@ final class BookingsVM: ObservableObject {
             }
 
         case .cancelled:
-            return items.filter { $0.status == "cancelled" }
+            return items.filter { $0.status == "cancelled" || $0.status == "canceled" }
         }
     }
 }

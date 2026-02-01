@@ -4,25 +4,25 @@ struct ParkingDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let parking: Parking
     @State private var showBooking = false
-    
+
     @State private var selectedTab: DetailTab = .about
-    
+
     var body: some View {
-        
-        VStack{
+
+        VStack {
             ScrollView(showsIndicators: false) {
-                
+
                 VStack(alignment: .leading, spacing: 0) {
-                    
+
                     // MARK: — Header Image
                     headerImage
-                    
+
                     // MARK: — Summary (Name, Rating, Address)
                     headerInfo
-                    
+
                     // MARK: — Tabs (About, Gallery, Review)
                     tabSelector
-                    
+
                     // MARK: — Tab Content
                     Group {
                         switch selectedTab {
@@ -36,80 +36,79 @@ struct ParkingDetailView: View {
                     }
                     .padding(.horizontal)
                     .padding(.top, 12)
-                    
-                    Spacer().frame(height: 24) // Book button markazga urilishmasligi uchun
+
+                    Spacer().frame(height: 24)  // Book button markazga urilishmasligi uchun
                 }
             }
-            
+
         }
-        .safeAreaInset(edge: .bottom) {               // ✅ book bar pastda
+        .safeAreaInset(edge: .bottom) {  // ✅ book bar pastda
             bottomBookingBar
-                .background(.white)                   // xohlasang bgLight qil
+                .background(.white)  // xohlasang bgLight qil
         }
         .ignoresSafeArea(edges: .top)
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .tabBar)
     }
-    
+
 }
-    
+
 // MARK: — UI COMPONENTS
 
 extension ParkingDetailView {
-   
+
     // MARK: Header Image
     private var headerImage: some View {
         ZStack(alignment: .topLeading) {
-            AsyncImage(url: URL(string: parking.thumbnail_url ?? "")) { img in
+            CachedAsyncImage(url: URL(string: parking.thumbnail_url ?? "")) { img in
                 img.resizable().scaledToFill()
             } placeholder: {
                 Rectangle().fill(Color.gray.opacity(0.2))
             }
-            
+
             .frame(height: 260)
             .clipped()
-           
-            
+
             HStack {
                 circularButton(system: "chevron.left") {
                     dismiss()
                 }
                 Spacer()
-                circularButton(system: "square.and.arrow.up") { }
-                circularButton(system: "heart") { }
+                circularButton(system: "square.and.arrow.up") {}
+                circularButton(system: "heart") {}
             }
             .padding(.horizontal)
-            .padding(.top,50)
+            .padding(.top, 50)
         }
-        
+
     }
-    
+
     // MARK: Header Info
     private var headerInfo: some View {
         VStack(alignment: .leading, spacing: 6) {
-            
+
             Text(parking.name)
                 .font(.title2)
                 .fontWeight(.semibold)
-            
+
             HStack(spacing: 6) {
                 Text("⭐️ 4.8 (365 reviews)")
                     .font(.subheadline)
                     .foregroundColor(.gray)
             }
-            
+
             HStack(spacing: 6) {
                 Image(systemName: "mappin.and.ellipse")
                 Text(parking.address ?? "Unknown")
             }
             .foregroundColor(.gray)
             .font(.subheadline)
-            
+
         }
         .padding(.horizontal)
         .padding(.top, 12)
     }
-    
+
     // MARK: Tabs
     private var tabSelector: some View {
         HStack {
@@ -118,12 +117,12 @@ extension ParkingDetailView {
                     Text(tab.rawValue)
                         .font(.headline)
                         .foregroundColor(selectedTab == tab ? Color.purple : .gray)
-                    
+
                     if selectedTab == tab {
                         Rectangle()
                             .fill(Color.purple)
                             .frame(height: 3)
-                           
+
                     } else {
                         Rectangle()
                             .fill(Color.clear)
@@ -137,14 +136,11 @@ extension ParkingDetailView {
         }
         .padding(.top, 16)
     }
-    
-   
-    
-    
+
     // MARK: ABOUT TAB
     private var aboutSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            
+
             HStack {
                 HStack {
                     Image(systemName: "clock")
@@ -158,18 +154,18 @@ extension ParkingDetailView {
             }
             .foregroundColor(.purple)
             .font(.subheadline)
-            
+
             VStack(alignment: .leading, spacing: 6) {
                 Text("Description")
                     .font(.headline)
                 Text("Lorem ipsum dolor sit amet, consectetur adipiscing elit...")
                     .foregroundColor(.gray)
             }
-            
+
             VStack(alignment: .leading) {
                 Text("Operated by")
                     .font(.headline)
-                
+
                 HStack {
                     Circle()
                         .fill(Color.gray.opacity(0.3))
@@ -183,11 +179,10 @@ extension ParkingDetailView {
                     Spacer()
                 }
             }
-            
+
         }
     }
-    
-    
+
     // MARK: GALLERY TAB
     private var gallerySection: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -199,7 +194,7 @@ extension ParkingDetailView {
                     .foregroundColor(.purple)
                     .font(.subheadline)
             }
-            
+
             LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 12) {
                 ForEach(0..<6, id: \.self) { i in
                     Rectangle()
@@ -210,12 +205,11 @@ extension ParkingDetailView {
             }
         }
     }
-    
-    
+
     // MARK: REVIEW TAB
     private var reviewSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            
+
             HStack {
                 Text("Reviews")
                     .font(.headline)
@@ -223,7 +217,7 @@ extension ParkingDetailView {
                 Text("add review")
                     .foregroundColor(.purple)
             }
-            
+
             // Search
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color(.systemGray6))
@@ -236,7 +230,7 @@ extension ParkingDetailView {
                     }
                     .padding(.horizontal)
                 )
-            
+
             // Example review
             HStack {
                 Circle().fill(Color.gray.opacity(0.3)).frame(width: 42, height: 42)
@@ -246,13 +240,12 @@ extension ParkingDetailView {
                 }
                 Spacer()
             }
-            
+
             Text("Great parking space! Very clean and safe.")
                 .foregroundColor(.gray)
         }
     }
-    
-    
+
     // MARK: Bottom Booking Bar
     private var bottomBookingBar: some View {
         HStack {
@@ -274,18 +267,16 @@ extension ParkingDetailView {
                     .background(Color.purple)
                     .cornerRadius(14)
             }
-            .sheet(isPresented: $showBooking) {
-                BookingDurationView(parking: parking)
+            .fullScreenCover(isPresented: $showBooking) {
+                BookingFlowView(parking: parking)
             }
         }
         .padding(.horizontal)
         .padding(.top, 12)
-        .padding(.bottom, 12)          // ✅ safe area bilan chiroyli
+        .padding(.bottom, 12)
         .background(Color.bgLight)
     }
 
-    
-    
     // MARK: Button UI
     private func circularButton(system: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -300,7 +291,6 @@ extension ParkingDetailView {
     }
 }
 
-
 // MARK: — TABS ENUM
 
 enum DetailTab: String, CaseIterable {
@@ -308,4 +298,3 @@ enum DetailTab: String, CaseIterable {
     case gallery = "Gallery"
     case review = "Review"
 }
-

@@ -10,7 +10,7 @@ import Supabase
 import Foundation
 
 final class ParkingService {
-    private let client = SB.client
+    private let client = SB.shared.client
 
     func fetchParkings() async throws -> [Parking] {
 

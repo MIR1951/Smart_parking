@@ -17,25 +17,13 @@ struct NearbyParkingCard: View {
 
             // ✅ Image + heart overlay (rasm ustida)
             ZStack(alignment: .topTrailing) {
-                AsyncImage(url: URL(string: parking.thumbnail_url ?? "")) { phase in
-                    switch phase {
-                    case .empty:
-                        Rectangle().fill(Color.gray.opacity(0.2))
-
-                    case .success(let img):
-                        img.resizable().scaledToFill()
-
-                    case .failure:
-                        ZStack {
-                            Rectangle().fill(Color.gray.opacity(0.2))
-                            Image(systemName: "photo")
-                                .font(.system(size: 24, weight: .medium))
-                                .foregroundColor(.gray.opacity(0.8))
-                        }
-
-                    @unknown default:
-                        Rectangle().fill(Color.gray.opacity(0.2))
-                    }
+                CachedAsyncImage(url: URL(string: parking.thumbnail_url ?? "")) { image in
+                    image
+                        .resizable()
+                        .scaledToFill()
+                } placeholder: {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
                 }
                 .frame(width: 90, height: 90)
                 .cornerRadius(15)

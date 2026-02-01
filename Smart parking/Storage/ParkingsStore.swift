@@ -40,32 +40,56 @@ final class ParkingsStore: ObservableObject {
 
         isLoading = true
         errorMessage = nil
+        
+        // 1) Avval cache dan yuklaymiz (tezkor UI)
+        if !force, let cached = ParkingCache.shared.load() {
+            updateParkings(cached, userLocation: userLocation)
+            hasLoadedOnce = true
+            isLoading = false
+            
+            // Agar cache fresh bo'lsa, network ga bormaymiz
+            if ParkingCache.shared.isFresh() {
+                return
+            }
+            // Cache stale - background da yangilaymiz
+        }
+        
         defer { isLoading = false }
 
+        // 2) Network dan yuklaymiz
         do {
             let items = try await service.fetchParkings()
-            self.all = items
-
-            self.popular = Array(items.filter { ($0.is_popular ?? false) }.prefix(10))
-
-            if let userLocation {
-                let sorted = items.sorted { a, b in
-                    CLLocation(latitude: a.latitude, longitude: a.longitude).distance(from: userLocation)
-                    <
-                    CLLocation(latitude: b.latitude, longitude: b.longitude).distance(from: userLocation)
-                }
-                self.nearby = Array(sorted.prefix(20))
-            } else {
-                self.nearby = Array(items.prefix(20))
-            }
-
+            
+            // Cache ga saqlaymiz
+            ParkingCache.shared.save(items)
+            
+            updateParkings(items, userLocation: userLocation)
             self.hasLoadedOnce = true
-            self.reloadToken = UUID() // ✅ UI majburan yangilanadi
+            self.reloadToken = UUID()
 
         } catch {
             if let urlError = error as? URLError, urlError.code == .cancelled { return }
-            errorMessage = "Ma’lumotlar yuklanmadi"
+            // Agar cache dan yuklangan bo'lsa, xato ko'rsatmaymiz
+            if all.isEmpty {
+                errorMessage = "Ma'lumotlar yuklanmadi"
+            }
             print("ERROR fetching parkings:", error)
+        }
+    }
+    
+    private func updateParkings(_ items: [Parking], userLocation: CLLocation?) {
+        self.all = items
+        self.popular = Array(items.filter { ($0.is_popular ?? false) }.prefix(10))
+        
+        if let userLocation {
+            let sorted = items.sorted { a, b in
+                CLLocation(latitude: a.latitude, longitude: a.longitude).distance(from: userLocation)
+                <
+                CLLocation(latitude: b.latitude, longitude: b.longitude).distance(from: userLocation)
+            }
+            self.nearby = Array(sorted.prefix(20))
+        } else {
+            self.nearby = Array(items.prefix(20))
         }
     }
     func refresh(userLocation: CLLocation?) async {

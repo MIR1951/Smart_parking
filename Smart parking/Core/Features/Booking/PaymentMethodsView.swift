@@ -1,0 +1,171 @@
+//
+//  PaymentMethodsView.swift
+//  Smart parking
+//
+//  To'lov usulini tanlash sahifasi
+//
+
+import SwiftUI
+
+struct PaymentMethodsView: View {
+    @Binding var selectedMethod: PaymentMethod?
+    let onConfirm: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            header
+
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 20) {
+
+                    // Wallet Section
+                    Section {
+                        paymentRow(method: .wallet)
+                    } header: {
+                        Text("Wallet")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.gray)
+                    }
+
+                    // Credit & Debit Card
+                    Section {
+                        addCardRow
+                    } header: {
+                        Text("Credit & Debit Card")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.gray)
+                    }
+
+                    // More Options
+                    Section {
+                        VStack(spacing: 12) {
+                            paymentRow(method: .paypal)
+                            paymentRow(method: .applePay)
+                            paymentRow(method: .googlePay)
+                        }
+                    } header: {
+                        Text("More Payment Options")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.gray)
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.top, 16)
+            }
+
+            Spacer()
+
+            // Confirm Button
+            confirmButton
+        }
+        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .navigationBarHidden(true)
+    }
+
+    // MARK: - Header
+    private var header: some View {
+        HStack {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .foregroundColor(.black)
+                    .padding(12)
+                    .background(Color.white)
+                    .clipShape(Circle())
+                    .shadow(color: .black.opacity(0.1), radius: 4)
+            }
+
+            Spacer()
+
+            Text("Payment Methods")
+                .font(.headline)
+
+            Spacer()
+
+            Color.clear.frame(width: 44, height: 44)
+        }
+        .padding(.horizontal)
+        .padding(.top, 8)
+    }
+
+    // MARK: - Payment Row
+    private func paymentRow(method: PaymentMethod) -> some View {
+        HStack(spacing: 16) {
+            Image(systemName: method.icon)
+                .font(.title3)
+                .foregroundColor(.purple)
+                .frame(width: 40, height: 40)
+                .background(Color.purple.opacity(0.1))
+                .cornerRadius(10)
+
+            Text(method.displayName)
+                .font(.body)
+
+            Spacer()
+
+            Circle()
+                .stroke(
+                    selectedMethod == method ? Color.purple : Color.gray.opacity(0.3), lineWidth: 2
+                )
+                .frame(width: 24, height: 24)
+                .overlay {
+                    if selectedMethod == method {
+                        Circle()
+                            .fill(Color.purple)
+                            .frame(width: 14, height: 14)
+                    }
+                }
+        }
+        .padding()
+        .background(Color.white)
+        .cornerRadius(16)
+        .onTapGesture {
+            selectedMethod = method
+        }
+    }
+
+    // MARK: - Add Card Row
+    private var addCardRow: some View {
+        HStack(spacing: 16) {
+            Image(systemName: "creditcard")
+                .font(.title3)
+                .foregroundColor(.purple)
+                .frame(width: 40, height: 40)
+                .background(Color.purple.opacity(0.1))
+                .cornerRadius(10)
+
+            Text("Add Card")
+                .font(.body)
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .foregroundColor(.purple)
+        }
+        .padding()
+        .background(Color.white)
+        .cornerRadius(16)
+    }
+
+    // MARK: - Confirm Button
+    private var confirmButton: some View {
+        Button(action: onConfirm) {
+            Text("Confirm Payment")
+                .fontWeight(.semibold)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity, minHeight: 52)
+                .background(selectedMethod != nil ? Color.purple : Color.gray)
+                .cornerRadius(26)
+        }
+        .disabled(selectedMethod == nil)
+        .padding(.horizontal)
+        .padding(.bottom, 24)
+    }
+}

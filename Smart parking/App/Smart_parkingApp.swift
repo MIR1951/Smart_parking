@@ -5,7 +5,7 @@
 //  Created by Kenjaboy Xajiyev on 30/11/25.
 //
 
-import SwiftUI
+ import SwiftUI
 import Supabase
 
 @main

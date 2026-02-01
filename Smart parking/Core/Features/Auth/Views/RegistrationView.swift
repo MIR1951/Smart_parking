@@ -5,7 +5,7 @@
 //  Created by Kenjaboy Xajiyev on 02/12/25.
 //
 
-import SwiftUI
+ import SwiftUI
 
 struct RegistrationView: View {
     @Environment(\.dismiss) private var dismiss

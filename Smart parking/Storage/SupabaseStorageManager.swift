@@ -9,10 +9,10 @@ import Foundation
 import Supabase
 
 struct SupabaseStorageManager {
-    private let client : SupabaseClient
+    private let client: SupabaseClient
     
-    init(){
-        self.client = SupabaseClient.init(supabaseURL: URL(string: Constants.projectURLString)!, supabaseKey: Constants.projectAPIKey)
+    init() {
+        self.client = SB.shared.client
     }
     
     func uploadProfilePhoto(for user: User, imageData : Data) async throws -> String {

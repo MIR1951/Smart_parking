@@ -7,18 +7,9 @@
 
 import SwiftUI
 
-
-import SwiftUI
-
 struct PopularParkingCard: View {
-   @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
+    @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
     let parking: Parking
-    
-
-//   var availableSpots: Int {
-//    availabilityStore.available[parking.id]
-//    ?? max(parking.total_spots - (parking.live_occupancy ?? 0), 0) // fallback
-//}
 
     var body: some View {
         let a = availabilityStore.availability(for: parking.id)
@@ -26,33 +17,13 @@ struct PopularParkingCard: View {
 
             ZStack(alignment: .topLeading) {
 
-                AsyncImage(url: URL(string: parking.thumbnail_url ?? "")) { phase in
-                    switch phase {
-                    case .empty:
-                        // loading placeholder (xuddi oldingidek)
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.2))
-
-                    case .success(let img):
-                        img
-                            .resizable()
-                            .scaledToFill()
-
-                    case .failure:
-                        // fallback (timeout bo‘lsa ham chiroyli)
-                        ZStack {
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.2))
-
-                            Image(systemName: "photo")
-                                .font(.system(size: 26, weight: .medium))
-                                .foregroundColor(.gray.opacity(0.8))
-                        }
-
-                    @unknown default:
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.2))
-                    }
+                CachedAsyncImage(url: URL(string: parking.thumbnail_url ?? "")) { image in
+                    image
+                        .resizable()
+                        .scaledToFill()
+                } placeholder: {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
                 }
                 .frame(width: 220, height: 140)
                 .clipped()
@@ -101,4 +72,3 @@ struct PopularParkingCard: View {
         .shadow(radius: 3)
     }
 }
-
