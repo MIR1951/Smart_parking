@@ -5,7 +5,7 @@
 //  To'liq booking flow boshqaruvchi view
 //
 
- import SwiftUI
+import SwiftUI
 
 enum BookingStep: Int, CaseIterable {
     case duration = 0
@@ -78,7 +78,10 @@ struct BookingFlowView: View {
                             vehicle: vehicle,
                             selectedMinutes: selectedMinutes,
                             paymentMethod: payment,
-                            reservationId: resId
+                            reservationId: resId,
+                            onBackToHome: {
+                                dismiss()
+                            }
                         )
                     }
                 }

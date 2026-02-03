@@ -11,7 +11,7 @@ import Supabase
 internal import Combine
 
 @MainActor
-final class ParkingAvailabilityStore: ObservableObject {
+final class ParkingAvailabilityStore: ObservableObject,Sendable {
 
     @Published private(set) var byParkingId: [UUID: ParkingAvailability] = [:]
     @Published var isLoading = false

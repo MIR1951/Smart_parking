@@ -2,153 +2,56 @@
 //  NotificationsView.swift
 //  Smart parking
 //
-//  Bildirishnomalar sahifasi
+//  Real-time bildirishnomalar sahifasi
 //
 
 import SwiftUI
-internal import Combine
 
-// MARK: - Notification Model
-struct AppNotification: Identifiable {
-    let id = UUID()
-    let icon: String
-    let iconColor: Color
-    let title: String
-    let description: String
-    let time: String
-    let isNew: Bool
-}
-
-// MARK: - Notifications Store
-@MainActor
-class NotificationsStore: ObservableObject {
-    static let shared = NotificationsStore()
-
-    @Published var notifications: [AppNotification] = []
-    @Published var newCount: Int = 0
-
-    private init() {
-        loadDemoNotifications()
-    }
-
-    private func loadDemoNotifications() {
-        notifications = [
-            AppNotification(
-                icon: "car.fill",
-                iconColor: .purple,
-                title: "Slot Booked Successfully",
-                description:
-                    "Your parking slot has been booked successfully. Enjoy your parking experience!",
-                time: "1h",
-                isNew: true
-            ),
-            AppNotification(
-                icon: "clock",
-                iconColor: .gray,
-                title: "15 Minutes Remain",
-                description:
-                    "Your parking session will expire in 15 minutes. Please extend or prepare to leave.",
-                time: "8h",
-                isNew: true
-            ),
-            AppNotification(
-                icon: "star.fill",
-                iconColor: .yellow,
-                title: "Slot Review Request",
-                description: "How was your parking experience? Leave a review to help other users.",
-                time: "9h",
-                isNew: false
-            ),
-            AppNotification(
-                icon: "xmark.circle.fill",
-                iconColor: .red,
-                title: "Slot Booking Cancelled",
-                description: "Your parking booking has been cancelled as per your request.",
-                time: "1d",
-                isNew: false
-            ),
-            AppNotification(
-                icon: "creditcard",
-                iconColor: .blue,
-                title: "New Paypal Added",
-                description: "Your PayPal account has been successfully linked to your profile.",
-                time: "1d",
-                isNew: false
-            ),
-            AppNotification(
-                icon: "clock.badge.exclamationmark",
-                iconColor: .orange,
-                title: "1 Hours Remain",
-                description: "You have 1 hour remaining in your parking session.",
-                time: "1d",
-                isNew: false
-            ),
-        ]
-        newCount = notifications.filter { $0.isNew }.count
-    }
-
-    func markAllAsRead() {
-        notifications = notifications.map { n in
-            AppNotification(
-                icon: n.icon,
-                iconColor: n.iconColor,
-                title: n.title,
-                description: n.description,
-                time: n.time,
-                isNew: false
-            )
-        }
-        newCount = 0
-    }
-}
-
-// MARK: - Notifications View
 struct NotificationsView: View {
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var store = NotificationsStore.shared
+    @StateObject private var manager = NotificationManager.shared
 
-    private var todayNotifications: [AppNotification] {
-        store.notifications.filter { $0.time.contains("h") || $0.time == "now" }
+    private var todayNotifications: [UserNotification] {
+        manager.notifications.filter { Calendar.current.isDateInToday($0.created_at) }
     }
 
-    private var yesterdayNotifications: [AppNotification] {
-        store.notifications.filter { $0.time.contains("d") }
+    private var yesterdayNotifications: [UserNotification] {
+        manager.notifications.filter { Calendar.current.isDateInYesterday($0.created_at) }
+    }
+
+    private var olderNotifications: [UserNotification] {
+        manager.notifications.filter {
+            !Calendar.current.isDateInToday($0.created_at)
+                && !Calendar.current.isDateInYesterday($0.created_at)
+        }
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
             header
 
-            // Content
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 20) {
-
-                    // Today Section
-                    if !todayNotifications.isEmpty {
-                        sectionHeader(title: "TODAY", onMarkRead: { store.markAllAsRead() })
-
-                        ForEach(todayNotifications) { notification in
-                            NotificationRow(notification: notification)
-                        }
-                    }
-
-                    // Yesterday Section
-                    if !yesterdayNotifications.isEmpty {
-                        sectionHeader(title: "YESTERDAY", onMarkRead: { store.markAllAsRead() })
-
-                        ForEach(yesterdayNotifications) { notification in
-                            NotificationRow(notification: notification)
-                        }
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.top, 16)
-                .padding(.bottom, 24)
+            if manager.isLoading && manager.notifications.isEmpty {
+                Spacer()
+                ProgressView()
+                Spacer()
+            } else if manager.notifications.isEmpty {
+                emptyState
+            } else {
+                content
             }
         }
         .background(Color(.systemGroupedBackground).ignoresSafeArea())
         .navigationBarHidden(true)
+        .task {
+            await manager.load()
+            manager.startRealtime()
+        }
+        .onDisappear {
+            manager.stopRealtime()
+        }
+        .refreshable {
+            await manager.load()
+        }
     }
 
     // MARK: - Header
@@ -167,12 +70,11 @@ struct NotificationsView: View {
 
             Spacer()
 
-            Text("Notification")
+            Text("Notifications")
                 .font(.headline)
 
-            // Badge
-            if store.newCount > 0 {
-                Text("\(store.newCount) NEW")
+            if manager.unreadCount > 0 {
+                Text("\(manager.unreadCount) NEW")
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
@@ -190,8 +92,63 @@ struct NotificationsView: View {
         .padding(.top, 8)
     }
 
+    // MARK: - Content
+    private var content: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 16) {
+
+                if !todayNotifications.isEmpty {
+                    sectionHeader("TODAY")
+                    ForEach(todayNotifications) { notification in
+                        NotificationRow(notification: notification) {
+                            Task { await manager.markAsRead(notification.id) }
+                        }
+                    }
+                }
+
+                if !yesterdayNotifications.isEmpty {
+                    sectionHeader("YESTERDAY")
+                    ForEach(yesterdayNotifications) { notification in
+                        NotificationRow(notification: notification) {
+                            Task { await manager.markAsRead(notification.id) }
+                        }
+                    }
+                }
+
+                if !olderNotifications.isEmpty {
+                    sectionHeader("OLDER")
+                    ForEach(olderNotifications) { notification in
+                        NotificationRow(notification: notification) {
+                            Task { await manager.markAsRead(notification.id) }
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal)
+            .padding(.top, 16)
+            .padding(.bottom, 24)
+        }
+    }
+
+    // MARK: - Empty State
+    private var emptyState: some View {
+        VStack(spacing: 16) {
+            Spacer()
+            Image(systemName: "bell.slash")
+                .font(.system(size: 60))
+                .foregroundColor(.gray.opacity(0.5))
+            Text("No Notifications")
+                .font(.headline)
+                .foregroundColor(.gray)
+            Text("You're all caught up!")
+                .font(.caption)
+                .foregroundColor(.gray.opacity(0.8))
+            Spacer()
+        }
+    }
+
     // MARK: - Section Header
-    private func sectionHeader(title: String, onMarkRead: @escaping () -> Void) -> some View {
+    private func sectionHeader(_ title: String) -> some View {
         HStack {
             Text(title)
                 .font(.subheadline)
@@ -200,11 +157,13 @@ struct NotificationsView: View {
 
             Spacer()
 
-            Button("Mark all as read") {
-                onMarkRead()
+            if manager.unreadCount > 0 {
+                Button("Mark all read") {
+                    Task { await manager.markAllAsRead() }
+                }
+                .font(.caption)
+                .foregroundColor(.purple)
             }
-            .font(.caption)
-            .foregroundColor(.purple)
         }
         .padding(.top, 8)
     }
@@ -212,7 +171,8 @@ struct NotificationsView: View {
 
 // MARK: - Notification Row
 private struct NotificationRow: View {
-    let notification: AppNotification
+    let notification: UserNotification
+    let onTap: () -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
@@ -236,12 +196,12 @@ private struct NotificationRow: View {
 
                     Spacer()
 
-                    Text(notification.time)
+                    Text(notification.timeAgo)
                         .font(.caption)
                         .foregroundColor(.gray)
                 }
 
-                Text(notification.description)
+                Text(notification.message)
                     .font(.caption)
                     .foregroundColor(.gray)
                     .lineLimit(3)
@@ -251,8 +211,7 @@ private struct NotificationRow: View {
         .background(Color.white)
         .cornerRadius(16)
         .overlay(
-            // New indicator
-            notification.isNew
+            !notification.is_read
                 ? Circle()
                     .fill(Color.purple)
                     .frame(width: 8, height: 8)
@@ -260,5 +219,6 @@ private struct NotificationRow: View {
                 : nil,
             alignment: .topTrailing
         )
+        .onTapGesture(perform: onTap)
     }
 }

@@ -14,40 +14,32 @@ struct PaymentSuccessView: View {
     let paymentMethod: PaymentMethod
     let reservationId: UUID
 
+    // Callback to dismiss entire booking flow
+    var onBackToHome: (() -> Void)?
+
     @State private var showEReceipt = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
+            // Header - faqat title
             HStack {
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(.black)
-                        .padding(12)
-                        .background(Color.white)
-                        .clipShape(Circle())
-                        .shadow(color: .black.opacity(0.1), radius: 4)
-                }
-
                 Spacer()
-
                 Text("Payment")
                     .font(.headline)
-
                 Spacer()
-
-                Color.clear.frame(width: 44, height: 44)
             }
             .padding(.horizontal)
-            .padding(.top, 8)
+            .padding(.top, 16)
 
             Spacer()
 
-            // Success Icon
+            // Success Icon with animation
             ZStack {
+                Circle()
+                    .fill(Color.purple.opacity(0.15))
+                    .frame(width: 140, height: 140)
+
                 Circle()
                     .fill(Color.purple)
                     .frame(width: 100, height: 100)
@@ -69,14 +61,25 @@ struct PaymentSuccessView: View {
                 .padding(.top, 8)
                 .padding(.horizontal, 32)
 
+            // Reservation ID
+            HStack {
+                Text("Reservation ID:")
+                    .foregroundColor(.gray)
+                Text(reservationId.uuidString.prefix(8).uppercased())
+                    .fontWeight(.semibold)
+            }
+            .font(.caption)
+            .padding(.top, 16)
+
             Spacer()
 
             // Buttons
             VStack(spacing: 12) {
+                // View E-Receipt (opens sheet)
                 Button {
                     showEReceipt = true
                 } label: {
-                    Text("Download E-Receipt")
+                    Text("View E-Receipt")
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity, minHeight: 52)
@@ -84,12 +87,21 @@ struct PaymentSuccessView: View {
                         .cornerRadius(26)
                 }
 
+                // Back to Home
                 Button {
-                    showEReceipt = true
+                    if let onBackToHome {
+                        onBackToHome()
+                    } else {
+                        // Fallback - coordinator orqali
+                        AppCoordinator.shared.goToHome()
+                    }
                 } label: {
-                    Text("View E-Ticket")
+                    Text("Back to Home")
                         .fontWeight(.semibold)
                         .foregroundColor(.purple)
+                        .frame(maxWidth: .infinity, minHeight: 52)
+                        .background(Color.purple.opacity(0.1))
+                        .cornerRadius(26)
                 }
             }
             .padding(.horizontal)
@@ -97,7 +109,7 @@ struct PaymentSuccessView: View {
         }
         .background(Color(.systemGroupedBackground).ignoresSafeArea())
         .navigationBarHidden(true)
-        .navigationDestination(isPresented: $showEReceipt) {
+        .sheet(isPresented: $showEReceipt) {
             EReceiptView(
                 parking: parking,
                 vehicle: vehicle,

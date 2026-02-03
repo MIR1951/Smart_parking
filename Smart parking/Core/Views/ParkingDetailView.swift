@@ -2,10 +2,23 @@ import SwiftUI
 
 struct ParkingDetailView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
+
     let parking: Parking
     @State private var showBooking = false
-
     @State private var selectedTab: DetailTab = .about
+
+    // Computed: real available spots
+    private var availableSpots: Int {
+        if let avail = availabilityStore.availability(for: parking.id) {
+            return avail.availableSpots
+        }
+        return parking.total_spots - (parking.live_occupancy ?? 0)
+    }
+
+    private var isAvailable: Bool {
+        availableSpots > 0
+    }
 
     var body: some View {
 
@@ -92,7 +105,15 @@ extension ParkingDetailView {
                 .fontWeight(.semibold)
 
             HStack(spacing: 6) {
-                Text("⭐️ 4.8 (365 reviews)")
+                Image(systemName: "star.fill")
+                    .foregroundColor(.yellow)
+                    .font(.caption)
+                Text(String(format: "%.1f", parking.rating ?? 4.5))
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                Text("•")
+                    .foregroundColor(.gray)
+                Text("\(parking.total_spots) total spots")
                     .font(.subheadline)
                     .foregroundColor(.gray)
             }
@@ -141,45 +162,88 @@ extension ParkingDetailView {
     private var aboutSection: some View {
         VStack(alignment: .leading, spacing: 16) {
 
+            // Real-time availability
             HStack {
-                HStack {
-                    Image(systemName: "clock")
-                    Text("05 mins away")
-                }
-                Spacer()
-                HStack {
+                HStack(spacing: 4) {
                     Image(systemName: "car.fill")
-                    Text("\(parking.total_spots - (parking.live_occupancy ?? 0)) Spots Available")
+                        .foregroundColor(isAvailable ? .green : .red)
+                    Text("\(availableSpots) Spots Available")
+                        .foregroundColor(isAvailable ? .green : .red)
                 }
-            }
-            .foregroundColor(.purple)
-            .font(.subheadline)
 
+                Spacer()
+
+                HStack(spacing: 4) {
+                    Image(systemName: "dollarsign.circle")
+                    Text(String(format: "$%.2f/hr", parking.price_per_hour))
+                }
+                .foregroundColor(.purple)
+            }
+            .font(.subheadline)
+            .fontWeight(.medium)
+
+            // Description from DB
             VStack(alignment: .leading, spacing: 6) {
                 Text("Description")
                     .font(.headline)
-                Text("Lorem ipsum dolor sit amet, consectetur adipiscing elit...")
+                Text(parking.description ?? "No description available for this parking location.")
                     .foregroundColor(.gray)
             }
 
-            VStack(alignment: .leading) {
-                Text("Operated by")
+            // Features
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Features")
                     .font(.headline)
 
-                HStack {
-                    Circle()
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(width: 42, height: 42)
-                    VStack(alignment: .leading) {
-                        Text("John Doe")
-                        Text("Manager")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                    }
-                    Spacer()
+                LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 12) {
+                    featureItem(icon: "shield.checkered", title: "24/7 Security")
+                    featureItem(icon: "video.fill", title: "CCTV")
+                    featureItem(icon: "lightbulb.fill", title: "Good Lighting")
+                    featureItem(icon: "figure.walk", title: "Covered Parking")
                 }
             }
 
+            // Parking Info
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Parking Info")
+                    .font(.headline)
+
+                HStack {
+                    infoItem(title: "Total Spots", value: "\(parking.total_spots)")
+                    Spacer()
+                    infoItem(title: "Available", value: "\(availableSpots)")
+                    Spacer()
+                    infoItem(
+                        title: "Price", value: String(format: "$%.2f/hr", parking.price_per_hour))
+                }
+            }
+
+        }
+    }
+
+    private func featureItem(icon: String, title: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .foregroundColor(.purple)
+                .frame(width: 24)
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.gray)
+            Spacer()
+        }
+        .padding(10)
+        .background(Color(.systemGray6))
+        .cornerRadius(10)
+    }
+
+    private func infoItem(title: String, value: String) -> some View {
+        VStack(spacing: 4) {
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.gray)
+            Text(value)
+                .font(.subheadline)
+                .fontWeight(.semibold)
         }
     }
 
@@ -187,21 +251,34 @@ extension ParkingDetailView {
     private var gallerySection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Gallery (400)")
+                Text("Gallery")
                     .font(.headline)
                 Spacer()
-                Text("add photo")
-                    .foregroundColor(.purple)
-                    .font(.subheadline)
             }
 
-            LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 12) {
-                ForEach(0..<6, id: \.self) { i in
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.3))
+            if let images = parking.images, !images.isEmpty {
+                LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 12) {
+                    ForEach(images, id: \.self) { imageUrl in
+                        CachedAsyncImage(url: URL(string: imageUrl)) { image in
+                            image.resizable().scaledToFill()
+                        } placeholder: {
+                            Rectangle().fill(Color.gray.opacity(0.2))
+                        }
                         .frame(height: 120)
-                        .cornerRadius(12)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
                 }
+            } else {
+                // Placeholder if no images
+                VStack(spacing: 12) {
+                    Image(systemName: "photo.on.rectangle.angled")
+                        .font(.largeTitle)
+                        .foregroundColor(.gray)
+                    Text("No gallery images available")
+                        .foregroundColor(.gray)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
             }
         }
     }
@@ -214,36 +291,92 @@ extension ParkingDetailView {
                 Text("Reviews")
                     .font(.headline)
                 Spacer()
-                Text("add review")
+                Button("Add Review") {}
                     .foregroundColor(.purple)
+                    .font(.subheadline)
             }
 
-            // Search
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemGray6))
-                .frame(height: 46)
-                .overlay(
-                    HStack {
-                        Image(systemName: "magnifyingglass").foregroundColor(.gray)
-                        Text("Search in reviews").foregroundColor(.gray)
-                        Spacer()
+            // Rating Summary
+            HStack(spacing: 16) {
+                VStack {
+                    Text(String(format: "%.1f", parking.rating ?? 4.5))
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                    HStack(spacing: 2) {
+                        ForEach(0..<5) { i in
+                            Image(systemName: i < Int(parking.rating ?? 4.5) ? "star.fill" : "star")
+                                .foregroundColor(.yellow)
+                                .font(.caption)
+                        }
                     }
-                    .padding(.horizontal)
-                )
-
-            // Example review
-            HStack {
-                Circle().fill(Color.gray.opacity(0.3)).frame(width: 42, height: 42)
-                VStack(alignment: .leading) {
-                    Text("Dale Thiel").bold()
-                    Text("11 months ago").foregroundColor(.gray).font(.caption)
+                    Text("Based on reviews")
+                        .font(.caption)
+                        .foregroundColor(.gray)
                 }
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+
                 Spacer()
             }
 
-            Text("Great parking space! Very clean and safe.")
+            // Example reviews (placeholder)
+            VStack(spacing: 16) {
+                reviewItem(
+                    name: "John Doe",
+                    date: "2 days ago",
+                    rating: 5,
+                    comment: "Great parking space! Very clean and safe. Will definitely use again."
+                )
+
+                reviewItem(
+                    name: "Jane Smith",
+                    date: "1 week ago",
+                    rating: 4,
+                    comment: "Good location, easy to find. A bit crowded on weekends."
+                )
+            }
+        }
+    }
+
+    private func reviewItem(name: String, date: String, rating: Int, comment: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Circle()
+                    .fill(Color.purple.opacity(0.2))
+                    .frame(width: 40, height: 40)
+                    .overlay(
+                        Text(String(name.prefix(1)))
+                            .fontWeight(.semibold)
+                            .foregroundColor(.purple)
+                    )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(name)
+                        .fontWeight(.medium)
+                    Text(date)
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+
+                Spacer()
+
+                HStack(spacing: 2) {
+                    ForEach(0..<rating, id: \.self) { _ in
+                        Image(systemName: "star.fill")
+                            .foregroundColor(.yellow)
+                            .font(.caption)
+                    }
+                }
+            }
+
+            Text(comment)
+                .font(.subheadline)
                 .foregroundColor(.gray)
         }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
     }
 
     // MARK: Bottom Booking Bar
@@ -260,13 +393,14 @@ extension ParkingDetailView {
             Spacer()
 
             Button(action: { showBooking = true }) {
-                Text("Book Slot")
+                Text(isAvailable ? "Book Slot" : "Fully Booked")
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
                     .frame(width: 160, height: 48)
-                    .background(Color.purple)
+                    .background(isAvailable ? Color.purple : Color.gray)
                     .cornerRadius(14)
             }
+            .disabled(!isAvailable)
             .fullScreenCover(isPresented: $showBooking) {
                 BookingFlowView(parking: parking)
             }
@@ -297,4 +431,12 @@ enum DetailTab: String, CaseIterable {
     case about = "About"
     case gallery = "Gallery"
     case review = "Review"
+}
+
+// MARK: - Parking Extension for images
+extension Parking {
+    var images: [String]? {
+        // Bu property DB dan kelishi kerak, hozircha nil
+        nil
+    }
 }

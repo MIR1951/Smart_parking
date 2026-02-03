@@ -77,10 +77,23 @@ struct HomeView: View {
             }
             Spacer()
             NavigationLink(destination: NotificationsView()) {
-                Circle()
-                    .fill(Color.primary.opacity(0.15))
-                    .frame(width: 40, height: 40)
-                    .overlay(Image(systemName: "bell").foregroundColor(.primary))
+                ZStack(alignment: .topTrailing) {
+                    Circle()
+                        .fill(Color.primary.opacity(0.15))
+                        .frame(width: 40, height: 40)
+                        .overlay(Image(systemName: "bell").foregroundColor(.primary))
+
+                    // Notification Badge
+                    if NotificationManager.shared.unreadCount > 0 {
+                        Text("\(min(NotificationManager.shared.unreadCount, 99))")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(minWidth: 16, minHeight: 16)
+                            .background(Color.red)
+                            .clipShape(Circle())
+                            .offset(x: 4, y: -4)
+                    }
+                }
             }
         }
         .padding(.horizontal)

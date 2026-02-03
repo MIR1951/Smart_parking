@@ -12,24 +12,23 @@ import Foundation
 class UserManager {
     var currentUser: User?
     private var service: UserService
-    
+
     init(service: UserService = UserService()) {
         self.service = service
     }
-    
-    func fetchCorrentUser () async  {
-        do{
-            self.currentUser = try await self.service.fetchCorrentUser()
-        }
-        catch{
-            print("DEBUG: Error fetching current user\(error)")
+
+    func fetchCurrentUser() async {
+        do {
+            self.currentUser = try await self.service.fetchCurrentUser()
+        } catch {
+            print("DEBUG: Error fetching current user \(error)")
         }
     }
     func updateProfileImageURL(_ imageURL: String) async {
         do {
             try await service.updateProfileImageURL(imageURL)
             self.currentUser?.profileImageURL = imageURL
-        }catch{
+        } catch {
             print("DEBUG: failed to update profile image url \(error)")
         }
     }

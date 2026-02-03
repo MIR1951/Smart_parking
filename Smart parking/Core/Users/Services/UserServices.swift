@@ -8,32 +8,27 @@
 import Foundation
 import Supabase
 
-struct UserService{
-    private let client: SupabaseClient
-    
-    init() {
-        self.client = SupabaseClient.init(supabaseURL: URL(string: Constants.projectURLString)!, supabaseKey: Constants.projectAPIKey)
-          
-    }
-    
-    
-    func fetchCorrentUser()async throws -> User{
-        let user = try await client.auth.session.user
-        
-        return try await client.from("users")
+struct UserService {
+
+    func fetchCurrentUser() async throws -> User {
+        let user = try await SB.shared.client.auth.session.user
+
+        return try await SB.shared.client
+            .from("users")
             .select()
             .eq("id", value: user.id.uuidString)
             .single()
             .execute()
             .value
     }
+
     func updateProfileImageURL(_ imageURL: String) async throws {
-        guard let uid = client.auth.currentUser?.id.uuidString else {
+        guard let uid = SB.shared.client.auth.currentUser?.id.uuidString else {
             print("DEBUG: No valid session found. User is not authenticated.")
             throw URLError(.userAuthenticationRequired)
         }
 
-        try await client
+        try await SB.shared.client
             .from("users")
             .update(["profileImageURL": imageURL])
             .eq("id", value: uid)

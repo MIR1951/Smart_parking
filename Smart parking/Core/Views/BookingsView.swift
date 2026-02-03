@@ -258,8 +258,21 @@ struct BookingCard: View {
             } else {
                 return "View"
             }
-        case .completed, .cancelled:
-            return "View"
+        case .completed:
+            return "Rebook"
+        case .cancelled:
+            return "Rebook"
+        }
+    }
+
+    private var rightButtonTitle: String {
+        switch tab {
+        case .ongoing:
+            return "E-Ticket"
+        case .completed:
+            return "View Receipt"
+        case .cancelled:
+            return "Details"
         }
     }
 
@@ -271,8 +284,10 @@ struct BookingCard: View {
             } else {
                 return (Color.purple.opacity(0.1), Color.purple)
             }
-        case .completed, .cancelled:
-            return (Color.gray.opacity(0.1), Color.gray)
+        case .completed:
+            return (Color.green.opacity(0.1), Color.green)
+        case .cancelled:
+            return (Color.orange.opacity(0.1), Color.orange)
         }
     }
 
@@ -358,7 +373,7 @@ struct BookingCard: View {
                 }
 
                 Button(action: onTicketTap) {
-                    Text("E-Ticket")
+                    Text(rightButtonTitle)
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
