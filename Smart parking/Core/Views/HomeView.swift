@@ -41,8 +41,8 @@ struct HomeView: View {
                     locationManager.requestPermission()
                 }
             }
-            .onChange(of: locationManager.location) { oldValue, newValue in
-                guard let loc = newValue, !parkings.isLoading else { return }
+            .onChange(of: locationManager.location) { _, newValue in
+                guard let loc = newValue else { return }
                 parkings.load(userLocation: loc)
             }
 

@@ -10,12 +10,15 @@ struct ExploreView: View {
     @State private var search = ""
     @StateObject private var locationManager = LocationManager()
 
-    @State private var region = MKCoordinateRegion(
+    @State private var cameraPosition: MapCameraPosition = .region(
+        MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 41.3117, longitude: 69.2797),
         span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
+        )
     )
 
     @State private var didRequestLocation = false
+    @State private var showFilterInfo = false
 
     private var filtered: [Parking] {
         let base = parkings.nearby
@@ -30,11 +33,13 @@ struct ExploreView: View {
 
     var body: some View {
         NavigationStack {
-            Map(coordinateRegion: $region, annotationItems: filtered) { p in
-                MapAnnotation(coordinate: .init(latitude: p.latitude, longitude: p.longitude)) {
+            Map(position: $cameraPosition) {
+                ForEach(filtered) { p in
+                    Annotation("", coordinate: .init(latitude: p.latitude, longitude: p.longitude)) {
                     Circle()
                         .fill(Color.primary)
                         .frame(width: 12, height: 12)
+                    }
                 }
             }
             .ignoresSafeArea()
@@ -55,7 +60,7 @@ struct ExploreView: View {
                     .cornerRadius(14)
 
                     Button {
-                        // filter sheet (keyin qo‘shamiz)
+                        showFilterInfo = true
                     } label: {
                         Image(systemName: "slider.horizontal.3")
                             .foregroundColor(.white)
@@ -67,6 +72,11 @@ struct ExploreView: View {
                 .padding(.horizontal)
                 .padding(.top, 8)
                 .padding(.bottom, 8)
+                .alert("Info", isPresented: $showFilterInfo) {
+                    Button("OK") {}
+                } message: {
+                    Text("Filter bo'limi keyingi versiyada qo'shiladi.")
+                }
             }
 
             // BOTTOM CARDS (TabBar ustida, balandroq)
@@ -104,13 +114,22 @@ struct ExploreView: View {
                     parkings.load(userLocation: locationManager.location)
                 }
             }
-            .onChange(of: locationManager.location) { loc in
+            .onChange(of: locationManager.location) { _, loc in
                 if let loc {
                     withAnimation {
-                        region.center = loc.coordinate
+                        cameraPosition = .region(
+                            MKCoordinateRegion(
+                                center: loc.coordinate,
+                                span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
+                            )
+                        )
                     }
                 }
-                parkings.load(userLocation: loc, force: true)
+                if parkings.all.isEmpty {
+                    parkings.load(userLocation: loc, force: true)
+                } else {
+                    parkings.recomputeNearby(userLocation: loc)
+                }
             }
         }
     }

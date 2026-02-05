@@ -1,4 +1,5 @@
 import CoreLocation
+import MapKit
 internal import Combine
 
 @MainActor
@@ -8,9 +9,9 @@ final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelega
     @Published var placeName: String = "Unknown"
 
     private let manager = CLLocationManager()
-    private let geocoder = CLGeocoder()
     private var didStartUpdating = false
     private var lastGeocodedLocation: CLLocation?
+    private var reverseGeocodeTask: Task<Void, Never>?
 
     override init() {
         self.authorizationStatus = manager.authorizationStatus
@@ -76,19 +77,29 @@ final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelega
         if let last = lastGeocodedLocation, last.distance(from: loc) < 200 { return }
         lastGeocodedLocation = loc
 
-        geocoder.reverseGeocodeLocation(loc) { [weak self] placemarks, error in
+        reverseGeocodeTask?.cancel()
+        reverseGeocodeTask = Task { [weak self] in
             guard let self else { return }
-            if let _ = error { return }
+            do {
+                guard let request = MKReverseGeocodingRequest(location: loc) else { return }
+                let mapItems = try await request.mapItems
+                let addressRepresentations = mapItems.first?.addressRepresentations
+                let city = addressRepresentations?.cityWithContext
+                let country = addressRepresentations?.regionName
+                let fullAddress = mapItems.first?.address?.shortAddress
+                    ?? mapItems.first?.address?.fullAddress
 
-            let pm = placemarks?.first
-            let city = pm?.locality ?? pm?.administrativeArea
-            let country = pm?.country
+                let text = [city, country].compactMap { $0 }.joined(separator: ", ")
+                let resolvedText = text.isEmpty ? (fullAddress ?? "") : text
+                guard !resolvedText.isEmpty else { return }
 
-            let text = [city, country].compactMap { $0 }.joined(separator: ", ")
-            if !text.isEmpty {
-                Task { @MainActor in
-                    self.placeName = text
+                await MainActor.run {
+                    self.placeName = resolvedText
                 }
+            } catch is CancellationError {
+                // ignore cancellation
+            } catch {
+                print("Reverse geocode error:", error)
             }
         }
     }

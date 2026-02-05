@@ -13,8 +13,8 @@ class UserManager {
     var currentUser: User?
     private var service: UserService
 
-    init(service: UserService = UserService()) {
-        self.service = service
+    init(service: UserService? = nil) {
+        self.service = service ?? UserService(client: SB.shared.client)
     }
 
     func fetchCurrentUser() async {
@@ -31,5 +31,10 @@ class UserManager {
         } catch {
             print("DEBUG: failed to update profile image url \(error)")
         }
+    }
+
+    func updateUsername(_ username: String) async throws {
+        try await service.updateUsername(username)
+        currentUser?.username = username
     }
 }

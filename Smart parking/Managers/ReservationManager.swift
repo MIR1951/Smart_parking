@@ -35,11 +35,14 @@ final class ReservationManager {
     }
 
     func cancelReservation(reservationId: UUID) async throws {
+        let userID = try await SB.shared.client.auth.session.user.id.uuidString
+
         // Note: Supabase constraint "canceled" (bir 'l' bilan) kutadi
         try await SB.shared.client
             .from("reservations")
             .update(["status": "canceled"])
             .eq("id", value: reservationId.uuidString)
+            .eq("user_id", value: userID)
             .execute()
     }
 }

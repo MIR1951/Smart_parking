@@ -9,9 +9,17 @@
 
 struct LoginView: View {
     @Environment(AuthManager.self) private var authManager
-    @State private var email: String = "example@gmail.com" // Joy egasi (Placeholder) sifatida ishlatilgan
-    @State private var password: String = "12345678" // Joy egasi (Placeholder) sifatida ishlatilgan
+    @State private var email: String = ""
+    @State private var password: String = ""
     @State private var isPasswordVisible: Bool = false
+    @State private var showAuthError = false
+    @State private var showInfoAlert = false
+    @State private var infoMessage = ""
+
+    private var isValidCredentials: Bool {
+        !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && password.count >= 6
+    }
     
     var body: some View {
         NavigationStack {
@@ -35,6 +43,8 @@ struct LoginView: View {
                         .fontWeight(.medium)
                     
                     TextField("example@gmail.com", text: $email)
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.emailAddress)
                         .padding()
                         .background(Color(.systemGray6))
                         .cornerRadius(10)
@@ -69,7 +79,7 @@ struct LoginView: View {
                     HStack {
                         Spacer()
                         Button("Forgot Password?") {
-                            // Parolni tiklash amali
+                            forgotPassword()
                         }
                         .foregroundColor(Color(red: 0.38, green: 0.22, blue: 0.82)) // Rasmga o'xshash binafsha rang
                         .font(.footnote)
@@ -78,7 +88,7 @@ struct LoginView: View {
                 .padding([.horizontal, .top])
                 
                 // --- Sign In tugmasi ---
-                Button("Sign In") {
+                Button(authManager.isLoading ? "Signing In..." : "Sign In") {
                     signIn()
                 }
                 .font(.title2)
@@ -86,8 +96,13 @@ struct LoginView: View {
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(Color(red: 0.38, green: 0.22, blue: 0.82)) // Rasmga o'xshash binafsha rang
+                .background(
+                    isValidCredentials
+                        ? Color(red: 0.38, green: 0.22, blue: 0.82)
+                        : Color.gray
+                )
                 .cornerRadius(15)
+                .disabled(!isValidCredentials || authManager.isLoading)
                 .padding([.horizontal, .top], 30)
                 
                 // --- Ijtimoiy tarmoqlar orqali kirish ---
@@ -96,9 +111,26 @@ struct LoginView: View {
                     .padding(.vertical, 20)
                 
                 HStack(spacing: 30) {
-                    SocialSignInButton(imageName: "applelogo")
-                    SocialSignInButton(imageName: "google") // 'google' va 'facebook' uchun maxsus rasm kerak
-                    SocialSignInButton(imageName: "facebook")
+                    Button {
+                        showInfo("Social sign in hozircha yoqilmagan.")
+                    } label: {
+                        SocialSignInButton(imageName: "applelogo")
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        showInfo("Social sign in hozircha yoqilmagan.")
+                    } label: {
+                        SocialSignInButton(imageName: "google")
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        showInfo("Social sign in hozircha yoqilmagan.")
+                    } label: {
+                        SocialSignInButton(imageName: "facebook")
+                    }
+                    .buttonStyle(.plain)
                 }
                 
                 // --- Hisobingiz yo'qmi? ---
@@ -125,6 +157,21 @@ struct LoginView: View {
                     .padding(.bottom, 8)
             }
             .padding(.horizontal, 10)
+            .onChange(of: authManager.authError) { _, newValue in
+                showAuthError = newValue != nil
+            }
+            .alert("Sign In Error", isPresented: $showAuthError) {
+                Button("OK") {
+                    authManager.clearAuthError()
+                }
+            } message: {
+                Text(authManager.authError ?? "Unknown error")
+            }
+            .alert("Info", isPresented: $showInfoAlert) {
+                Button("OK") {}
+            } message: {
+                Text(infoMessage)
+            }
         }
     }
 }
@@ -159,11 +206,33 @@ struct SocialSignInButton: View {
 }
 private extension LoginView {
     func signIn(){
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedEmail.isEmpty, password.count >= 6, !authManager.isLoading else { return }
+
         Task{
-            await authManager.signIn(email: email, password: password)
+            await authManager.signIn(email: trimmedEmail, password: password)
         }
     }
-    
+
+    func forgotPassword() {
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedEmail.isEmpty else {
+            showInfo("Avval email kiriting.")
+            return
+        }
+
+        Task {
+            let didSend = await authManager.resetPassword(email: trimmedEmail)
+            if didSend {
+                showInfo("Parolni tiklash havolasi emailingizga yuborildi.")
+            }
+        }
+    }
+
+    func showInfo(_ message: String) {
+        infoMessage = message
+        showInfoAlert = true
+    }
 }
 
 

@@ -74,9 +74,9 @@ final class ImageCacheManager {
     
     func saveImage(_ image: UIImage, for url: URL) {
         saveToMemory(image, for: url)
-        
+
         // Disk ga background da save qilamiz
-        Task.detached(priority: .utility) { [weak self] in
+        DispatchQueue.global(qos: .utility).async { [weak self] in
             self?.saveToDisk(image, for: url)
         }
     }

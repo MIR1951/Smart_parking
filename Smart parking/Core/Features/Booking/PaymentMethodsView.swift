@@ -152,6 +152,9 @@ struct PaymentMethodsView: View {
         .padding()
         .background(Color.white)
         .cornerRadius(16)
+        .onTapGesture {
+            selectedMethod = .card
+        }
     }
 
     // MARK: - Confirm Button

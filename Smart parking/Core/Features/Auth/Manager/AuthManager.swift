@@ -14,30 +14,48 @@ class AuthManager {
     private let authService : SupabaseAuthService
     
     var currentUserID : String?
-    init(authService: SupabaseAuthService = SupabaseAuthService()) {
-        self.authService = authService
+    var authError: String?
+    var isLoading = false
+
+    init(authService: SupabaseAuthService? = nil) {
+        self.authService = authService ?? SupabaseAuthService(client: SB.shared.client)
     }
     
     func signUp(email: String, password: String, username: String) async  {
+        isLoading = true
+        authError = nil
+        defer { isLoading = false }
+
         do {
             self.currentUserID = try await authService.signUp(email: email, password: password, username: username)
         } catch{
+            authError = error.localizedDescription
             print("DEBUG: signUp error: \(error.localizedDescription)")
         }
     }
     
     func signIn(email: String, password: String) async {
+        isLoading = true
+        authError = nil
+        defer { isLoading = false }
+
         do {
             self.currentUserID = try await authService.signIn(email: email, password: password)
         } catch{
+            authError = error.localizedDescription
             print("DEBUG: signIn error: \(error.localizedDescription)")
         }
     }
     func signOut() async {
+        isLoading = true
+        authError = nil
+        defer { isLoading = false }
+
         do {
             try await authService.signOut()
             currentUserID = nil
         } catch{
+            authError = error.localizedDescription
             print("DEBUG: signOut error: \(error.localizedDescription)")
         }
     }
@@ -50,5 +68,22 @@ class AuthManager {
             currentUserID = nil
         }
     }
-}
 
+    func clearAuthError() {
+        authError = nil
+    }
+
+    func resetPassword(email: String) async -> Bool {
+        isLoading = true
+        authError = nil
+        defer { isLoading = false }
+
+        do {
+            try await authService.resetPassword(email: email)
+            return true
+        } catch {
+            authError = error.localizedDescription
+            return false
+        }
+    }
+}

@@ -259,9 +259,9 @@ struct BookingCard: View {
                 return "View"
             }
         case .completed:
-            return "Rebook"
+            return "View"
         case .cancelled:
-            return "Rebook"
+            return "View"
         }
     }
 
@@ -472,6 +472,7 @@ struct BookingCard: View {
 struct BookingETicketView: View {
     let item: BookingItem
     @Environment(\.dismiss) private var dismiss
+    @State private var showShareSheet = false
 
     var body: some View {
         NavigationStack {
@@ -507,13 +508,26 @@ struct BookingETicketView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
-                        // Download action
+                        showShareSheet = true
                     } label: {
                         Image(systemName: "square.and.arrow.down")
                     }
                 }
             }
+            .sheet(isPresented: $showShareSheet) {
+                ShareSheet(activityItems: [ticketText])
+            }
         }
+    }
+
+    private var ticketText: String {
+        """
+        Parking: \(item.parking.name)
+        Status: \(item.status)
+        Start: \(formatDateTime(item.start_time))
+        End: \(formatDateTime(item.end_time))
+        Reservation ID: \(item.id.uuidString)
+        """
     }
 
     private var statusBadge: some View {
@@ -542,10 +556,10 @@ struct BookingETicketView: View {
     private var barcodeSection: some View {
         VStack {
             HStack(spacing: 2) {
-                ForEach(0..<40, id: \.self) { _ in
+                ForEach(0..<40, id: \.self) { index in
                     Rectangle()
                         .fill(Color.black)
-                        .frame(width: CGFloat.random(in: 1...4), height: 60)
+                        .frame(width: barcodeWidth(for: index), height: 60)
                 }
             }
 
@@ -556,6 +570,12 @@ struct BookingETicketView: View {
         .padding()
         .background(Color.white)
         .cornerRadius(16)
+    }
+
+    private func barcodeWidth(for index: Int) -> CGFloat {
+        let hash = item.id.hashValue
+        let seed = abs(hash >> (index % 8)) % 4
+        return CGFloat(seed + 1)
     }
 
     private var parkingInfoSection: some View {

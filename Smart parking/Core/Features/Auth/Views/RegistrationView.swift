@@ -15,6 +15,15 @@ struct RegistrationView: View {
     @State private var password: String = ""
     @State private var agreedToTerms: Bool = false
     @State private var isPasswordVisible: Bool = false
+    @State private var showAuthError = false
+    @State private var showSocialInfo = false
+
+    private var isValidForm: Bool {
+        !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && password.count >= 6
+            && agreedToTerms
+    }
     
     var body: some View {
         VStack {
@@ -52,6 +61,8 @@ struct RegistrationView: View {
                     .fontWeight(.medium)
                 
                 TextField("example@gmail.com", text: $email)
+                    .textInputAutocapitalization(.never)
+                    .keyboardType(.emailAddress)
                     .padding()
                     .background(Color(.systemGray6))
                     .cornerRadius(10)
@@ -103,7 +114,7 @@ struct RegistrationView: View {
             .padding([.horizontal, .top])
             
             // --- Sign Up tugmasi ---
-            Button("Sign Up") {
+            Button(authManager.isLoading ? "Creating..." : "Sign Up") {
                 signUp()
             }
             .font(.title2)
@@ -111,8 +122,13 @@ struct RegistrationView: View {
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
             .padding()
-            .background(Color(red: 0.38, green: 0.22, blue: 0.82)) // Rasmga o'xshash binafsha rang
+            .background(
+                isValidForm
+                    ? Color(red: 0.38, green: 0.22, blue: 0.82)
+                    : Color.gray
+            )
             .cornerRadius(15)
+            .disabled(!isValidForm || authManager.isLoading)
             .padding([.horizontal, .top], 30)
             
             // --- Ijtimoiy tarmoqlar orqali kirish ---
@@ -121,9 +137,26 @@ struct RegistrationView: View {
                 .padding(.vertical, 20)
             
             HStack(spacing: 30) {
-                SocialSignInButton(imageName: "applelogo")
-                SocialSignInButton(imageName: "google")
-                SocialSignInButton(imageName: "facebook")
+                Button {
+                    showSocialInfo = true
+                } label: {
+                    SocialSignInButton(imageName: "applelogo")
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    showSocialInfo = true
+                } label: {
+                    SocialSignInButton(imageName: "google")
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    showSocialInfo = true
+                } label: {
+                    SocialSignInButton(imageName: "facebook")
+                }
+                .buttonStyle(.plain)
             }
             
             // --- Hisobingiz bormi? ---
@@ -147,6 +180,21 @@ struct RegistrationView: View {
                 .padding(.bottom, 8)
         }
         .padding(.horizontal, 10)
+        .onChange(of: authManager.authError) { _, newValue in
+            showAuthError = newValue != nil
+        }
+        .alert("Sign Up Error", isPresented: $showAuthError) {
+            Button("OK") {
+                authManager.clearAuthError()
+            }
+        } message: {
+            Text(authManager.authError ?? "Unknown error")
+        }
+        .alert("Info", isPresented: $showSocialInfo) {
+            Button("OK") {}
+        } message: {
+            Text("Social sign up hozircha yoqilmagan.")
+        }
     }
 }
 
@@ -165,7 +213,23 @@ struct CheckboxToggleStyle: ToggleStyle {
 
 private extension RegistrationView {
     func signUp(){
-        Task{await authManager.signUp(email: email, password: password, username: username)}
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedUsername = username.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard
+            !trimmedUsername.isEmpty,
+            !trimmedEmail.isEmpty,
+            password.count >= 6,
+            agreedToTerms,
+            !authManager.isLoading
+        else { return }
+
+        Task {
+            await authManager.signUp(
+                email: trimmedEmail,
+                password: password,
+                username: trimmedUsername
+            )
+        }
     }
 }
 

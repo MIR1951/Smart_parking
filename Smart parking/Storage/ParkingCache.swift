@@ -38,17 +38,13 @@ final class ParkingCache {
     
     func save(_ parkings: [Parking]) {
         let entry = CacheEntry(parkings: parkings, timestamp: Date())
-        
-        Task.detached(priority: .utility) { [weak self] in
-            guard let self else { return }
-            do {
-                let encoder = JSONEncoder()
-                encoder.dateEncodingStrategy = .iso8601
-                let data = try encoder.encode(entry)
-                try data.write(to: self.cacheFilePath)
-            } catch {
-                print("Cache save error:", error)
-            }
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            let data = try encoder.encode(entry)
+            try data.write(to: cacheFilePath, options: .atomic)
+        } catch {
+            print("Cache save error:", error)
         }
     }
     

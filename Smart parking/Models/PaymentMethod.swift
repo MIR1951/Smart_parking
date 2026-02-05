@@ -19,7 +19,7 @@ enum PaymentMethod: String, Codable, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .wallet: return "wallet.pass"
-        case .applePay: return "apple.logo"
+        case .applePay: return "applelogo"
         case .googlePay: return "g.circle.fill"
         case .paypal: return "p.circle.fill"
         case .card: return "creditcard"

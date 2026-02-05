@@ -3,17 +3,19 @@ import SwiftUI
 struct ParkingDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
+    @EnvironmentObject var favorites: FavoritesStore
 
     let parking: Parking
     @State private var showBooking = false
+    @State private var showShareSheet = false
     @State private var selectedTab: DetailTab = .about
 
     // Computed: real available spots
     private var availableSpots: Int {
         if let avail = availabilityStore.availability(for: parking.id) {
-            return avail.availableSpots
+            return max(avail.availableSpots, 0)
         }
-        return parking.total_spots - (parking.live_occupancy ?? 0)
+        return max(parking.total_spots - (parking.live_occupancy ?? 0), 0)
     }
 
     private var isAvailable: Bool {
@@ -62,8 +64,14 @@ struct ParkingDetailView: View {
         .ignoresSafeArea(edges: .top)
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .tabBar)
+        .sheet(isPresented: $showShareSheet) {
+            ShareSheet(activityItems: [shareText])
+        }
     }
 
+    private var shareText: String {
+        "\(parking.name)\n\(parking.address ?? "Unknown address")\nPrice: $\(String(format: "%.2f", parking.price_per_hour))/hr"
+    }
 }
 
 // MARK: — UI COMPONENTS
@@ -87,8 +95,14 @@ extension ParkingDetailView {
                     dismiss()
                 }
                 Spacer()
-                circularButton(system: "square.and.arrow.up") {}
-                circularButton(system: "heart") {}
+                circularButton(system: "square.and.arrow.up") {
+                    showShareSheet = true
+                }
+                circularButton(
+                    system: favorites.isFavorite(parking.id) ? "heart.fill" : "heart"
+                ) {
+                    favorites.toggle(parking.id)
+                }
             }
             .padding(.horizontal)
             .padding(.top, 50)

@@ -22,7 +22,7 @@ final class ParkingAvailabilityRealtimeService {
             table: "parking_availability"
         )
 
-        try await channel.subscribe()
+        try await channel.subscribeWithError()
 
         Task {
             for await update in updates {
@@ -42,10 +42,7 @@ final class ParkingAvailabilityRealtimeService {
 
     private func decodeAvailability(from json: JSONObject) -> ParkingAvailability? {
         do {
-            let data = try JSONSerialization.data(withJSONObject: json, options: [])
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            return try decoder.decode(ParkingAvailability.self, from: data)
+            return try json.decode(as: ParkingAvailability.self)
         } catch {
             print("decode error:", error)
             return nil

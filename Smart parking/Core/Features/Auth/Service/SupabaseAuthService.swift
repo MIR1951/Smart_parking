@@ -9,17 +9,14 @@ import Foundation
 import Supabase
 
 struct SupabaseAuthService {
-    private var client : SupabaseClient
-    init() {
-        self.client = SupabaseClient.init(
-            supabaseURL: URL(string: Constants.projectURLString)!,
-            supabaseKey: Constants.projectAPIKey
-        )
+    private let client: SupabaseClient
+
+    init(client: SupabaseClient) {
+        self.client = client
     }
     
     func signUp(email:String,password:String,username:String) async throws -> String {
         let response = try await client.auth.signUp(email: email, password: password)
-        print(response.user)
         let uid = response.user.id.uuidString
         try await uploadUserData(with: uid, email: email, username: username)
         return uid
@@ -28,13 +25,15 @@ struct SupabaseAuthService {
     func signIn(email: String, password: String) async throws -> String {
         let response = try await client.auth.signIn(email: email, password: password)
        
-        print(response.user)
-        
         return response.user.id.uuidString
     }
     
     func signOut() async throws {
         try await client.auth.signOut()
+    }
+
+    func resetPassword(email: String) async throws {
+        try await client.auth.resetPasswordForEmail(email)
     }
     
     func getCurrentUserSession() async throws ->String? {

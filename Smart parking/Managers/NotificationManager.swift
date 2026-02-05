@@ -68,6 +68,7 @@ final class NotificationManager: ObservableObject {
     @Published var isLoading = false
 
     private var realtimeChannel: RealtimeChannelV2?
+    private var streamTask: Task<Void, Never>?
 
     private init() {
         requestPushPermission()
@@ -79,9 +80,12 @@ final class NotificationManager: ObservableObject {
         defer { isLoading = false }
 
         do {
+            let userID = try await currentUserID()
+
             let rows: [UserNotification] = try await SB.shared.client
                 .from("notifications")
                 .select()
+                .eq("user_id", value: userID)
                 .order("created_at", ascending: false)
                 .limit(50)
                 .execute()
@@ -90,37 +94,40 @@ final class NotificationManager: ObservableObject {
             self.notifications = rows
             self.unreadCount = rows.filter { !$0.is_read }.count
         } catch {
+            self.notifications = []
+            self.unreadCount = 0
             print("❌ Notifications load error: \(error)")
         }
     }
 
     // MARK: - Start Realtime
     func startRealtime() {
+        guard realtimeChannel == nil else { return }
+
         Task {
-            // Get current user ID
-            guard let userId = try? await SB.shared.client.auth.session.user.id else {
-                print("❌ No user for realtime notifications")
-                return
-            }
+            do {
+                let userID = try await currentUserID()
+                let channel = SB.shared.client.realtimeV2.channel("notifications_\(userID)")
 
-            let channel = SB.shared.client.realtimeV2.channel("notifications_\(userId.uuidString)")
+                let insertions = channel.postgresChange(
+                    InsertAction.self,
+                    schema: "public",
+                    table: "notifications",
+                    filter: .eq("user_id", value: userID)
+                )
 
-            let insertions = channel.postgresChange(
-                InsertAction.self,
-                schema: "public",
-                table: "notifications",
-                filter: "user_id=eq.\(userId.uuidString)"
-            )
+                try await channel.subscribeWithError()
+                self.realtimeChannel = channel
 
-            await channel.subscribe()
-
-            self.realtimeChannel = channel
-
-            // Listen for new notifications
-            Task {
-                for await insertion in insertions {
-                    await handleNewNotification(insertion)
+                streamTask?.cancel()
+                streamTask = Task { [weak self] in
+                    guard let self else { return }
+                    for await insertion in insertions {
+                        await handleNewNotification(insertion)
+                    }
                 }
+            } catch {
+                print("❌ Notification realtime start error: \(error)")
             }
         }
     }
@@ -129,6 +136,8 @@ final class NotificationManager: ObservableObject {
     func stopRealtime() {
         Task {
             if let channel = realtimeChannel {
+                streamTask?.cancel()
+                streamTask = nil
                 await channel.unsubscribe()
                 self.realtimeChannel = nil
             }
@@ -158,10 +167,13 @@ final class NotificationManager: ObservableObject {
     // MARK: - Mark as Read
     func markAsRead(_ id: UUID) async {
         do {
+            let userID = try await currentUserID()
+
             try await SB.shared.client
                 .from("notifications")
                 .update(["is_read": true])
                 .eq("id", value: id.uuidString)
+                .eq("user_id", value: userID)
                 .execute()
 
             if let index = notifications.firstIndex(where: { $0.id == id }) {
@@ -180,9 +192,12 @@ final class NotificationManager: ObservableObject {
 
     func markAllAsRead() async {
         do {
+            let userID = try await currentUserID()
+
             try await SB.shared.client
                 .from("notifications")
                 .update(["is_read": true])
+                .eq("user_id", value: userID)
                 .eq("is_read", value: false)
                 .execute()
 
@@ -224,13 +239,37 @@ final class NotificationManager: ObservableObject {
             }
         }
     }
+
+    private func currentUserID() async throws -> String {
+        try await SB.shared.client.auth.session.user.id.uuidString
+    }
 }
 
 // MARK: - JSON Decoder Extension
 extension JSONDecoder {
     static var supabaseDecoder: JSONDecoder {
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let raw = try container.decode(String.self)
+
+            let formatterWithFractional = ISO8601DateFormatter()
+            formatterWithFractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let parsed = formatterWithFractional.date(from: raw) {
+                return parsed
+            }
+
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime]
+            if let parsed = formatter.date(from: raw) {
+                return parsed
+            }
+
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Unsupported date format: \(raw)"
+            )
+        }
         return decoder
     }
 }

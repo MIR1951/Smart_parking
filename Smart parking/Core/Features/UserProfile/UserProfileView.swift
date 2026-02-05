@@ -291,6 +291,8 @@ struct EditProfileView: View {
     @State private var email = ""
     @State private var phone = ""
     @State private var isSaving = false
+    @State private var showError = false
+    @State private var errorMessage = ""
 
     var body: some View {
         NavigationStack {
@@ -299,8 +301,16 @@ struct EditProfileView: View {
                     TextField("Username", text: $username)
                     TextField("Email", text: $email)
                         .keyboardType(.emailAddress)
+                        .disabled(true)
                     TextField("Phone", text: $phone)
                         .keyboardType(.phonePad)
+                        .disabled(true)
+                }
+
+                Section {
+                    Text("Hozircha faqat username yangilanadi.")
+                        .font(.caption)
+                        .foregroundColor(.gray)
                 }
             }
             .navigationTitle("Edit Profile")
@@ -311,8 +321,7 @@ struct EditProfileView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        // Save logic
-                        dismiss()
+                        Task { await saveProfile() }
                     }
                     .disabled(isSaving)
                 }
@@ -321,6 +330,31 @@ struct EditProfileView: View {
                 username = userManager.currentUser?.username ?? ""
                 email = userManager.currentUser?.email ?? ""
             }
+            .alert("Error", isPresented: $showError) {
+                Button("OK") {}
+            } message: {
+                Text(errorMessage)
+            }
+        }
+    }
+
+    private func saveProfile() async {
+        let trimmedUsername = username.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedUsername.isEmpty else {
+            errorMessage = "Username bo'sh bo'lishi mumkin emas."
+            showError = true
+            return
+        }
+
+        isSaving = true
+        defer { isSaving = false }
+
+        do {
+            try await userManager.updateUsername(trimmedUsername)
+            dismiss()
+        } catch {
+            errorMessage = "Profilni saqlab bo'lmadi: \(error.localizedDescription)"
+            showError = true
         }
     }
 }
@@ -392,6 +426,7 @@ struct MyVehiclesView: View {
 // MARK: - Payment Methods Settings View
 struct PaymentMethodsSettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var showInfo = false
 
     var body: some View {
         NavigationStack {
@@ -403,7 +438,7 @@ struct PaymentMethodsSettingsView: View {
 
                 Section {
                     Button {
-                        // Add new payment method
+                        showInfo = true
                     } label: {
                         HStack {
                             Image(systemName: "plus.circle.fill")
@@ -420,6 +455,11 @@ struct PaymentMethodsSettingsView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
                 }
+            }
+            .alert("Info", isPresented: $showInfo) {
+                Button("OK") {}
+            } message: {
+                Text("Yangi karta qo'shish backend qismi hali yoqilmagan.")
             }
         }
     }

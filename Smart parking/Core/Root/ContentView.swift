@@ -17,9 +17,10 @@ struct ContentView: View {
     @StateObject private var favoritesStore = FavoritesStore()
     
     @State private var didStart = false
+    @State private var didStartNotifications = false
     var body: some View {
         Group{
-            if let currentUserID = authManager.currentUserID {
+            if authManager.currentUserID != nil {
                
 
                 // MainTabView chaqiriladigan joyda:
@@ -37,6 +38,20 @@ struct ContentView: View {
             }
             else {
                 LoginView()
+            }
+        }
+        .onChange(of: authManager.currentUserID) { _, newValue in
+            if newValue != nil {
+                guard !didStartNotifications else { return }
+                didStartNotifications = true
+                Task {
+                    await NotificationManager.shared.load()
+                    NotificationManager.shared.startRealtime()
+                }
+            } else {
+                didStart = false
+                didStartNotifications = false
+                NotificationManager.shared.stopRealtime()
             }
         }
         .task {

@@ -24,9 +24,13 @@ final class ParkingsStore: ObservableObject {
     private let service = ParkingService()
     private var loadTask: Task<Void, Never>?
     private var hasLoadedOnce = false
+    private var lastUserLocation: CLLocation?
 
     func load(userLocation: CLLocation?, force: Bool = false) {
-        if hasLoadedOnce && !force { return }
+        if hasLoadedOnce && !force {
+            recomputeNearby(userLocation: userLocation)
+            return
+        }
 
         loadTask?.cancel()
         loadTask = Task { [weak self] in
@@ -80,20 +84,27 @@ final class ParkingsStore: ObservableObject {
     private func updateParkings(_ items: [Parking], userLocation: CLLocation?) {
         self.all = items
         self.popular = Array(items.filter { ($0.is_popular ?? false) }.prefix(10))
-        
-        if let userLocation {
-            let sorted = items.sorted { a, b in
-                CLLocation(latitude: a.latitude, longitude: a.longitude).distance(from: userLocation)
-                <
-                CLLocation(latitude: b.latitude, longitude: b.longitude).distance(from: userLocation)
-            }
-            self.nearby = Array(sorted.prefix(20))
-        } else {
-            self.nearby = Array(items.prefix(20))
-        }
+
+        recomputeNearby(userLocation: userLocation)
     }
     func refresh(userLocation: CLLocation?) async {
         loadTask?.cancel()
         await loadAsync(userLocation: userLocation, force: true)
+    }
+
+    func recomputeNearby(userLocation: CLLocation?) {
+        lastUserLocation = userLocation ?? lastUserLocation
+
+        guard let userLocation = lastUserLocation else {
+            nearby = Array(all.prefix(20))
+            return
+        }
+
+        let sorted = all.sorted { a, b in
+            CLLocation(latitude: a.latitude, longitude: a.longitude).distance(from: userLocation)
+            <
+            CLLocation(latitude: b.latitude, longitude: b.longitude).distance(from: userLocation)
+        }
+        nearby = Array(sorted.prefix(20))
     }
 }

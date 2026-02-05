@@ -22,6 +22,31 @@ final class ParkingAvailabilityStore: ObservableObject,Sendable {
     private let client: SupabaseClient
     private var channel: RealtimeChannelV2?
     private var hasLoadedOnce = false
+    private static let realtimeDecoder: JSONDecoder = {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let raw = try container.decode(String.self)
+
+            let formatterWithFractional = ISO8601DateFormatter()
+            formatterWithFractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let parsed = formatterWithFractional.date(from: raw) {
+                return parsed
+            }
+
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime]
+            if let parsed = formatter.date(from: raw) {
+                return parsed
+            }
+
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Unsupported date format: \(raw)"
+            )
+        }
+        return decoder
+    }()
 
     init(client: SupabaseClient) {
         self.client = client
@@ -82,26 +107,15 @@ final class ParkingAvailabilityStore: ObservableObject,Sendable {
                     table: "parking_availability"
                 )
 
-                try await channel.subscribe()
+                try await channel.subscribeWithError()
 
                 // stream listener
                 Task { [weak self] in
                     guard let self else { return }
                     for await update in updates {
-                        print("✅ REALTIME UPDATE:", update.record)
-                        print("raw available_spots:", update.record["available_spots"] as Any,
-                              "type:", type(of: update.record["available_spots"] as Any))
-
                         if let decoded = self.decodeAvailability(from: update.record) {
-                            print("✅ DECODED:", decoded.parkingId, decoded.availableSpots)
                             self.byParkingId[decoded.parkingId] = decoded
                             self.available[decoded.parkingId] = decoded.availableSpots
-                            print("✅ DECODED available:", decoded.availableSpots,
-                                  "reserved:", decoded.reservedSpots,
-                                  "live:", decoded.liveOccupancy)
-
-                        } else {
-                            print("❌ decode failed")
                         }
                     }
                 }
@@ -123,80 +137,12 @@ final class ParkingAvailabilityStore: ObservableObject,Sendable {
 
     // MARK: - Decode
     private func decodeAvailability(from record: JSONObject) -> ParkingAvailability? {
-
-        // parking_id: UUID yoki String bo'lishi mumkin
-        func uuid(_ key: String) -> UUID? {
-            if let u = record[key] as? UUID { return u }
-            if let s = record[key] as? String { return UUID(uuidString: s) }
-
-            // ba'zan CustomStringConvertible bo'lib keladi
-            if let any = record[key] as? CustomStringConvertible {
-                return UUID(uuidString: any.description)
-            }
+        do {
+            return try record.decode(as: ParkingAvailability.self, decoder: Self.realtimeDecoder)
+        } catch {
+            print("availability decode error:", error)
             return nil
         }
-
-        // int: Int yoki Double yoki String bo'lishi mumkin
-        func int(_ key: String) -> Int {
-            guard let raw = record[key] else { return 0 }
-
-            // 1) common numeric types
-            if let v = raw as? Int { return v }
-            if let v = raw as? Int64 { return Int(v) }
-            if let v = raw as? Double { return Int(v) }
-            if let v = raw as? Float { return Int(v) }
-
-            // 2) NSNumber (most common from JSON bridging)
-            if let n = raw as? NSNumber { return n.intValue }
-
-            // 3) String number
-            if let s = raw as? String { return Int(s) ?? 0 }
-
-            // 4) Fallback: parse from description (handles many wrapper types)
-            let desc = String(describing: raw)          // e.g. "69" or "Optional(69)"
-            let cleaned = desc
-                .replacingOccurrences(of: "Optional(", with: "")
-                .replacingOccurrences(of: ")", with: "")
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-
-            return Int(cleaned) ?? 0
-        }
-
-
-        // updated_at: String yoki Date bo'lishi mumkin
-        func date(_ key: String) -> Date {
-            if let d = record[key] as? Date { return d }
-            if let s = record[key] as? String {
-                // Supabase timestamp ko'pincha fractionalSeconds bilan keladi
-                let f = ISO8601DateFormatter()
-                f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-                if let d = f.date(from: s) { return d }
-
-                // fallback (fractionalSeconds bo'lmasa)
-                let f2 = ISO8601DateFormatter()
-                f2.formatOptions = [.withInternetDateTime]
-                return f2.date(from: s) ?? Date()
-            }
-
-            if let any = record[key] as? CustomStringConvertible {
-                let s = any.description
-                let f = ISO8601DateFormatter()
-                f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-                return f.date(from: s) ?? Date()
-            }
-
-            return Date()
-        }
-
-        guard let pid = uuid("parking_id") else { return nil }
-
-        return ParkingAvailability(
-            parkingId: pid,
-            liveOccupancy: int("live_occupancy"),
-            reservedSpots: int("reserved_spots"),
-            availableSpots: int("available_spots"),
-            updatedAt: date("updated_at")
-        )
     }
 
 

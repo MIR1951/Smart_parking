@@ -15,6 +15,8 @@ final class BookingsVM: ObservableObject {
         defer { isLoading = false }
 
         do {
+            let userID = try await SB.shared.client.auth.session.user.id.uuidString
+
             // ✅ Supabase join (reservations -> parkings)
             // FK: reservations.parking_id -> parkings.id
             let rows: [BookingItem] = try await SB.shared.client
@@ -37,6 +39,7 @@ final class BookingsVM: ObservableObject {
                         )
                     """
                 )
+                .eq("user_id", value: userID)
                 .order("created_at", ascending: false)
                 .execute()
                 .value
