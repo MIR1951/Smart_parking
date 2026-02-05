@@ -26,6 +26,6 @@ struct MainTabView: View {
             ProfileView()
                 .tabItem { Label("Profile", systemImage: "person") }
         }
-        .tint(.primary) // sizda Color.primary bor
+        .tint(AppTheme.Palette.brand)
     }
 }

@@ -11,9 +11,9 @@ struct SelectVehicleView: View {
     let parking: Parking
     let selectedMinutes: Int
     @Binding var selectedVehicle: Vehicle?
+    let onBack: () -> Void
     let onContinue: () -> Void
 
-    @Environment(\.dismiss) private var dismiss
     @StateObject private var store = VehiclesStore.shared
     @State private var showAddVehicle = false
 
@@ -24,19 +24,32 @@ struct SelectVehicleView: View {
 
             // Vehicle List
             ScrollView(showsIndicators: false) {
-                LazyVStack(spacing: 12) {
-                    ForEach(store.vehicles) { vehicle in
-                        VehicleRow(
-                            vehicle: vehicle,
-                            isSelected: selectedVehicle?.id == vehicle.id
+                Group {
+                    if store.vehicles.isEmpty {
+                        AppStateView(
+                            kind: .empty(
+                                icon: "car",
+                                title: "Vehicle topilmadi",
+                                subtitle: "Davom etish uchun avval mashina qo'shing."
+                            )
                         )
-                        .onTapGesture {
-                            selectedVehicle = vehicle
+                        .padding(.top, 40)
+                    } else {
+                        LazyVStack(spacing: 12) {
+                            ForEach(store.vehicles) { vehicle in
+                                VehicleRow(
+                                    vehicle: vehicle,
+                                    isSelected: selectedVehicle?.id == vehicle.id
+                                )
+                                .onTapGesture {
+                                    selectedVehicle = vehicle
+                                }
+                            }
                         }
+                        .padding(.top, 16)
                     }
                 }
                 .padding(.horizontal)
-                .padding(.top, 16)
             }
 
             Spacer()
@@ -44,7 +57,7 @@ struct SelectVehicleView: View {
             // Continue Button
             continueButton
         }
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
         .navigationBarHidden(true)
         .sheet(isPresented: $showAddVehicle) {
             AddVehicleView(store: store)
@@ -55,12 +68,12 @@ struct SelectVehicleView: View {
     private var header: some View {
         HStack {
             Button {
-                dismiss()
+                onBack()
             } label: {
                 Image(systemName: "chevron.left")
-                    .foregroundColor(.black)
+                    .foregroundColor(AppTheme.Palette.textPrimary)
                     .padding(12)
-                    .background(Color.white)
+                    .background(AppTheme.Palette.surface)
                     .clipShape(Circle())
                     .shadow(color: .black.opacity(0.1), radius: 4)
             }
@@ -76,9 +89,9 @@ struct SelectVehicleView: View {
                 showAddVehicle = true
             } label: {
                 Image(systemName: "plus")
-                    .foregroundColor(.black)
+                    .foregroundColor(AppTheme.Palette.textPrimary)
                     .padding(12)
-                    .background(Color.white)
+                    .background(AppTheme.Palette.surface)
                     .clipShape(Circle())
                     .shadow(color: .black.opacity(0.1), radius: 4)
             }
@@ -89,15 +102,12 @@ struct SelectVehicleView: View {
 
     // MARK: - Continue Button
     private var continueButton: some View {
-        Button(action: onContinue) {
-            Text("Continue")
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity, minHeight: 52)
-                .background(selectedVehicle != nil ? Color.purple : Color.gray)
-                .cornerRadius(26)
+        AppPrimaryButton(
+            title: "Continue",
+            isEnabled: selectedVehicle != nil
+        ) {
+            onContinue()
         }
-        .disabled(selectedVehicle == nil)
         .padding(.horizontal)
         .padding(.bottom, 24)
     }
@@ -128,25 +138,25 @@ private struct VehicleRow: View {
 
                 Text("\(vehicle.type.rawValue) • \(vehicle.plateNumber)")
                     .font(.caption)
-                    .foregroundColor(.gray)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
             }
 
             Spacer()
 
             // Selection Circle
             Circle()
-                .stroke(isSelected ? Color.purple : Color.gray.opacity(0.3), lineWidth: 2)
+                .stroke(isSelected ? AppTheme.Palette.brand : Color.gray.opacity(0.3), lineWidth: 2)
                 .frame(width: 24, height: 24)
                 .overlay {
                     if isSelected {
                         Circle()
-                            .fill(Color.purple)
+                            .fill(AppTheme.Palette.brand)
                             .frame(width: 14, height: 14)
                     }
                 }
         }
         .padding()
-        .background(Color.white)
+        .background(AppTheme.Palette.surface)
         .cornerRadius(16)
     }
 

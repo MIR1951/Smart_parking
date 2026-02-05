@@ -102,13 +102,17 @@ struct BookingsView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 16) {
                         if vm.isLoading && vm.items.isEmpty {
-                            ProgressView()
+                            AppStateView(kind: .loading(title: "Bandlar yuklanmoqda..."))
                                 .padding(.top, 40)
                         } else if let error = vm.error {
-                            VStack(spacing: 12) {
-                                Text(error).foregroundColor(.red)
-                                Button("Retry") { Task { await vm.load() } }
-                            }
+                            AppStateView(
+                                kind: .error(
+                                    title: "Bandlar yuklanmadi",
+                                    subtitle: error,
+                                    actionTitle: "Retry",
+                                    action: { Task { await vm.load() } }
+                                )
+                            )
                             .padding(.top, 40)
                         } else if vm.filtered(tab).isEmpty {
                             emptyState
@@ -128,8 +132,8 @@ struct BookingsView: View {
                     .padding(.bottom, 24)
                 }
             }
-            .background(Color(.systemGroupedBackground).ignoresSafeArea())
-            .navigationTitle("My Booking")
+            .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
+            .navigationTitle("My Bookings")
             .navigationBarTitleDisplayMode(.inline)
             .task { await vm.load() }
             .refreshable { await vm.load() }
@@ -165,11 +169,11 @@ struct BookingsView: View {
 
             Text("No \(tab.rawValue) Bookings")
                 .font(.headline)
-                .foregroundColor(.gray)
+                .foregroundColor(AppTheme.Palette.textPrimary)
 
             Text("Your \(tab.rawValue.lowercased()) bookings will appear here")
                 .font(.caption)
-                .foregroundColor(.gray.opacity(0.8))
+                .foregroundColor(AppTheme.Palette.textSecondary)
         }
         .padding(.top, 80)
     }
@@ -181,10 +185,10 @@ struct BookingsView: View {
                 VStack(spacing: 8) {
                     Text(t.rawValue)
                         .font(.headline)
-                        .foregroundColor(tab == t ? Color.purple : .gray)
+                        .foregroundColor(tab == t ? AppTheme.Palette.brand : AppTheme.Palette.textSecondary)
 
                     Capsule()
-                        .fill(tab == t ? Color.purple : Color.clear)
+                        .fill(tab == t ? AppTheme.Palette.brand : Color.clear)
                         .frame(height: 3)
                 }
                 .frame(maxWidth: .infinity)
@@ -197,7 +201,7 @@ struct BookingsView: View {
         .padding(.horizontal)
         .padding(.top, 8)
         .padding(.bottom, 10)
-        .background(Color.white)
+        .background(AppTheme.Palette.surface)
     }
 
     // MARK: - Actions
@@ -282,7 +286,7 @@ struct BookingCard: View {
             if item.canCancel {
                 return (Color.red.opacity(0.1), Color.red)
             } else {
-                return (Color.purple.opacity(0.1), Color.purple)
+                return (AppTheme.Palette.brand.opacity(0.1), AppTheme.Palette.brand)
             }
         case .completed:
             return (Color.green.opacity(0.1), Color.green)
@@ -309,10 +313,10 @@ struct BookingCard: View {
                     HStack {
                         Text("Car Parking")
                             .font(.caption)
-                            .foregroundColor(.purple)
+                            .foregroundColor(AppTheme.Palette.brand)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 4)
-                            .background(Color.purple.opacity(0.10))
+                            .background(AppTheme.Palette.brand.opacity(0.10))
                             .clipShape(Capsule())
 
                         Spacer()
@@ -323,32 +327,32 @@ struct BookingCard: View {
                                 .foregroundColor(.yellow)
                             Text(String(format: "%.1f", item.parking.rating ?? 4.5))
                                 .font(.caption)
-                                .foregroundColor(.gray)
+                                .foregroundColor(AppTheme.Palette.textSecondary)
                         }
                     }
 
                     Text(item.parking.name)
                         .font(.headline)
-                        .foregroundColor(.black)
+                        .foregroundColor(AppTheme.Palette.textPrimary)
                         .lineLimit(1)
 
                     HStack(spacing: 6) {
                         Image(systemName: "mappin.and.ellipse")
                             .font(.caption)
-                            .foregroundColor(.gray)
+                            .foregroundColor(AppTheme.Palette.textSecondary)
                         Text(item.parking.address ?? "Unknown")
                             .font(.caption)
-                            .foregroundColor(.gray)
+                            .foregroundColor(AppTheme.Palette.textSecondary)
                             .lineLimit(1)
                     }
 
                     HStack(spacing: 4) {
                         Text("$\(item.parking.price_per_hour, specifier: "%.2f")")
                             .font(.headline)
-                            .foregroundColor(.purple)
+                            .foregroundColor(AppTheme.Palette.brand)
                         Text("/hr")
                             .font(.caption)
-                            .foregroundColor(.gray)
+                            .foregroundColor(AppTheme.Palette.textSecondary)
                     }
                 }
             }
@@ -378,13 +382,13 @@ struct BookingCard: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .background(Color.purple)
+                        .background(AppTheme.Palette.brand)
                         .clipShape(Capsule())
                 }
             }
         }
         .padding(14)
-        .background(Color.white)
+        .background(AppTheme.Palette.surface)
         .clipShape(RoundedRectangle(cornerRadius: 18))
         .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
     }
@@ -396,7 +400,7 @@ struct BookingCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Start")
                     .font(.caption2)
-                    .foregroundColor(.gray)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
 
                 Text(formatTime(item.start_time))
                     .font(.caption)
@@ -405,13 +409,13 @@ struct BookingCard: View {
 
             Image(systemName: "arrow.right")
                 .font(.caption)
-                .foregroundColor(.gray)
+                .foregroundColor(AppTheme.Palette.textSecondary)
 
             // End Time
             VStack(alignment: .leading, spacing: 2) {
                 Text("End")
                     .font(.caption2)
-                    .foregroundColor(.gray)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
 
                 Text(formatTime(item.end_time))
                     .font(.caption)
@@ -424,15 +428,15 @@ struct BookingCard: View {
             Text("\(item.durationMinutes) min")
                 .font(.caption)
                 .fontWeight(.semibold)
-                .foregroundColor(.purple)
+                .foregroundColor(AppTheme.Palette.brand)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(Color.purple.opacity(0.1))
+                .background(AppTheme.Palette.brand.opacity(0.1))
                 .cornerRadius(8)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 8)
-        .background(Color(.systemGray6))
+        .background(AppTheme.Palette.pageBackground)
         .cornerRadius(12)
     }
 
@@ -450,7 +454,7 @@ struct BookingCard: View {
 
                 Text("Extra charge: $\(item.overtimeAmount, specifier: "%.2f")")
                     .font(.caption2)
-                    .foregroundColor(.gray)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
             }
 
             Spacer()
@@ -462,9 +466,7 @@ struct BookingCard: View {
 
     private func formatTime(_ date: Date?) -> String {
         guard let date = date else { return "--:--" }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM dd, HH:mm"
-        return formatter.string(from: date)
+        return DateFormatter.shortDateTime.string(from: date)
     }
 }
 
@@ -499,7 +501,7 @@ struct BookingETicketView: View {
                 }
                 .padding()
             }
-            .background(Color(.systemGroupedBackground))
+            .background(AppTheme.Palette.pageBackground)
             .navigationTitle("E-Ticket")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -565,10 +567,10 @@ struct BookingETicketView: View {
 
             Text(item.id.uuidString.prefix(12).uppercased())
                 .font(.caption)
-                .foregroundColor(.gray)
+                .foregroundColor(AppTheme.Palette.textSecondary)
         }
         .padding()
-        .background(Color.white)
+        .background(AppTheme.Palette.surface)
         .cornerRadius(16)
     }
 
@@ -594,7 +596,7 @@ struct BookingETicketView: View {
 
                 Text(item.parking.address ?? "")
                     .font(.caption)
-                    .foregroundColor(.gray)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
             }
 
             Spacer()
@@ -651,7 +653,7 @@ struct BookingETicketView: View {
                 Text(String(format: "$%.2f", item.totalAmount + item.overtimeAmount))
                     .font(.title3)
                     .fontWeight(.bold)
-                    .foregroundColor(.purple)
+                    .foregroundColor(AppTheme.Palette.brand)
             }
         }
     }
@@ -659,7 +661,7 @@ struct BookingETicketView: View {
     private func infoRow(title: String, value: String) -> some View {
         HStack {
             Text(title)
-                .foregroundColor(.gray)
+                .foregroundColor(AppTheme.Palette.textSecondary)
             Spacer()
             Text(value)
                 .fontWeight(.medium)
@@ -668,8 +670,6 @@ struct BookingETicketView: View {
 
     private func formatDateTime(_ date: Date?) -> String {
         guard let date = date else { return "--" }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM dd, yyyy HH:mm"
-        return formatter.string(from: date)
+        return DateFormatter.fullDateTime.string(from: date)
     }
 }

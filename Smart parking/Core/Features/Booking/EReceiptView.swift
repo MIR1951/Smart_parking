@@ -63,7 +63,7 @@ struct EReceiptView: View {
                 // Download Button
                 downloadButton
             }
-            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
             .navigationTitle("E-Receipt")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -95,10 +95,10 @@ struct EReceiptView: View {
 
             Text(reservationId.uuidString.prefix(12).uppercased())
                 .font(.caption)
-                .foregroundColor(.gray)
+                .foregroundColor(AppTheme.Palette.textSecondary)
         }
         .padding()
-        .background(Color.white)
+        .background(AppTheme.Palette.surface)
         .cornerRadius(16)
     }
 
@@ -137,7 +137,7 @@ struct EReceiptView: View {
                 Text(String(format: "$%.2f", parking.price_per_hour))
                     .fontWeight(.medium)
                 Text("/hr")
-                    .foregroundColor(.gray)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
             }
 
             HStack {
@@ -170,7 +170,7 @@ struct EReceiptView: View {
                 Text(String(format: "$%.2f", total))
                     .font(.title3)
                     .fontWeight(.bold)
-                    .foregroundColor(.purple)
+                    .foregroundColor(AppTheme.Palette.brand)
             }
         }
     }
@@ -204,7 +204,7 @@ struct EReceiptView: View {
             .fontWeight(.semibold)
             .foregroundColor(.white)
             .frame(maxWidth: .infinity, minHeight: 52)
-            .background(Color.purple)
+            .background(AppTheme.Palette.brand)
             .cornerRadius(26)
         }
         .disabled(isGeneratingPDF)
@@ -326,7 +326,7 @@ struct EReceiptView: View {
     private func infoRow(title: String, value: String) -> some View {
         HStack {
             Text(title)
-                .foregroundColor(.gray)
+                .foregroundColor(AppTheme.Palette.textSecondary)
             Spacer()
             Text(value)
                 .fontWeight(.medium)

@@ -31,8 +31,8 @@ struct NotificationsView: View {
             header
 
             if manager.isLoading && manager.notifications.isEmpty {
-                Spacer()
-                ProgressView()
+                Spacer(minLength: 24)
+                AppStateView(kind: .loading(title: "Bildirishnomalar yuklanmoqda..."))
                 Spacer()
             } else if manager.notifications.isEmpty {
                 emptyState
@@ -40,7 +40,7 @@ struct NotificationsView: View {
                 content
             }
         }
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
         .navigationBarHidden(true)
         .task {
             await manager.load()
@@ -61,9 +61,9 @@ struct NotificationsView: View {
                 dismiss()
             } label: {
                 Image(systemName: "chevron.left")
-                    .foregroundColor(.black)
+                    .foregroundColor(AppTheme.Palette.textPrimary)
                     .padding(12)
-                    .background(Color.white)
+                    .background(AppTheme.Palette.surface)
                     .clipShape(Circle())
                     .shadow(color: .black.opacity(0.1), radius: 4)
             }
@@ -80,7 +80,7 @@ struct NotificationsView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
-                    .background(Color.purple)
+                    .background(AppTheme.Palette.brand)
                     .cornerRadius(12)
             }
 
@@ -132,19 +132,13 @@ struct NotificationsView: View {
 
     // MARK: - Empty State
     private var emptyState: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            Image(systemName: "bell.slash")
-                .font(.system(size: 60))
-                .foregroundColor(.gray.opacity(0.5))
-            Text("No Notifications")
-                .font(.headline)
-                .foregroundColor(.gray)
-            Text("You're all caught up!")
-                .font(.caption)
-                .foregroundColor(.gray.opacity(0.8))
-            Spacer()
-        }
+        AppStateView(
+            kind: .empty(
+                icon: "bell.slash",
+                title: "No Notifications",
+                subtitle: "You're all caught up!"
+            )
+        )
     }
 
     // MARK: - Section Header
@@ -162,7 +156,7 @@ struct NotificationsView: View {
                     Task { await manager.markAllAsRead() }
                 }
                 .font(.caption)
-                .foregroundColor(.purple)
+                .foregroundColor(AppTheme.Palette.brand)
             }
         }
         .padding(.top, 8)
@@ -208,12 +202,12 @@ private struct NotificationRow: View {
             }
         }
         .padding()
-        .background(Color.white)
+        .background(AppTheme.Palette.surface)
         .cornerRadius(16)
         .overlay(
             !notification.is_read
                 ? Circle()
-                    .fill(Color.purple)
+                    .fill(AppTheme.Palette.brand)
                     .frame(width: 8, height: 8)
                     .offset(x: 8, y: -8)
                 : nil,

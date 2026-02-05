@@ -23,22 +23,23 @@ struct ProfileView: View {
             VStack(spacing: 20) {
                 VStack(spacing: 10) {
                     Circle()
-                        .fill(Color.gray.opacity(0.2))
+                        .fill(AppTheme.Palette.brandSoft)
                         .frame(width: 90, height: 90)
                         .overlay {
                             Text(userInitial)
                                 .font(.title)
                                 .fontWeight(.bold)
-                                .foregroundColor(.gray)
+                                .foregroundColor(AppTheme.Palette.brand)
                         }
 
                     Text(userManager.currentUser?.username ?? "User")
                         .font(.title3)
                         .fontWeight(.semibold)
+                        .foregroundColor(AppTheme.Palette.textPrimary)
 
                     Text(userManager.currentUser?.email ?? "")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
                 }
                 .padding(.top, 20)
 
@@ -78,13 +79,12 @@ struct ProfileView: View {
                             showLogoutAlert = true
                         }
                 }
-                .background(Color.white)
-                .cornerRadius(16)
+                .appCard()
                 .padding(.horizontal)
 
                 Spacer()
             }
-            .background(Color.bgLight.ignoresSafeArea())
+            .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
             .navigationTitle("Profile")
             .task {
                 await userManager.fetchCurrentUser()
@@ -137,15 +137,15 @@ struct ProfileRow: View {
     var body: some View {
         HStack {
             Image(systemName: icon)
-                .foregroundColor(isDestructive ? .red : .primary)
+                .foregroundColor(isDestructive ? AppTheme.Palette.danger : AppTheme.Palette.textPrimary)
 
             Text(title)
-                .foregroundColor(isDestructive ? .red : .primary)
+                .foregroundColor(isDestructive ? AppTheme.Palette.danger : AppTheme.Palette.textPrimary)
 
             Spacer()
 
             Image(systemName: "chevron.right")
-                .foregroundColor(.gray)
+                .foregroundColor(AppTheme.Palette.textSecondary)
         }
         .padding()
         Divider()

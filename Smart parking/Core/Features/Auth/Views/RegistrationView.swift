@@ -16,7 +16,8 @@ struct RegistrationView: View {
     @State private var agreedToTerms: Bool = false
     @State private var isPasswordVisible: Bool = false
     @State private var showAuthError = false
-    @State private var showSocialInfo = false
+    @State private var showInfoAlert = false
+    @State private var infoMessage = ""
 
     private var isValidForm: Bool {
         !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -26,160 +27,108 @@ struct RegistrationView: View {
     }
     
     var body: some View {
-        VStack {
-            // Yuqori qism
-            Text("Create Account")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .padding(.top, 50)
-            
-            Text("Fill your information below or register with your social account.")
-                .foregroundColor(.gray)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
-                .padding(.bottom, 40)
-            
-            // --- Kirish maydonlari ---
-            
-            // Ism maydoni
-            VStack(alignment: .leading, spacing: 5) {
-                Text("Name")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                
-                TextField("Ex. John Doe", text: $username)
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(10)
-            }
-            .padding(.horizontal)
-            
-            // Email maydoni
-            VStack(alignment: .leading, spacing: 5) {
-                Text("Email")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                
-                TextField("example@gmail.com", text: $email)
-                    .textInputAutocapitalization(.never)
-                    .keyboardType(.emailAddress)
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(10)
-            }
-            .padding([.horizontal, .top])
-            
-            // Parol maydoni
-            VStack(alignment: .leading, spacing: 5) {
-                Text("Password")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                
-                HStack {
-                    if isPasswordVisible {
-                        TextField("**********", text: $password)
-                    } else {
-                        SecureField("**********", text: $password)
-                    }
-                    
-                    Button(action: {
-                        isPasswordVisible.toggle()
-                    }) {
-                        Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
-                            .foregroundColor(.gray)
-                    }
-                }
-                .padding()
-                .background(Color(.systemGray6))
-                .cornerRadius(10)
-            }
-            .padding([.horizontal, .top])
-            
-            // --- Shartlarga rozilik ---
-            HStack {
-                Toggle("", isOn: $agreedToTerms)
-                    .labelsHidden()
-                    .toggleStyle(CheckboxToggleStyle()) // Pastdagi yordamchi uslub (Style)
-                
-                Text("Agree with")
-                
-                Button("Terms & Condition") {
-                    // Shartlar va qoidalar sahifasiga o'tish
-                }
-                .foregroundColor(Color(red: 0.38, green: 0.22, blue: 0.82))
-                .fontWeight(.medium)
-                
-                Spacer()
-            }
-            .padding([.horizontal, .top])
-            
-            // --- Sign Up tugmasi ---
-            Button(authManager.isLoading ? "Creating..." : "Sign Up") {
-                signUp()
-            }
-            .font(.title2)
-            .fontWeight(.semibold)
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(
-                isValidForm
-                    ? Color(red: 0.38, green: 0.22, blue: 0.82)
-                    : Color.gray
-            )
-            .cornerRadius(15)
-            .disabled(!isValidForm || authManager.isLoading)
-            .padding([.horizontal, .top], 30)
-            
-            // --- Ijtimoiy tarmoqlar orqali kirish ---
-            Text("Or sign up with")
-                .foregroundColor(.gray)
-                .padding(.vertical, 20)
-            
-            HStack(spacing: 30) {
-                Button {
-                    showSocialInfo = true
-                } label: {
-                    SocialSignInButton(imageName: "applelogo")
-                }
-                .buttonStyle(.plain)
+        ZStack {
+            AppTheme.Palette.pageBackground
+                .ignoresSafeArea()
 
-                Button {
-                    showSocialInfo = true
-                } label: {
-                    SocialSignInButton(imageName: "google")
-                }
-                .buttonStyle(.plain)
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: AppTheme.Spacing.xLarge) {
+                    VStack(spacing: AppTheme.Spacing.small) {
+                        Text("Create Account")
+                            .font(.system(size: 34, weight: .bold))
+                            .foregroundColor(AppTheme.Palette.textPrimary)
+                        Text("Fill your information below or register with your social account.")
+                            .foregroundColor(AppTheme.Palette.textSecondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.top, 28)
 
-                Button {
-                    showSocialInfo = true
-                } label: {
-                    SocialSignInButton(imageName: "facebook")
+                    VStack(spacing: AppTheme.Spacing.medium) {
+                        AppInputField(
+                            title: "Name",
+                            placeholder: "Ex. John Doe",
+                            text: $username,
+                            keyboardType: .default,
+                            autocapitalization: .words
+                        )
+
+                        AppInputField(
+                            title: "Email",
+                            placeholder: "example@gmail.com",
+                            text: $email,
+                            keyboardType: .emailAddress,
+                            autocapitalization: .never
+                        )
+
+                        AppInputField(
+                            title: "Password",
+                            placeholder: "**********",
+                            text: $password,
+                            isSecure: true,
+                            revealSecureText: $isPasswordVisible
+                        )
+
+                        HStack(spacing: AppTheme.Spacing.small) {
+                            Toggle("", isOn: $agreedToTerms)
+                                .labelsHidden()
+                                .toggleStyle(CheckboxToggleStyle())
+
+                            Text("Agree with")
+                                .foregroundColor(AppTheme.Palette.textSecondary)
+
+                            Button("Terms & Condition") {
+                                showInfo("Terms sahifasi keyingi versiyada qo'shiladi.")
+                            }
+                            .foregroundColor(AppTheme.Palette.brand)
+                            .fontWeight(.semibold)
+
+                            Spacer()
+                        }
+                    }
+
+                    AppPrimaryButton(
+                        title: authManager.isLoading ? "Creating..." : "Sign Up",
+                        isLoading: authManager.isLoading,
+                        isEnabled: isValidForm && !authManager.isLoading
+                    ) {
+                        signUp()
+                    }
+
+                    VStack(spacing: AppTheme.Spacing.large) {
+                        HStack(spacing: AppTheme.Spacing.small) {
+                            Rectangle()
+                                .fill(AppTheme.Palette.border)
+                                .frame(height: 1)
+                            Text("Or sign up with")
+                                .font(.caption)
+                                .foregroundColor(AppTheme.Palette.textSecondary)
+                            Rectangle()
+                                .fill(AppTheme.Palette.border)
+                                .frame(height: 1)
+                        }
+
+                        HStack(spacing: 28) {
+                            socialButton("applelogo")
+                            socialButton("google")
+                            socialButton("facebook")
+                        }
+                    }
+
+                    HStack(spacing: 4) {
+                        Text("Already have an account?")
+                            .foregroundColor(AppTheme.Palette.textSecondary)
+                        Button("Sign In") {
+                            dismiss()
+                        }
+                        .foregroundColor(AppTheme.Palette.brand)
+                        .fontWeight(.semibold)
+                    }
+                    .font(.subheadline)
                 }
-                .buttonStyle(.plain)
+                .padding(.horizontal, 18)
+                .padding(.bottom, 28)
             }
-            
-            // --- Hisobingiz bormi? ---
-            Spacer()
-            
-            HStack {
-                Text("Already have an account?")
-                Button("Sign In") {
-                    dismiss()
-                }
-                .foregroundColor(Color(red: 0.38, green: 0.22, blue: 0.82))
-                .fontWeight(.medium)
-            }
-            .padding(.bottom, 20)
-            
-            // Pastki chiziqni imitatsiya qilish
-            Rectangle()
-                .frame(width: 134, height: 5)
-                .cornerRadius(5)
-                .foregroundColor(.black)
-                .padding(.bottom, 8)
         }
-        .padding(.horizontal, 10)
         .onChange(of: authManager.authError) { _, newValue in
             showAuthError = newValue != nil
         }
@@ -190,10 +139,10 @@ struct RegistrationView: View {
         } message: {
             Text(authManager.authError ?? "Unknown error")
         }
-        .alert("Info", isPresented: $showSocialInfo) {
+        .alert("Info", isPresented: $showInfoAlert) {
             Button("OK") {}
         } message: {
-            Text("Social sign up hozircha yoqilmagan.")
+            Text(infoMessage)
         }
     }
 }
@@ -205,7 +154,7 @@ struct CheckboxToggleStyle: ToggleStyle {
             configuration.isOn.toggle()
         } label: {
             Image(systemName: configuration.isOn ? "checkmark.square.fill" : "square")
-                .foregroundColor(configuration.isOn ? Color(red: 0.38, green: 0.22, blue: 0.82) : .gray)
+                .foregroundColor(configuration.isOn ? AppTheme.Palette.brand : .gray)
                 .font(.title2)
         }
     }
@@ -230,6 +179,21 @@ private extension RegistrationView {
                 username: trimmedUsername
             )
         }
+    }
+
+    func showInfo(_ message: String) {
+        infoMessage = message
+        showInfoAlert = true
+    }
+
+    @ViewBuilder
+    func socialButton(_ imageName: String) -> some View {
+        Button {
+            showInfo("Social sign up hozircha yoqilmagan.")
+        } label: {
+            SocialSignInButton(imageName: imageName)
+        }
+        .buttonStyle(.plain)
     }
 }
 

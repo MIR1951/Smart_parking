@@ -16,29 +16,44 @@ struct FavoriteView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 16) {
-                    ForEach(favoriteParkings) { parking in
-                        NavigationLink {
-                            ParkingDetailView(parking: parking)
-                        } label: {
-                            NearbyParkingCard(
-                                availabilityStore: _availabilityStore,
-                                parking: parking,
-                                onHeartTap: {
-                                    selectedToRemove = parking
+            ZStack {
+                AppTheme.Palette.pageBackground
+                    .ignoresSafeArea()
+
+                if favoriteParkings.isEmpty {
+                    AppStateView(
+                        kind: .empty(
+                            icon: "heart.slash",
+                            title: "Favorites yo'q",
+                            subtitle: "Yoqtirgan parkinglaringiz shu yerda chiqadi."
+                        )
+                    )
+                } else {
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 16) {
+                            ForEach(favoriteParkings) { parking in
+                                NavigationLink {
+                                    ParkingDetailView(parking: parking)
+                                } label: {
+                                    NearbyParkingCard(
+                                        availabilityStore: _availabilityStore,
+                                        parking: parking,
+                                        isFavorite: true,
+                                        onHeartTap: {
+                                            selectedToRemove = parking
+                                        }
+                                    )
                                 }
-                            )
+                                .buttonStyle(.plain)
+                            }
                         }
-                        .buttonStyle(.plain)
+                        .padding(.horizontal)
+                        .padding(.top, 12)
+                        .padding(.bottom, 24)
                     }
                 }
-                .padding(.horizontal)
-                .padding(.top, 12)
-                .padding(.bottom, 24)
             }
-            .background(Color.bgLight.ignoresSafeArea())
-            .navigationTitle("Favorite")
+            .navigationTitle("Favorites")
             .navigationBarTitleDisplayMode(.inline)
 
             // Realtime + initial load (agar root’da start qilingan bo‘lsa ham zarar qilmaydi)
@@ -87,7 +102,7 @@ struct RemoveFavoriteSheet: View {
                     HStack {
                         Text("Car Parking")
                             .font(.caption)
-                            .foregroundColor(.purple)
+                            .foregroundColor(AppTheme.Palette.brand)
 
                         Spacer()
 
@@ -97,7 +112,7 @@ struct RemoveFavoriteSheet: View {
                                 .foregroundColor(.yellow)
                             Text(String(format: "%.1f", parking.rating ?? 5))
                                 .font(.caption)
-                                .foregroundColor(.gray)
+                                .foregroundColor(AppTheme.Palette.textSecondary)
                         }
                     }
 
@@ -108,21 +123,21 @@ struct RemoveFavoriteSheet: View {
 
                     Text("$\(parking.price_per_hour, specifier: "%.2f") /hr")
                         .font(.subheadline)
-                        .foregroundColor(.purple)
+                        .foregroundColor(AppTheme.Palette.brand)
                 }
             }
             .padding()
-            .background(Color.bgLight)
+            .background(AppTheme.Palette.pageBackground)
             .clipShape(RoundedRectangle(cornerRadius: 16))
 
             HStack(spacing: 12) {
                 Button(action: onCancel) {
                     Text("Cancel")
                         .fontWeight(.semibold)
-                        .foregroundColor(.purple)
+                        .foregroundColor(AppTheme.Palette.brand)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .background(Color.purple.opacity(0.10))
+                        .background(AppTheme.Palette.brandSoft)
                         .clipShape(Capsule())
                 }
 
@@ -132,7 +147,7 @@ struct RemoveFavoriteSheet: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .background(Color.purple)
+                        .background(AppTheme.Palette.brand)
                         .clipShape(Capsule())
                 }
             }
@@ -142,6 +157,6 @@ struct RemoveFavoriteSheet: View {
         }
         .padding(.horizontal)
         .padding(.bottom, 14)
-        .background(Color.white)
+        .background(AppTheme.Palette.surface)
     }
 }

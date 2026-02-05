@@ -33,31 +33,51 @@ struct ExploreView: View {
 
     var body: some View {
         NavigationStack {
-            Map(position: $cameraPosition) {
-                ForEach(filtered) { p in
-                    Annotation("", coordinate: .init(latitude: p.latitude, longitude: p.longitude)) {
-                    Circle()
-                        .fill(Color.primary)
-                        .frame(width: 12, height: 12)
+            ZStack {
+                Map(position: $cameraPosition) {
+                    ForEach(filtered) { p in
+                        Annotation("", coordinate: .init(latitude: p.latitude, longitude: p.longitude)) {
+                            Circle()
+                                .fill(AppTheme.Palette.brand)
+                                .frame(width: 12, height: 12)
+                        }
+                    }
+                }
+                .ignoresSafeArea()
+
+                if !parkings.isLoading && !search.isEmpty && filtered.isEmpty {
+                    VStack {
+                        AppStateView(
+                            kind: .empty(
+                                icon: "magnifyingglass",
+                                title: "Natija topilmadi",
+                                subtitle: "Qidiruv matnini o'zgartirib ko'ring."
+                            )
+                        )
+                        .padding(.top, 120)
+                        Spacer()
                     }
                 }
             }
-            .ignoresSafeArea()
 
             // TOP SEARCH BAR (rasmdagidek yuqorida)
             .safeAreaInset(edge: .top) {
                 HStack(spacing: 12) {
                     HStack(spacing: 10) {
                         Image(systemName: "magnifyingglass")
-                            .foregroundColor(.gray)
+                            .foregroundColor(AppTheme.Palette.textSecondary)
 
                         TextField("Search Parking", text: $search)
                             .autocorrectionDisabled()
                     }
                     .padding(.horizontal, 14)
                     .padding(.vertical, 12)
-                    .background(.white)
-                    .cornerRadius(14)
+                    .background(AppTheme.Palette.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous)
+                            .stroke(AppTheme.Palette.border, lineWidth: 1)
+                    )
 
                     Button {
                         showFilterInfo = true
@@ -65,13 +85,14 @@ struct ExploreView: View {
                         Image(systemName: "slider.horizontal.3")
                             .foregroundColor(.white)
                             .frame(width: 44, height: 44)
-                            .background(Color.primary)
+                            .background(AppTheme.Palette.brand)
                             .cornerRadius(12)
                     }
                 }
                 .padding(.horizontal)
                 .padding(.top, 8)
                 .padding(.bottom, 8)
+                .background(AppTheme.Palette.pageBackground.opacity(0.9))
                 .alert("Info", isPresented: $showFilterInfo) {
                     Button("OK") {}
                 } message: {

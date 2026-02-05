@@ -4,6 +4,7 @@ struct NearbyParkingCard: View {
 
     @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
     let parking: Parking
+    var isFavorite: Bool = false
     let onHeartTap: (() -> Void)?
 
     private var availableSpots: Int {
@@ -31,10 +32,10 @@ struct NearbyParkingCard: View {
 
                 if let onHeartTap {
                     Button(action: onHeartTap) {
-                        Image(systemName: "heart.fill")
-                            .foregroundColor(.red)
+                        Image(systemName: isFavorite ? "heart.fill" : "heart")
+                            .foregroundColor(isFavorite ? .red : AppTheme.Palette.textPrimary)
                             .padding(8)
-                            .background(Color.white)
+                            .background(AppTheme.Palette.surface)
                             .clipShape(Circle())
                             .shadow(radius: 2)
                     }
@@ -48,10 +49,10 @@ struct NearbyParkingCard: View {
                 HStack {
                     Text("Car Parking")
                         .font(.caption)
-                        .foregroundColor(.purple)
+                        .foregroundColor(AppTheme.Palette.brand)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
-                        .background(Color.purple.opacity(0.10))
+                        .background(AppTheme.Palette.brandSoft)
                         .clipShape(Capsule())
 
                     Spacer()
@@ -62,42 +63,42 @@ struct NearbyParkingCard: View {
                             .foregroundColor(.yellow)
                         Text(String(format: "%.1f", parking.rating ?? 5))
                             .font(.caption)
-                            .foregroundColor(.gray)
+                            .foregroundColor(AppTheme.Palette.textSecondary)
                     }
                 }
 
                 Text(parking.name)
                     .font(.headline)
-                    .foregroundColor(.black)
+                    .foregroundColor(AppTheme.Palette.textPrimary)
                     .lineLimit(1)
 
                 HStack(spacing: 6) {
                     Image(systemName: "mappin.and.ellipse")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
                     Text(parking.address ?? "Unknown")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
                         .lineLimit(1)
                 }
 
                 HStack(spacing: 4) {
                     Text("$\(parking.price_per_hour, specifier: "%.2f")")
                         .font(.headline)
-                        .foregroundColor(.purple)
+                        .foregroundColor(AppTheme.Palette.brand)
                     Text("/hr")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
                 }
 
                 HStack {
                     Label("04 Mins", systemImage: "clock")
-                        .foregroundColor(.purple)
+                        .foregroundColor(AppTheme.Palette.brand)
 
                     Spacer()
 
                     Label("\(availableSpots) Spots", systemImage: "car.fill")
-                        .foregroundColor(.purple)
+                        .foregroundColor(AppTheme.Palette.brand)
                 }
                 .font(.caption)
             }
@@ -105,8 +106,6 @@ struct NearbyParkingCard: View {
             Spacer()
         }
         .padding(14)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
+        .appCard()
     }
 }

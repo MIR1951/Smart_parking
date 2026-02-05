@@ -23,140 +23,94 @@ struct LoginView: View {
     
     var body: some View {
         NavigationStack {
-            VStack {
-                // Yuqori qism
-                Text("Sign In")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .padding(.top, 50)
-                
-                Text("Hi! Welcome back, you've been missed")
-                    .foregroundColor(.gray)
-                    .padding(.bottom, 40)
-                
-                // --- Kirish maydonlari ---
-                
-                // Email maydoni
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("Email")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    
-                    TextField("example@gmail.com", text: $email)
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.emailAddress)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(10)
-                }
-                .padding(.horizontal)
-                
-                // Parol maydoni
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("Password")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    
-                    HStack {
-                        if isPasswordVisible {
-                            TextField("**********", text: $password)
-                        } else {
-                            SecureField("**********", text: $password)
-                        }
-                        
-                        Button(action: {
-                            isPasswordVisible.toggle()
-                        }) {
-                            Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
-                                .foregroundColor(.gray)
-                        }
-                    }
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(10)
-                    
-                    // Parolni unutdingizmi? tugmasi
-                    HStack {
-                        Spacer()
-                        Button("Forgot Password?") {
-                            forgotPassword()
-                        }
-                        .foregroundColor(Color(red: 0.38, green: 0.22, blue: 0.82)) // Rasmga o'xshash binafsha rang
-                        .font(.footnote)
-                    }
-                }
-                .padding([.horizontal, .top])
-                
-                // --- Sign In tugmasi ---
-                Button(authManager.isLoading ? "Signing In..." : "Sign In") {
-                    signIn()
-                }
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(
-                    isValidCredentials
-                        ? Color(red: 0.38, green: 0.22, blue: 0.82)
-                        : Color.gray
-                )
-                .cornerRadius(15)
-                .disabled(!isValidCredentials || authManager.isLoading)
-                .padding([.horizontal, .top], 30)
-                
-                // --- Ijtimoiy tarmoqlar orqali kirish ---
-                Text("Or sign in with")
-                    .foregroundColor(.gray)
-                    .padding(.vertical, 20)
-                
-                HStack(spacing: 30) {
-                    Button {
-                        showInfo("Social sign in hozircha yoqilmagan.")
-                    } label: {
-                        SocialSignInButton(imageName: "applelogo")
-                    }
-                    .buttonStyle(.plain)
+            ZStack {
+                AppTheme.Palette.pageBackground
+                    .ignoresSafeArea()
 
-                    Button {
-                        showInfo("Social sign in hozircha yoqilmagan.")
-                    } label: {
-                        SocialSignInButton(imageName: "google")
-                    }
-                    .buttonStyle(.plain)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: AppTheme.Spacing.xLarge) {
+                        VStack(spacing: AppTheme.Spacing.small) {
+                            Text("Sign In")
+                                .font(.system(size: 34, weight: .bold))
+                                .foregroundColor(AppTheme.Palette.textPrimary)
+                            Text("Hi! Welcome back, you've been missed")
+                                .foregroundColor(AppTheme.Palette.textSecondary)
+                        }
+                        .padding(.top, 28)
 
-                    Button {
-                        showInfo("Social sign in hozircha yoqilmagan.")
-                    } label: {
-                        SocialSignInButton(imageName: "facebook")
+                        VStack(spacing: AppTheme.Spacing.medium) {
+                            AppInputField(
+                                title: "Email",
+                                placeholder: "example@gmail.com",
+                                text: $email,
+                                keyboardType: .emailAddress,
+                                autocapitalization: .never
+                            )
+
+                            AppInputField(
+                                title: "Password",
+                                placeholder: "**********",
+                                text: $password,
+                                isSecure: true,
+                                revealSecureText: $isPasswordVisible
+                            )
+
+                            HStack {
+                                Spacer()
+                                Button("Forgot Password?") {
+                                    forgotPassword()
+                                }
+                                .font(.footnote)
+                                .foregroundColor(AppTheme.Palette.brand)
+                            }
+                        }
+
+                        AppPrimaryButton(
+                            title: authManager.isLoading ? "Signing In..." : "Sign In",
+                            isLoading: authManager.isLoading,
+                            isEnabled: isValidCredentials && !authManager.isLoading
+                        ) {
+                            signIn()
+                        }
+
+                        VStack(spacing: AppTheme.Spacing.large) {
+                            HStack(spacing: AppTheme.Spacing.small) {
+                                Rectangle()
+                                    .fill(AppTheme.Palette.border)
+                                    .frame(height: 1)
+                                Text("Or sign in with")
+                                    .font(.caption)
+                                    .foregroundColor(AppTheme.Palette.textSecondary)
+                                Rectangle()
+                                    .fill(AppTheme.Palette.border)
+                                    .frame(height: 1)
+                            }
+
+                            HStack(spacing: 28) {
+                                socialButton("applelogo")
+                                socialButton("google")
+                                socialButton("facebook")
+                            }
+                        }
+
+                        NavigationLink {
+                            RegistrationView()
+                                .navigationBarBackButtonHidden()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text("Don't have an account?")
+                                    .foregroundColor(AppTheme.Palette.textSecondary)
+                                Text("Sign Up")
+                                    .foregroundColor(AppTheme.Palette.brand)
+                                    .fontWeight(.semibold)
+                            }
+                            .font(.subheadline)
+                        }
                     }
-                    .buttonStyle(.plain)
+                    .padding(.horizontal, 18)
+                    .padding(.bottom, 28)
                 }
-                
-                // --- Hisobingiz yo'qmi? ---
-                Spacer()
-                NavigationLink{
-                    RegistrationView()
-                        .navigationBarBackButtonHidden()
-                } label: {
-                    HStack {
-                        Text("Don't have an account?")
-                        Text("Sign Up")
-                            .foregroundColor(Color(red: 0.38, green: 0.22, blue: 0.82))
-                            .fontWeight(.medium)
-                    }
-                    .padding(.bottom, 20)
-                }
-                
-                
-                // Pastki chiziqni imitatsiya qilish
-                Rectangle()
-                    .frame(width: 134, height: 5)
-                    .cornerRadius(5)
-                    .foregroundColor(.black)
-                    .padding(.bottom, 8)
             }
-            .padding(.horizontal, 10)
             .onChange(of: authManager.authError) { _, newValue in
                 showAuthError = newValue != nil
             }
@@ -187,20 +141,21 @@ struct SocialSignInButton: View {
             Image(systemName: imageName)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 25, height: 25)
-                .padding(15)
-                .background(Color.white)
+                .frame(width: 20, height: 20)
+                .frame(width: 52, height: 52)
+                .background(AppTheme.Palette.surface)
                 .clipShape(Circle())
-                .shadow(radius: 2)
+                .overlay(Circle().stroke(AppTheme.Palette.border, lineWidth: 1))
         } else {
             // Google va Facebook logolari uchun joy egasi
             Text(imageName.prefix(1).uppercased())
                 .font(.title2)
                 .fontWeight(.bold)
-                .frame(width: 55, height: 55)
-                .background(Color.white)
+                .foregroundColor(AppTheme.Palette.textPrimary)
+                .frame(width: 52, height: 52)
+                .background(AppTheme.Palette.surface)
                 .clipShape(Circle())
-                .shadow(radius: 2)
+                .overlay(Circle().stroke(AppTheme.Palette.border, lineWidth: 1))
         }
     }
 }
@@ -232,6 +187,16 @@ private extension LoginView {
     func showInfo(_ message: String) {
         infoMessage = message
         showInfoAlert = true
+    }
+
+    @ViewBuilder
+    func socialButton(_ imageName: String) -> some View {
+        Button {
+            showInfo("Social sign in hozircha yoqilmagan.")
+        } label: {
+            SocialSignInButton(imageName: imageName)
+        }
+        .buttonStyle(.plain)
     }
 }
 

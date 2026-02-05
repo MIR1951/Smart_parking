@@ -9,9 +9,8 @@ import SwiftUI
 
 struct PaymentMethodsView: View {
     @Binding var selectedMethod: PaymentMethod?
+    let onBack: () -> Void
     let onConfirm: () -> Void
-
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(spacing: 0) {
@@ -28,7 +27,7 @@ struct PaymentMethodsView: View {
                         Text("Wallet")
                             .font(.subheadline)
                             .fontWeight(.semibold)
-                            .foregroundColor(.gray)
+                            .foregroundColor(AppTheme.Palette.textSecondary)
                     }
 
                     // Credit & Debit Card
@@ -38,7 +37,7 @@ struct PaymentMethodsView: View {
                         Text("Credit & Debit Card")
                             .font(.subheadline)
                             .fontWeight(.semibold)
-                            .foregroundColor(.gray)
+                            .foregroundColor(AppTheme.Palette.textSecondary)
                     }
 
                     // More Options
@@ -52,7 +51,7 @@ struct PaymentMethodsView: View {
                         Text("More Payment Options")
                             .font(.subheadline)
                             .fontWeight(.semibold)
-                            .foregroundColor(.gray)
+                            .foregroundColor(AppTheme.Palette.textSecondary)
                     }
                 }
                 .padding(.horizontal)
@@ -64,7 +63,7 @@ struct PaymentMethodsView: View {
             // Confirm Button
             confirmButton
         }
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
         .navigationBarHidden(true)
     }
 
@@ -72,12 +71,12 @@ struct PaymentMethodsView: View {
     private var header: some View {
         HStack {
             Button {
-                dismiss()
+                onBack()
             } label: {
                 Image(systemName: "chevron.left")
-                    .foregroundColor(.black)
+                    .foregroundColor(AppTheme.Palette.textPrimary)
                     .padding(12)
-                    .background(Color.white)
+                    .background(AppTheme.Palette.surface)
                     .clipShape(Circle())
                     .shadow(color: .black.opacity(0.1), radius: 4)
             }
@@ -100,9 +99,9 @@ struct PaymentMethodsView: View {
         HStack(spacing: 16) {
             Image(systemName: method.icon)
                 .font(.title3)
-                .foregroundColor(.purple)
+                .foregroundColor(AppTheme.Palette.brand)
                 .frame(width: 40, height: 40)
-                .background(Color.purple.opacity(0.1))
+                .background(AppTheme.Palette.brandSoft)
                 .cornerRadius(10)
 
             Text(method.displayName)
@@ -112,19 +111,19 @@ struct PaymentMethodsView: View {
 
             Circle()
                 .stroke(
-                    selectedMethod == method ? Color.purple : Color.gray.opacity(0.3), lineWidth: 2
+                    selectedMethod == method ? AppTheme.Palette.brand : Color.gray.opacity(0.3), lineWidth: 2
                 )
                 .frame(width: 24, height: 24)
                 .overlay {
                     if selectedMethod == method {
                         Circle()
-                            .fill(Color.purple)
+                            .fill(AppTheme.Palette.brand)
                             .frame(width: 14, height: 14)
                     }
                 }
         }
         .padding()
-        .background(Color.white)
+        .background(AppTheme.Palette.surface)
         .cornerRadius(16)
         .onTapGesture {
             selectedMethod = method
@@ -136,9 +135,9 @@ struct PaymentMethodsView: View {
         HStack(spacing: 16) {
             Image(systemName: "creditcard")
                 .font(.title3)
-                .foregroundColor(.purple)
+                .foregroundColor(AppTheme.Palette.brand)
                 .frame(width: 40, height: 40)
-                .background(Color.purple.opacity(0.1))
+                .background(AppTheme.Palette.brandSoft)
                 .cornerRadius(10)
 
             Text("Add Card")
@@ -147,10 +146,10 @@ struct PaymentMethodsView: View {
             Spacer()
 
             Image(systemName: "chevron.right")
-                .foregroundColor(.purple)
+                .foregroundColor(AppTheme.Palette.brand)
         }
         .padding()
-        .background(Color.white)
+        .background(AppTheme.Palette.surface)
         .cornerRadius(16)
         .onTapGesture {
             selectedMethod = .card
@@ -159,15 +158,12 @@ struct PaymentMethodsView: View {
 
     // MARK: - Confirm Button
     private var confirmButton: some View {
-        Button(action: onConfirm) {
-            Text("Confirm Payment")
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity, minHeight: 52)
-                .background(selectedMethod != nil ? Color.purple : Color.gray)
-                .cornerRadius(26)
+        AppPrimaryButton(
+            title: "Confirm Payment",
+            isEnabled: selectedMethod != nil
+        ) {
+            onConfirm()
         }
-        .disabled(selectedMethod == nil)
         .padding(.horizontal)
         .padding(.bottom, 24)
     }

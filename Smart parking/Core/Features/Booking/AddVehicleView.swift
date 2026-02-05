@@ -82,10 +82,10 @@ struct AddVehicleView: View {
                                 .foregroundColor(selectedBrand == nil ? .gray : .black)
                             Spacer()
                             Image(systemName: "chevron.right")
-                                .foregroundColor(.purple)
+                                .foregroundColor(AppTheme.Palette.brand)
                         }
                         .padding()
-                        .background(Color.white)
+                        .background(AppTheme.Palette.surface)
                         .cornerRadius(12)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
@@ -110,10 +110,10 @@ struct AddVehicleView: View {
                                 .foregroundColor(selectedModel == nil ? .gray : .black)
                             Spacer()
                             Image(systemName: "chevron.right")
-                                .foregroundColor(.purple)
+                                .foregroundColor(AppTheme.Palette.brand)
                         }
                         .padding()
-                        .background(Color.white)
+                        .background(AppTheme.Palette.surface)
                         .cornerRadius(12)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
@@ -133,7 +133,7 @@ struct AddVehicleView: View {
                     TextField("Ex. GR 789-IJKL", text: $plateNumber)
                         .textFieldStyle(.plain)
                         .padding()
-                        .background(Color.white)
+                        .background(AppTheme.Palette.surface)
                         .cornerRadius(12)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
@@ -150,7 +150,7 @@ struct AddVehicleView: View {
             // Add Vehicle Button
             addButton
         }
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
         .navigationBarHidden(true)
         .sheet(isPresented: $showBrandPicker) {
             BrandPickerSheet(selectedBrand: $selectedBrand, selectedModel: $selectedModel)
@@ -171,9 +171,9 @@ struct AddVehicleView: View {
                 dismiss()
             } label: {
                 Image(systemName: "chevron.left")
-                    .foregroundColor(.black)
+                    .foregroundColor(AppTheme.Palette.textPrimary)
                     .padding(12)
-                    .background(Color.white)
+                    .background(AppTheme.Palette.surface)
                     .clipShape(Circle())
                     .shadow(color: .black.opacity(0.1), radius: 4)
             }
@@ -206,7 +206,7 @@ struct AddVehicleView: View {
                 .fontWeight(.semibold)
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity, minHeight: 52)
-                .background(isValid ? Color.purple : Color.gray)
+                .background(isValid ? AppTheme.Palette.brand : Color.gray)
                 .cornerRadius(26)
         }
         .disabled(!isValid)
@@ -248,7 +248,7 @@ private struct BrandPickerSheet: View {
 
                     if selectedBrand?.name == brand.name {
                         Image(systemName: "checkmark")
-                            .foregroundColor(.purple)
+                            .foregroundColor(AppTheme.Palette.brand)
                     }
                 }
                 .contentShape(Rectangle())
@@ -286,7 +286,7 @@ private struct ModelPickerSheet: View {
 
                     if selectedModel == model {
                         Image(systemName: "checkmark")
-                            .foregroundColor(.purple)
+                            .foregroundColor(AppTheme.Palette.brand)
                     }
                 }
                 .contentShape(Rectangle())

@@ -12,10 +12,9 @@ struct ReviewSummaryView: View {
     let selectedMinutes: Int
     let vehicle: Vehicle
     @Binding var paymentMethod: PaymentMethod?
+    let onBack: () -> Void
     let onContinue: () -> Void
     let onChangePayment: () -> Void
-
-    @Environment(\.dismiss) private var dismiss
 
     // Calculated values
     private var startTime: Date { Date() }
@@ -57,7 +56,7 @@ struct ReviewSummaryView: View {
             // Continue Button
             continueButton
         }
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
         .navigationBarHidden(true)
     }
 
@@ -65,12 +64,12 @@ struct ReviewSummaryView: View {
     private var header: some View {
         HStack {
             Button {
-                dismiss()
+                onBack()
             } label: {
                 Image(systemName: "chevron.left")
-                    .foregroundColor(.black)
+                    .foregroundColor(AppTheme.Palette.textPrimary)
                     .padding(12)
-                    .background(Color.white)
+                    .background(AppTheme.Palette.surface)
                     .clipShape(Circle())
                     .shadow(color: .black.opacity(0.1), radius: 4)
             }
@@ -103,10 +102,10 @@ struct ReviewSummaryView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Car Parking")
                     .font(.caption)
-                    .foregroundColor(.purple)
+                    .foregroundColor(AppTheme.Palette.brand)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.purple.opacity(0.1))
+                    .background(AppTheme.Palette.brandSoft)
                     .cornerRadius(8)
 
                 Text(parking.name)
@@ -115,10 +114,10 @@ struct ReviewSummaryView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "mappin.circle.fill")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
                     Text(parking.address ?? "")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
                         .lineLimit(1)
                 }
             }
@@ -137,7 +136,7 @@ struct ReviewSummaryView: View {
             }
         }
         .padding()
-        .background(Color.white)
+        .background(AppTheme.Palette.surface)
         .cornerRadius(16)
     }
 
@@ -160,7 +159,7 @@ struct ReviewSummaryView: View {
                 Text(String(format: "$%.2f", parking.price_per_hour))
                     .fontWeight(.medium)
                 Text("/hr")
-                    .foregroundColor(.gray)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
             }
 
             HStack {
@@ -195,11 +194,11 @@ struct ReviewSummaryView: View {
         HStack {
             if let method = paymentMethod {
                 Image(systemName: method.icon)
-                    .foregroundColor(.purple)
+                    .foregroundColor(AppTheme.Palette.brand)
                 Text(method.displayName)
             } else {
                 Text("Select Payment")
-                    .foregroundColor(.gray)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
             }
 
             Spacer()
@@ -207,24 +206,21 @@ struct ReviewSummaryView: View {
             Button("Change") {
                 onChangePayment()
             }
-            .foregroundColor(.purple)
+            .foregroundColor(AppTheme.Palette.brand)
         }
         .padding()
-        .background(Color.white)
+        .background(AppTheme.Palette.surface)
         .cornerRadius(12)
     }
 
     // MARK: - Continue Button
     private var continueButton: some View {
-        Button(action: onContinue) {
-            Text("Continue")
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity, minHeight: 52)
-                .background(paymentMethod != nil ? Color.purple : Color.gray)
-                .cornerRadius(26)
+        AppPrimaryButton(
+            title: "Continue",
+            isEnabled: paymentMethod != nil
+        ) {
+            onContinue()
         }
-        .disabled(paymentMethod == nil)
         .padding(.horizontal)
         .padding(.bottom, 24)
     }
@@ -233,7 +229,7 @@ struct ReviewSummaryView: View {
     private func infoRow(title: String, value: String) -> some View {
         HStack {
             Text(title)
-                .foregroundColor(.gray)
+                .foregroundColor(AppTheme.Palette.textSecondary)
             Spacer()
             Text(value)
                 .fontWeight(.medium)

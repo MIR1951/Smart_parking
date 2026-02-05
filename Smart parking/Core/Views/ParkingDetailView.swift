@@ -59,8 +59,9 @@ struct ParkingDetailView: View {
         }
         .safeAreaInset(edge: .bottom) {  // ✅ book bar pastda
             bottomBookingBar
-                .background(.white)  // xohlasang bgLight qil
+                .background(AppTheme.Palette.surface)
         }
+        .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
         .ignoresSafeArea(edges: .top)
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .tabBar)
@@ -122,21 +123,21 @@ extension ParkingDetailView {
                 Image(systemName: "star.fill")
                     .foregroundColor(.yellow)
                     .font(.caption)
-                Text(String(format: "%.1f", parking.rating ?? 4.5))
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
+                    Text(String(format: "%.1f", parking.rating ?? 4.5))
+                        .font(.subheadline)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
                 Text("•")
-                    .foregroundColor(.gray)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
                 Text("\(parking.total_spots) total spots")
                     .font(.subheadline)
-                    .foregroundColor(.gray)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
             }
 
             HStack(spacing: 6) {
                 Image(systemName: "mappin.and.ellipse")
                 Text(parking.address ?? "Unknown")
             }
-            .foregroundColor(.gray)
+            .foregroundColor(AppTheme.Palette.textSecondary)
             .font(.subheadline)
 
         }
@@ -151,11 +152,11 @@ extension ParkingDetailView {
                 VStack {
                     Text(tab.rawValue)
                         .font(.headline)
-                        .foregroundColor(selectedTab == tab ? Color.purple : .gray)
+                        .foregroundColor(selectedTab == tab ? AppTheme.Palette.brand : AppTheme.Palette.textSecondary)
 
                     if selectedTab == tab {
                         Rectangle()
-                            .fill(Color.purple)
+                            .fill(AppTheme.Palette.brand)
                             .frame(height: 3)
 
                     } else {
@@ -191,7 +192,7 @@ extension ParkingDetailView {
                     Image(systemName: "dollarsign.circle")
                     Text(String(format: "$%.2f/hr", parking.price_per_hour))
                 }
-                .foregroundColor(.purple)
+                .foregroundColor(AppTheme.Palette.brand)
             }
             .font(.subheadline)
             .fontWeight(.medium)
@@ -201,7 +202,7 @@ extension ParkingDetailView {
                 Text("Description")
                     .font(.headline)
                 Text(parking.description ?? "No description available for this parking location.")
-                    .foregroundColor(.gray)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
             }
 
             // Features
@@ -238,15 +239,15 @@ extension ParkingDetailView {
     private func featureItem(icon: String, title: String) -> some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
-                .foregroundColor(.purple)
+                .foregroundColor(AppTheme.Palette.brand)
                 .frame(width: 24)
             Text(title)
                 .font(.caption)
-                .foregroundColor(.gray)
+                .foregroundColor(AppTheme.Palette.textSecondary)
             Spacer()
         }
         .padding(10)
-        .background(Color(.systemGray6))
+        .background(AppTheme.Palette.brandSoft)
         .cornerRadius(10)
     }
 
@@ -254,7 +255,7 @@ extension ParkingDetailView {
         VStack(spacing: 4) {
             Text(title)
                 .font(.caption)
-                .foregroundColor(.gray)
+                .foregroundColor(AppTheme.Palette.textSecondary)
             Text(value)
                 .font(.subheadline)
                 .fontWeight(.semibold)
@@ -287,9 +288,9 @@ extension ParkingDetailView {
                 VStack(spacing: 12) {
                     Image(systemName: "photo.on.rectangle.angled")
                         .font(.largeTitle)
-                        .foregroundColor(.gray)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
                     Text("No gallery images available")
-                        .foregroundColor(.gray)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 40)
@@ -306,7 +307,7 @@ extension ParkingDetailView {
                     .font(.headline)
                 Spacer()
                 Button("Add Review") {}
-                    .foregroundColor(.purple)
+                    .foregroundColor(AppTheme.Palette.brand)
                     .font(.subheadline)
             }
 
@@ -325,10 +326,10 @@ extension ParkingDetailView {
                     }
                     Text("Based on reviews")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
                 }
                 .padding()
-                .background(Color(.systemGray6))
+                .background(AppTheme.Palette.brandSoft)
                 .cornerRadius(12)
 
                 Spacer()
@@ -357,12 +358,12 @@ extension ParkingDetailView {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Circle()
-                    .fill(Color.purple.opacity(0.2))
+                    .fill(AppTheme.Palette.brandSoft)
                     .frame(width: 40, height: 40)
                     .overlay(
                         Text(String(name.prefix(1)))
                             .fontWeight(.semibold)
-                            .foregroundColor(.purple)
+                            .foregroundColor(AppTheme.Palette.brand)
                     )
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -370,7 +371,7 @@ extension ParkingDetailView {
                         .fontWeight(.medium)
                     Text(date)
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
                 }
 
                 Spacer()
@@ -386,10 +387,10 @@ extension ParkingDetailView {
 
             Text(comment)
                 .font(.subheadline)
-                .foregroundColor(.gray)
+                .foregroundColor(AppTheme.Palette.textSecondary)
         }
         .padding()
-        .background(Color(.systemGray6))
+        .background(AppTheme.Palette.pageBackground)
         .cornerRadius(12)
     }
 
@@ -398,11 +399,12 @@ extension ParkingDetailView {
         HStack {
             VStack(alignment: .leading) {
                 Text("Total Price")
-                    .foregroundColor(.gray)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
                     .font(.caption)
                 Text("$\(parking.price_per_hour, specifier: "%.2f") /hr")
                     .font(.title3)
                     .fontWeight(.bold)
+                    .foregroundColor(AppTheme.Palette.textPrimary)
             }
             Spacer()
 
@@ -411,7 +413,7 @@ extension ParkingDetailView {
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
                     .frame(width: 160, height: 48)
-                    .background(isAvailable ? Color.purple : Color.gray)
+                    .background(isAvailable ? AppTheme.Palette.brand : Color.gray)
                     .cornerRadius(14)
             }
             .disabled(!isAvailable)
@@ -422,7 +424,7 @@ extension ParkingDetailView {
         .padding(.horizontal)
         .padding(.top, 12)
         .padding(.bottom, 12)
-        .background(Color.bgLight)
+        .background(AppTheme.Palette.surface)
     }
 
     // MARK: Button UI
@@ -430,9 +432,9 @@ extension ParkingDetailView {
         Button(action: action) {
             Image(systemName: system)
                 .font(.headline)
-                .foregroundColor(.black)
+                .foregroundColor(AppTheme.Palette.textPrimary)
                 .padding(10)
-                .background(Color.white)
+                .background(AppTheme.Palette.surface)
                 .clipShape(Circle())
                 .shadow(radius: 3)
         }

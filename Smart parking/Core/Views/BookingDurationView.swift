@@ -24,9 +24,9 @@ struct BookingDurationView: View {
             HStack {
                 Button { dismiss() } label: {
                     Image(systemName: "chevron.left")
-                        .foregroundColor(.black)
+                        .foregroundColor(AppTheme.Palette.textPrimary)
                         .padding(10)
-                        .background(Color.white)
+                        .background(AppTheme.Palette.surface)
                         .clipShape(Circle())
                         .shadow(radius: 2)
                 }
@@ -44,7 +44,7 @@ struct BookingDurationView: View {
                 Text(parking.name).font(.title3).fontWeight(.semibold)
                 Text("Reservation starts now. Arriving late reduces prepaid time usable inside.")
                     .font(.caption)
-                    .foregroundColor(.gray)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
             }
             .padding(.horizontal)
 
@@ -70,7 +70,7 @@ struct BookingDurationView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Prepaid amount")
                     .font(.caption)
-                    .foregroundColor(.gray)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
 
                 Text(vm.prepaidText(hourlyRate: parking.price_per_hour))
                     .font(.title3)
@@ -92,7 +92,7 @@ struct BookingDurationView: View {
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity, minHeight: 52)
-                .background(Color.purple)
+                .background(AppTheme.Palette.brand)
                 .cornerRadius(16)
             }
             .disabled(vm.selectedMinutes == nil || vm.isProcessing)
@@ -100,7 +100,7 @@ struct BookingDurationView: View {
             .padding(.bottom, 12)
 
         }
-        .background(Color.bgLight.ignoresSafeArea())
+        .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
         .alert("Reservation", isPresented: $vm.showAlert) {
             Button("OK") { if vm.didSucceed { dismiss() } }
         } message: {
@@ -122,9 +122,9 @@ private struct DurationChip: View {
     var body: some View {
         Text(title)
             .font(.headline)
-            .foregroundColor(isSelected ? .white : .black)
+            .foregroundColor(isSelected ? .white : AppTheme.Palette.textPrimary)
             .frame(maxWidth: .infinity, minHeight: 46)
-            .background(isSelected ? Color.purple : Color.white)
+            .background(isSelected ? AppTheme.Palette.brand : AppTheme.Palette.surface)
             .cornerRadius(14)
             .shadow(radius: 2)
     }

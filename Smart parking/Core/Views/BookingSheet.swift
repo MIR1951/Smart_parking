@@ -37,7 +37,7 @@ struct BookingSheet: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.primary)
+                    .background(AppTheme.Palette.brand)
                     .cornerRadius(16)
                     .padding(.horizontal)
             }

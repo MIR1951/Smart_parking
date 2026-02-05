@@ -18,7 +18,6 @@ struct PaymentSuccessView: View {
     var onBackToHome: (() -> Void)?
 
     @State private var showEReceipt = false
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(spacing: 0) {
@@ -37,11 +36,11 @@ struct PaymentSuccessView: View {
             // Success Icon with animation
             ZStack {
                 Circle()
-                    .fill(Color.purple.opacity(0.15))
+                    .fill(AppTheme.Palette.brandSoft)
                     .frame(width: 140, height: 140)
 
                 Circle()
-                    .fill(Color.purple)
+                    .fill(AppTheme.Palette.brand)
                     .frame(width: 100, height: 100)
 
                 Image(systemName: "checkmark")
@@ -56,7 +55,7 @@ struct PaymentSuccessView: View {
 
             Text("Your Parking Slot Successfully Booked.\nYou can check your booking on Home Menu.")
                 .font(.subheadline)
-                .foregroundColor(.gray)
+                .foregroundColor(AppTheme.Palette.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.top, 8)
                 .padding(.horizontal, 32)
@@ -64,7 +63,7 @@ struct PaymentSuccessView: View {
             // Reservation ID
             HStack {
                 Text("Reservation ID:")
-                    .foregroundColor(.gray)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
                 Text(reservationId.uuidString.prefix(8).uppercased())
                     .fontWeight(.semibold)
             }
@@ -76,38 +75,24 @@ struct PaymentSuccessView: View {
             // Buttons
             VStack(spacing: 12) {
                 // View E-Receipt (opens sheet)
-                Button {
+                AppPrimaryButton(title: "View E-Receipt") {
                     showEReceipt = true
-                } label: {
-                    Text("View E-Receipt")
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity, minHeight: 52)
-                        .background(Color.purple)
-                        .cornerRadius(26)
                 }
 
                 // Back to Home
-                Button {
+                AppGhostButton(title: "Back to Home") {
                     if let onBackToHome {
                         onBackToHome()
                     } else {
                         // Fallback - coordinator orqali
                         AppCoordinator.shared.goToHome()
                     }
-                } label: {
-                    Text("Back to Home")
-                        .fontWeight(.semibold)
-                        .foregroundColor(.purple)
-                        .frame(maxWidth: .infinity, minHeight: 52)
-                        .background(Color.purple.opacity(0.1))
-                        .cornerRadius(26)
                 }
             }
             .padding(.horizontal)
             .padding(.bottom, 24)
         }
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
         .navigationBarHidden(true)
         .sheet(isPresented: $showEReceipt) {
             EReceiptView(

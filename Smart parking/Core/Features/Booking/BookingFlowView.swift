@@ -47,12 +47,14 @@ struct BookingFlowView: View {
                         parking: parking,
                         selectedMinutes: selectedMinutes,
                         selectedVehicle: $selectedVehicle,
+                        onBack: { currentStep = .duration },
                         onContinue: { currentStep = .payment }
                     )
 
                 case .payment:
                     PaymentMethodsView(
                         selectedMethod: $selectedPaymentMethod,
+                        onBack: { currentStep = .vehicle },
                         onConfirm: { currentStep = .review }
                     )
 
@@ -63,6 +65,7 @@ struct BookingFlowView: View {
                             selectedMinutes: selectedMinutes,
                             vehicle: vehicle,
                             paymentMethod: $selectedPaymentMethod,
+                            onBack: { currentStep = .payment },
                             onContinue: { processPayment() },
                             onChangePayment: { currentStep = .payment }
                         )
@@ -164,9 +167,9 @@ private struct BookingDurationStepView: View {
             HStack {
                 Button(action: onBack) {
                     Image(systemName: "chevron.left")
-                        .foregroundColor(.black)
+                        .foregroundColor(AppTheme.Palette.textPrimary)
                         .padding(12)
-                        .background(Color.white)
+                        .background(AppTheme.Palette.surface)
                         .clipShape(Circle())
                         .shadow(color: .black.opacity(0.1), radius: 4)
                 }
@@ -191,7 +194,7 @@ private struct BookingDurationStepView: View {
 
                 Text("Reservation starts now. Select how long you need the parking spot.")
                     .font(.caption)
-                    .foregroundColor(.gray)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
             }
             .padding(.horizontal)
 
@@ -217,12 +220,13 @@ private struct BookingDurationStepView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Prepaid amount")
                     .font(.caption)
-                    .foregroundColor(.gray)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
 
                 let amount = (Double(selectedMinutes) / 60.0) * parking.price_per_hour
                 Text(String(format: "$%.2f", amount))
                     .font(.title3)
                     .fontWeight(.bold)
+                    .foregroundColor(AppTheme.Palette.textPrimary)
             }
             .padding(.horizontal)
             .padding(.top, 6)
@@ -230,18 +234,11 @@ private struct BookingDurationStepView: View {
             Spacer()
 
             // Continue button
-            Button(action: onContinue) {
-                Text("Continue")
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity, minHeight: 52)
-                    .background(Color.purple)
-                    .cornerRadius(26)
-            }
+            AppPrimaryButton(title: "Continue", action: onContinue)
             .padding(.horizontal)
             .padding(.bottom, 24)
         }
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
     }
 
     private func labelFor(minutes: Int) -> String {
@@ -258,9 +255,9 @@ private struct DurationChipView: View {
     var body: some View {
         Text(title)
             .font(.headline)
-            .foregroundColor(isSelected ? .white : .black)
+            .foregroundColor(isSelected ? .white : AppTheme.Palette.textPrimary)
             .frame(maxWidth: .infinity, minHeight: 46)
-            .background(isSelected ? Color.purple : Color.white)
+            .background(isSelected ? AppTheme.Palette.brand : AppTheme.Palette.surface)
             .cornerRadius(14)
             .shadow(color: .black.opacity(0.05), radius: 4)
     }

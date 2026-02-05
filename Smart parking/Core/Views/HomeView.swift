@@ -10,30 +10,75 @@ struct HomeView: View {
     @StateObject private var locationManager = LocationManager()
     @State private var didRequestLocation = false
 
+    private var searchQuery: String {
+        search.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private var filteredPopular: [Parking] {
+        guard !searchQuery.isEmpty else { return parkings.popular }
+        return parkings.popular.filter {
+            $0.name.lowercased().contains(searchQuery)
+                || ($0.address ?? "").lowercased().contains(searchQuery)
+        }
+    }
+
+    private var filteredNearby: [Parking] {
+        guard !searchQuery.isEmpty else { return parkings.nearby }
+        return parkings.nearby.filter {
+            $0.name.lowercased().contains(searchQuery)
+                || ($0.address ?? "").lowercased().contains(searchQuery)
+        }
+    }
+
     var body: some View {
         NavigationStack {
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 20) {
-                    headerSection
-                    searchSection
-                    popularSection
-                    nearbySection
-                }
-                .padding(.vertical)
-            }
+            ZStack {
+                AppTheme.Palette.pageBackground.ignoresSafeArea()
 
-            .overlay {
-                if parkings.isLoading && parkings.all.isEmpty {
-                    ZStack {
-                        Color.black.opacity(0.08).ignoresSafeArea()
-                        ProgressView("Loading...")
-                            .padding()
-                            .background(.ultraThinMaterial)
-                            .cornerRadius(14)
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        headerSection
+                        searchSection
+                        if let error = parkings.errorMessage, parkings.all.isEmpty {
+                            AppStateView(
+                                kind: .error(
+                                    title: "Parkinglar yuklanmadi",
+                                    subtitle: error,
+                                    actionTitle: "Qayta urinish",
+                                    action: { parkings.load(userLocation: locationManager.location, force: true) }
+                                )
+                            )
+                            .padding(.top, 30)
+                        } else if !parkings.isLoading && parkings.all.isEmpty {
+                            AppStateView(
+                                kind: .empty(
+                                    icon: "car",
+                                    title: "Parking topilmadi",
+                                    subtitle: "Internet yoki joylashuvni tekshirib ko'ring."
+                                )
+                            )
+                            .padding(.top, 30)
+                        } else {
+                            popularSection
+                            nearbySection
+                        }
+                    }
+                    .padding(.vertical)
+                }
+
+                .overlay {
+                    if parkings.isLoading && parkings.all.isEmpty {
+                        ZStack {
+                            Color.black.opacity(0.08).ignoresSafeArea()
+                            AppStateView(kind: .loading(title: "Parkinglar yuklanmoqda..."))
+                                .padding()
+                                .background(.ultraThinMaterial)
+                                .cornerRadius(14)
+                        }
                     }
                 }
+                .id(parkings.reloadToken)
             }
-            .id(parkings.reloadToken)
 
             .onAppear {
                 if !didRequestLocation {
@@ -64,24 +109,24 @@ struct HomeView: View {
     private var headerSection: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Location").foregroundColor(.gray).font(.caption)
+                Text("Location").foregroundColor(AppTheme.Palette.textSecondary).font(.caption)
                 HStack {
-                    Image(systemName: "location.fill").foregroundColor(.primary)
+                    Image(systemName: "location.fill").foregroundColor(AppTheme.Palette.brand)
                     Text(locationManager.placeName)
                         .font(.headline)
-                        .foregroundColor(.black)
+                        .foregroundColor(AppTheme.Palette.textPrimary)
                     Image(systemName: "chevron.down")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
                 }
             }
             Spacer()
             NavigationLink(destination: NotificationsView()) {
                 ZStack(alignment: .topTrailing) {
                     Circle()
-                        .fill(Color.primary.opacity(0.15))
+                        .fill(AppTheme.Palette.brandSoft)
                         .frame(width: 40, height: 40)
-                        .overlay(Image(systemName: "bell").foregroundColor(.primary))
+                        .overlay(Image(systemName: "bell").foregroundColor(AppTheme.Palette.brand))
 
                     // Notification Badge
                     if NotificationManager.shared.unreadCount > 0 {
@@ -101,12 +146,18 @@ struct HomeView: View {
 
     private var searchSection: some View {
         HStack {
-            Image(systemName: "magnifyingglass").foregroundColor(.gray)
-            TextField("Search Parking", text: $search).autocorrectionDisabled()
+            Image(systemName: "magnifyingglass").foregroundColor(AppTheme.Palette.textSecondary)
+            TextField("Search parking", text: $search).autocorrectionDisabled()
+                .foregroundColor(AppTheme.Palette.textPrimary)
         }
-        .padding()
-        .background(Color.bgLight)
-        .cornerRadius(15)
+        .padding(.horizontal, AppTheme.Spacing.medium)
+        .padding(.vertical, 12)
+        .background(AppTheme.Palette.surface)
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous)
+                .stroke(AppTheme.Palette.border, lineWidth: 1)
+        )
         .padding(.horizontal)
     }
 
@@ -115,13 +166,17 @@ struct HomeView: View {
             HStack {
                 Text("Popular Parking").font(.title3).fontWeight(.semibold)
                 Spacer()
-                Text("See All").foregroundColor(.primary).font(.subheadline)
+                if !filteredPopular.isEmpty {
+                    Text("\(filteredPopular.count)")
+                        .foregroundColor(AppTheme.Palette.textSecondary)
+                        .font(.subheadline)
+                }
             }
             .padding(.horizontal)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
-                    ForEach(parkings.popular) { parking in
+                    ForEach(filteredPopular) { parking in
                         ZStack(alignment: .topTrailing) {
 
                             NavigationLink {
@@ -157,17 +212,22 @@ struct HomeView: View {
             HStack {
                 Text("Nearby Parking").font(.title3).fontWeight(.semibold)
                 Spacer()
-                Text("See All").foregroundColor(.primary).font(.subheadline)
+                if !filteredNearby.isEmpty {
+                    Text("\(filteredNearby.count)")
+                        .foregroundColor(AppTheme.Palette.textSecondary)
+                        .font(.subheadline)
+                }
             }
             .padding(.horizontal)
 
             VStack(spacing: 16) {
-                ForEach(parkings.nearby) { parking in
+                ForEach(filteredNearby) { parking in
                     NavigationLink {
                         ParkingDetailView(parking: parking)
                     } label: {
                         NearbyParkingCard(
                             parking: parking,
+                            isFavorite: favorites.isFavorite(parking.id),
                             onHeartTap: {
                                 favorites.toggle(parking.id)
                             }
@@ -177,6 +237,17 @@ struct HomeView: View {
                 }
             }
             .padding(.horizontal)
+
+            if !searchQuery.isEmpty && filteredNearby.isEmpty && filteredPopular.isEmpty {
+                AppStateView(
+                    kind: .empty(
+                        icon: "magnifyingglass",
+                        title: "Natija topilmadi",
+                        subtitle: "Boshqa nom yoki manzil bilan qidirib ko'ring."
+                    )
+                )
+                .padding(.top, 20)
+            }
         }
     }
 }

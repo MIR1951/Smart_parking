@@ -50,16 +50,17 @@ struct PopularParkingCard: View {
 
             Text("Car Parking")
                 .font(.caption)
-                .foregroundColor(.primary)
+                .foregroundColor(AppTheme.Palette.brand)
 
             Text(parking.name)
                 .font(.headline)
+                .foregroundColor(AppTheme.Palette.textPrimary)
 
             HStack {
                 Text("$\(parking.price_per_hour, specifier: "%.2f")")
-                    .foregroundColor(.primary)
+                    .foregroundColor(AppTheme.Palette.brand)
                 Text("/hr")
-                    .foregroundColor(.gray)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
             }
 
             HStack {
@@ -67,13 +68,11 @@ struct PopularParkingCard: View {
                 Spacer()
                 Label("\(availableSpots) Spots", systemImage: "car.fill")
             }
-            .foregroundColor(.gray)
+            .foregroundColor(AppTheme.Palette.textSecondary)
             .font(.caption)
         }
         .frame(width: 220)
         .padding(12)
-        .background(Color.white)
-        .cornerRadius(20)
-        .shadow(radius: 3)
+        .appCard()
     }
 }
