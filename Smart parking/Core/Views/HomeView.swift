@@ -9,6 +9,7 @@ struct HomeView: View {
     @State private var search = ""
     @StateObject private var locationManager = LocationManager()
     @State private var didRequestLocation = false
+    @State private var isRefreshing = false
 
     private var searchQuery: String {
         search.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -39,13 +40,19 @@ struct HomeView: View {
                     VStack(alignment: .leading, spacing: 20) {
                         headerSection
                         searchSection
-                        if let error = parkings.errorMessage, parkings.all.isEmpty {
+                        if isRefreshing || (parkings.isLoading && parkings.all.isEmpty) {
+                            // Shimmer skeleton
+                            HomeShimmerView()
+                        } else if let error = parkings.errorMessage, parkings.all.isEmpty {
                             AppStateView(
                                 kind: .error(
                                     title: "Parkinglar yuklanmadi",
                                     subtitle: error,
                                     actionTitle: "Qayta urinish",
-                                    action: { parkings.load(userLocation: locationManager.location, force: true) }
+                                    action: {
+                                        parkings.load(
+                                            userLocation: locationManager.location, force: true)
+                                    }
                                 )
                             )
                             .padding(.top, 30)
@@ -65,18 +72,6 @@ struct HomeView: View {
                     }
                     .padding(.vertical)
                 }
-
-                .overlay {
-                    if parkings.isLoading && parkings.all.isEmpty {
-                        ZStack {
-                            Color.black.opacity(0.08).ignoresSafeArea()
-                            AppStateView(kind: .loading(title: "Parkinglar yuklanmoqda..."))
-                                .padding()
-                                .background(.ultraThinMaterial)
-                                .cornerRadius(14)
-                        }
-                    }
-                }
                 .id(parkings.reloadToken)
             }
 
@@ -92,9 +87,11 @@ struct HomeView: View {
             }
 
             .refreshable {
+                withAnimation { isRefreshing = true }
                 await parkings.refresh(userLocation: locationManager.location)
                 availabilityStore.initialLoad(force: true)
-
+                try? await Task.sleep(nanoseconds: 600_000_000)
+                withAnimation(.easeOut(duration: 0.3)) { isRefreshing = false }
             }
 
             .task {

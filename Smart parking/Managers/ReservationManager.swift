@@ -14,7 +14,12 @@ struct CreateReservationParams: Sendable {
     let p_duration_minutes: Int
 }
 
+struct CancelReservationParams: Sendable {
+    let p_reservation_id: UUID
+}
+
 nonisolated extension CreateReservationParams: Encodable {}
+nonisolated extension CancelReservationParams: Encodable {}
 
 final class ReservationManager {
     static let shared = ReservationManager()
@@ -35,14 +40,10 @@ final class ReservationManager {
     }
 
     func cancelReservation(reservationId: UUID) async throws {
-        let userID = try await SB.shared.client.auth.session.user.id.uuidString
+        let params = CancelReservationParams(p_reservation_id: reservationId)
 
-        // Note: Supabase constraint "canceled" (bir 'l' bilan) kutadi
         try await SB.shared.client
-            .from("reservations")
-            .update(["status": "canceled"])
-            .eq("id", value: reservationId.uuidString)
-            .eq("user_id", value: userID)
+            .rpc("cancel_reservation", params: params)
             .execute()
     }
 }

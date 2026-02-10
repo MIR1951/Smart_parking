@@ -102,8 +102,8 @@ struct BookingsView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 16) {
                         if vm.isLoading && vm.items.isEmpty {
-                            AppStateView(kind: .loading(title: "Bandlar yuklanmoqda..."))
-                                .padding(.top, 40)
+                            BookingsShimmerView()
+                                .padding(.top, 8)
                         } else if let error = vm.error {
                             AppStateView(
                                 kind: .error(
@@ -185,7 +185,8 @@ struct BookingsView: View {
                 VStack(spacing: 8) {
                     Text(t.rawValue)
                         .font(.headline)
-                        .foregroundColor(tab == t ? AppTheme.Palette.brand : AppTheme.Palette.textSecondary)
+                        .foregroundColor(
+                            tab == t ? AppTheme.Palette.brand : AppTheme.Palette.textSecondary)
 
                     Capsule()
                         .fill(tab == t ? AppTheme.Palette.brand : Color.clear)

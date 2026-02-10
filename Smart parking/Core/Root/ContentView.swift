@@ -5,39 +5,46 @@
 //  Created by Kenjaboy Xajiyev on 30/11/25.
 //
 
-import SwiftUI
-import Supabase
 internal import Combine
+import Supabase
+import SwiftUI
 
 struct ContentView: View {
-    
+
     @Environment(AuthManager.self) private var authManager
     @StateObject private var availabilityStore = ParkingAvailabilityStore(client: SB.shared.client)
     @StateObject private var parkingsStore = ParkingsStore()
     @StateObject private var favoritesStore = FavoritesStore()
-    
+
     @State private var didStart = false
     @State private var didStartNotifications = false
+    @State private var showSplash = true
+    @State private var splashOpacity: Double = 1.0
+
     var body: some View {
-        Group{
-            if authManager.currentUserID != nil {
-               
-
-                // MainTabView chaqiriladigan joyda:
-                MainTabView()
-                    .environmentObject(parkingsStore)
-                    .environmentObject(favoritesStore)
-                    .environmentObject(availabilityStore)
-
-                    .onAppear {
-                                            guard !didStart else { return }
-                                            didStart = true
-                                            availabilityStore.initialLoad() // ✅ 1 marta
-                                                  // ✅ 1 marta
-                                        }
+        ZStack {
+            Group {
+                if authManager.currentUserID != nil {
+                    MainTabView()
+                        .environmentObject(parkingsStore)
+                        .environmentObject(favoritesStore)
+                        .environmentObject(availabilityStore)
+                        .onAppear {
+                            guard !didStart else { return }
+                            didStart = true
+                            availabilityStore.initialLoad()
+                        }
+                } else {
+                    LoginView()
+                }
             }
-            else {
-                LoginView()
+
+            // Splash screen overlay
+            if showSplash {
+                SplashScreenView()
+                    .opacity(splashOpacity)
+                    .transition(.opacity)
+                    .zIndex(100)
             }
         }
         .onChange(of: authManager.currentUserID) { _, newValue in
@@ -56,6 +63,14 @@ struct ContentView: View {
         }
         .task {
             await authManager.refreshUser()
+            // Auth refresh bo'lgandan keyin splash ni yashirish
+            try? await Task.sleep(nanoseconds: 1_800_000_000)  // 1.8 soniya minimum
+            withAnimation(.easeOut(duration: 0.6)) {
+                splashOpacity = 0
+            }
+            // Animatsiya tugagandan keyin view ni olib tashlash
+            try? await Task.sleep(nanoseconds: 700_000_000)
+            showSplash = false
         }
     }
 }

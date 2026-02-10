@@ -1,6 +1,6 @@
-import SwiftUI
-import MapKit
 import CoreLocation
+import MapKit
+import SwiftUI
 
 struct ExploreView: View {
 
@@ -12,13 +12,14 @@ struct ExploreView: View {
 
     @State private var cameraPosition: MapCameraPosition = .region(
         MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 41.3117, longitude: 69.2797),
-        span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
+            center: CLLocationCoordinate2D(latitude: 41.3117, longitude: 69.2797),
+            span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
         )
     )
 
     @State private var didRequestLocation = false
     @State private var showFilterInfo = false
+    @State private var isRefreshing = false
 
     private var filtered: [Parking] {
         let base = parkings.nearby
@@ -26,8 +27,7 @@ struct ExploreView: View {
         guard !q.isEmpty else { return base }
 
         return base.filter {
-            $0.name.lowercased().contains(q) ||
-            ($0.address ?? "").lowercased().contains(q)
+            $0.name.lowercased().contains(q) || ($0.address ?? "").lowercased().contains(q)
         }
     }
 
@@ -36,7 +36,9 @@ struct ExploreView: View {
             ZStack {
                 Map(position: $cameraPosition) {
                     ForEach(filtered) { p in
-                        Annotation("", coordinate: .init(latitude: p.latitude, longitude: p.longitude)) {
+                        Annotation(
+                            "", coordinate: .init(latitude: p.latitude, longitude: p.longitude)
+                        ) {
                             Circle()
                                 .fill(AppTheme.Palette.brand)
                                 .frame(width: 12, height: 12)
@@ -60,7 +62,7 @@ struct ExploreView: View {
                 }
             }
 
-            // TOP SEARCH BAR (rasmdagidek yuqorida)
+            // TOP SEARCH BAR
             .safeAreaInset(edge: .top) {
                 HStack(spacing: 12) {
                     HStack(spacing: 10) {
@@ -73,7 +75,9 @@ struct ExploreView: View {
                     .padding(.horizontal, 14)
                     .padding(.vertical, 12)
                     .background(AppTheme.Palette.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
+                    .clipShape(
+                        RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous)
+                    )
                     .overlay(
                         RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous)
                             .stroke(AppTheme.Palette.border, lineWidth: 1)
@@ -88,6 +92,27 @@ struct ExploreView: View {
                             .background(AppTheme.Palette.brand)
                             .cornerRadius(12)
                     }
+
+                    // Refresh button
+                    Button {
+                        Task { await refreshData() }
+                    } label: {
+                        Image(
+                            systemName: isRefreshing
+                                ? "arrow.triangle.2.circlepath" : "arrow.clockwise"
+                        )
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                        .background(AppTheme.Palette.brand)
+                        .cornerRadius(12)
+                        .rotationEffect(.degrees(isRefreshing ? 360 : 0))
+                        .animation(
+                            isRefreshing
+                                ? .linear(duration: 1).repeatForever(autoreverses: false)
+                                : .default,
+                            value: isRefreshing
+                        )
+                    }
                 }
                 .padding(.horizontal)
                 .padding(.top, 8)
@@ -100,28 +125,44 @@ struct ExploreView: View {
                 }
             }
 
-            // BOTTOM CARDS (TabBar ustida, balandroq)
+            // BOTTOM CARDS
             .safeAreaInset(edge: .bottom) {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 16) {
-                        ForEach(filtered.prefix(10)) { parking in
-                            NavigationLink {
-                                ParkingDetailView(parking: parking)
-                            } label: {
-                                PopularParkingCard(parking: parking)
+                if isRefreshing {
+                    // Shimmer skeleton cards
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 16) {
+                            ForEach(0..<3, id: \.self) { _ in
+                                PopularCardSkeleton()
                             }
-                            .buttonStyle(.plain)   // ✅ navigation ishlaydi
                         }
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+                        .padding(.bottom, 12)
                     }
-                    .padding(.horizontal)
-                    .padding(.top, 8)
-                    .padding(.bottom, 12)
+                    .background(Color.clear)
+                } else {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 16) {
+                            ForEach(filtered.prefix(10)) { parking in
+                                NavigationLink {
+                                    ParkingDetailView(parking: parking)
+                                } label: {
+                                    PopularParkingCard(parking: parking)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+                        .padding(.bottom, 12)
+                    }
+                    .background(Color.clear)
                 }
-                .background(Color.clear)
             }
 
+            .toolbar(.hidden, for: .navigationBar)
+
             .task {
-                // availability realtime (agar root’da start qilmagan bo‘lsangiz)
                 availabilityStore.initialLoad()
                 availabilityStore.startRealtime()
 
@@ -130,7 +171,6 @@ struct ExploreView: View {
                     locationManager.requestPermission()
                 }
 
-                // parkings yo'q bo'lsa yuklash
                 if parkings.all.isEmpty && !parkings.isLoading {
                     parkings.load(userLocation: locationManager.location)
                 }
@@ -152,6 +192,17 @@ struct ExploreView: View {
                     parkings.recomputeNearby(userLocation: loc)
                 }
             }
+        }
+    }
+
+    private func refreshData() async {
+        isRefreshing = true
+        await parkings.refresh(userLocation: locationManager.location)
+        availabilityStore.initialLoad(force: true)
+        // Shimmer ni biroz ko'rsatish
+        try? await Task.sleep(nanoseconds: 800_000_000)
+        withAnimation(.easeOut(duration: 0.3)) {
+            isRefreshing = false
         }
     }
 }
