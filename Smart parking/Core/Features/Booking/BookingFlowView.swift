@@ -19,6 +19,8 @@ struct BookingFlowView: View {
     let parking: Parking
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppCoordinator.self) private var coordinator
+    private let loc = LocalizationManager.shared
 
     // Flow State
     @State private var currentStep: BookingStep = .duration
@@ -83,7 +85,7 @@ struct BookingFlowView: View {
                             paymentMethod: payment,
                             reservationId: resId,
                             onBackToHome: {
-                                dismiss()
+                                coordinator.goToHome()
                             }
                         )
                     }
@@ -99,7 +101,7 @@ struct BookingFlowView: View {
                             .scaleEffect(1.5)
                             .tint(.white)
 
-                        Text("Processing...")
+                        Text(loc.str(.bookingProcessing))
                             .foregroundColor(.white)
                             .fontWeight(.medium)
                     }
@@ -110,8 +112,8 @@ struct BookingFlowView: View {
             }
             .navigationBarHidden(true)
         }
-        .alert("Error", isPresented: $showError) {
-            Button("OK") {}
+        .alert(loc.str(.error), isPresented: $showError) {
+            Button(loc.str(.ok)) {}
         } message: {
             Text(errorMessage)
         }
@@ -158,6 +160,7 @@ private struct BookingDurationStepView: View {
     @Binding var selectedMinutes: Int
     let onBack: () -> Void
     let onContinue: () -> Void
+    private let loc = LocalizationManager.shared
 
     private let durations = [30, 60, 90, 120, 150, 180]
 
@@ -176,7 +179,7 @@ private struct BookingDurationStepView: View {
 
                 Spacer()
 
-                Text("Book Slot")
+                Text(loc.str(.bookingBookSlot))
                     .font(.headline)
 
                 Spacer()
@@ -192,7 +195,7 @@ private struct BookingDurationStepView: View {
                     .font(.title3)
                     .fontWeight(.semibold)
 
-                Text("Reservation starts now. Select how long you need the parking spot.")
+                Text(loc.str(.bookingReservationInfo))
                     .font(.caption)
                     .foregroundColor(AppTheme.Palette.textSecondary)
             }
@@ -200,7 +203,7 @@ private struct BookingDurationStepView: View {
 
             // Duration chips
             VStack(alignment: .leading, spacing: 10) {
-                Text("Select duration")
+                Text(loc.str(.bookingSelectDuration))
                     .font(.headline)
                     .padding(.horizontal)
 
@@ -218,7 +221,7 @@ private struct BookingDurationStepView: View {
 
             // Price
             VStack(alignment: .leading, spacing: 6) {
-                Text("Prepaid amount")
+                Text(loc.str(.bookingPrepaidAmount))
                     .font(.caption)
                     .foregroundColor(AppTheme.Palette.textSecondary)
 
@@ -234,7 +237,7 @@ private struct BookingDurationStepView: View {
             Spacer()
 
             // Continue button
-            AppPrimaryButton(title: "Continue", action: onContinue)
+            AppPrimaryButton(title: loc.str(.bookingContinue), action: onContinue)
             .padding(.horizontal)
             .padding(.bottom, 24)
         }
@@ -242,9 +245,12 @@ private struct BookingDurationStepView: View {
     }
 
     private func labelFor(minutes: Int) -> String {
-        if minutes < 60 { return "\(minutes) min" }
-        if minutes % 60 == 0 { return "\(minutes/60) hour" }
-        return "\(minutes/60)h \(minutes%60)m"
+        if minutes < 60 { return "\(minutes) \(loc.str(.bookingMin))" }
+        if minutes % 60 == 0 {
+            let unit = minutes / 60 == 1 ? loc.str(.bookingHour) : loc.str(.bookingHours)
+            return "\(minutes/60) \(unit)"
+        }
+        return "\(minutes/60)\(loc.str(.bookingHour)) \(minutes%60)\(loc.str(.bookingMin))"
     }
 }
 

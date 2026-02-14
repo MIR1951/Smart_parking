@@ -15,6 +15,7 @@ struct ReviewSummaryView: View {
     let onBack: () -> Void
     let onContinue: () -> Void
     let onChangePayment: () -> Void
+    private let loc = LocalizationManager.shared
 
     // Calculated values
     private var startTime: Date { Date() }
@@ -142,11 +143,11 @@ struct ReviewSummaryView: View {
 
     // MARK: - Time & Vehicle Info
     private var timeVehicleInfo: some View {
-        VStack(spacing: 12) {
-            infoRow(title: "Arriving Time", value: formatDateTime(startTime))
-            infoRow(title: "Exit Time", value: formatDateTime(endTime))
-            infoRow(title: "Vehicle", value: "\(vehicle.name) (\(vehicle.type.rawValue))")
-            infoRow(title: "Duration", value: formatDuration(selectedMinutes))
+            VStack(spacing: 12) {
+            infoRow(title: loc.str(.reviewArrivingTime), value: formatDateTime(startTime))
+            infoRow(title: loc.str(.reviewExitTime), value: formatDateTime(endTime))
+            infoRow(title: loc.str(.reviewVehicle), value: "\(vehicle.name) (\(vehicle.type.rawValue))")
+            infoRow(title: loc.str(.reviewDuration), value: formatDuration(selectedMinutes))
         }
     }
 
@@ -197,13 +198,13 @@ struct ReviewSummaryView: View {
                     .foregroundColor(AppTheme.Palette.brand)
                 Text(method.displayName)
             } else {
-                Text("Select Payment")
+                Text(loc.str(.paymentSelectPayment))
                     .foregroundColor(AppTheme.Palette.textSecondary)
             }
 
             Spacer()
 
-            Button("Change") {
+            Button(loc.str(.paymentChange)) {
                 onChangePayment()
             }
             .foregroundColor(AppTheme.Palette.brand)
@@ -216,7 +217,7 @@ struct ReviewSummaryView: View {
     // MARK: - Continue Button
     private var continueButton: some View {
         AppPrimaryButton(
-            title: "Continue",
+            title: loc.str(.bookingContinue),
             isEnabled: paymentMethod != nil
         ) {
             onContinue()
@@ -245,8 +246,8 @@ struct ReviewSummaryView: View {
     private func formatDuration(_ minutes: Int) -> String {
         let h = minutes / 60
         let m = minutes % 60
-        if h == 0 { return "\(m) min" }
-        if m == 0 { return "\(h) hour\(h > 1 ? "s" : "")" }
-        return "\(h)h \(m)m"
+        if h == 0 { return "\(m) \(loc.str(.bookingMin))" }
+        if m == 0 { return "\(h) \(h > 1 ? loc.str(.bookingHours) : loc.str(.bookingHour))" }
+        return "\(h)\(loc.str(.bookingHour)) \(m)\(loc.str(.bookingMin))"
     }
 }

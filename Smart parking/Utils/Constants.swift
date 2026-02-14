@@ -6,10 +6,18 @@
 //
 
 import Foundation
-import Supabase
 
 enum Constants {
-    static let projectURLString = "https://eaanopqupsfwxvqkiqor.supabase.co"
-    static let projectAPIKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhYW5vcHF1cHNmd3h2cWtpcW9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0NDc0NTIsImV4cCI6MjA4MDAyMzQ1Mn0.BkgRWEEjjWkVeX7hIuIgG8-180ZUq-0o9_ktIBxt3Zc"
-    
+    static let projectURLString = requiredString(for: "SUPABASE_URL")
+    static let projectAPIKey = requiredString(for: "SUPABASE_ANON_KEY")
+
+    private static func requiredString(for key: String) -> String {
+        guard
+            let value = Bundle.main.object(forInfoDictionaryKey: key) as? String,
+            !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
+            fatalError("Missing Info.plist key: \(key)")
+        }
+        return value
+    }
 }

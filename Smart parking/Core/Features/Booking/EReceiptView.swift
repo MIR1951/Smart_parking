@@ -19,6 +19,7 @@ struct EReceiptView: View {
     @State private var showShareSheet = false
     @State private var pdfURL: URL?
     @State private var isGeneratingPDF = false
+    private let loc = LocalizationManager.shared
 
     // Calculated values
     private var startTime: Date { Date() }
@@ -64,11 +65,11 @@ struct EReceiptView: View {
                 downloadButton
             }
             .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
-            .navigationTitle("E-Receipt")
+            .navigationTitle(loc.str(.receiptTitle))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
+                    Button(loc.str(.eticketClose)) { dismiss() }
                 }
             }
             .sheet(isPresented: $showShareSheet) {
@@ -112,19 +113,19 @@ struct EReceiptView: View {
     // MARK: - Vehicle Info Section
     private var vehicleInfoSection: some View {
         VStack(spacing: 12) {
-            infoRow(title: "Car", value: "\(vehicle.name) (\(vehicle.type.rawValue))")
-            infoRow(title: "Car Number Plate", value: vehicle.plateNumber)
-            infoRow(title: "Parking", value: parking.name)
-            infoRow(title: "Address", value: parking.address ?? "N/A")
+            infoRow(title: loc.str(.receiptCar), value: "\(vehicle.name) (\(vehicle.type.rawValue))")
+            infoRow(title: loc.str(.receiptPlate), value: vehicle.plateNumber)
+            infoRow(title: loc.str(.receiptParking), value: parking.name)
+            infoRow(title: loc.str(.receiptAddress), value: parking.address ?? loc.str(.unknown))
         }
     }
 
     // MARK: - Time Info Section
     private var timeInfoSection: some View {
         VStack(spacing: 12) {
-            infoRow(title: "Arriving Time", value: startTime.fullDateTime)
-            infoRow(title: "Exit Time", value: endTime.fullDateTime)
-            infoRow(title: "Duration", value: formatDuration(selectedMinutes))
+            infoRow(title: loc.str(.reviewArrivingTime), value: startTime.fullDateTime)
+            infoRow(title: loc.str(.reviewExitTime), value: endTime.fullDateTime)
+            infoRow(title: loc.str(.reviewDuration), value: formatDuration(selectedMinutes))
         }
     }
 
@@ -132,7 +133,7 @@ struct EReceiptView: View {
     private var priceInfoSection: some View {
         VStack(spacing: 12) {
             HStack {
-                Text("Rate")
+                Text(loc.str(.receiptRate))
                 Spacer()
                 Text(String(format: "$%.2f", parking.price_per_hour))
                     .fontWeight(.medium)
@@ -141,21 +142,21 @@ struct EReceiptView: View {
             }
 
             HStack {
-                Text("Duration")
+                Text(loc.str(.reviewDuration))
                 Spacer()
                 Text(formatDuration(selectedMinutes))
                     .fontWeight(.medium)
             }
 
             HStack {
-                Text("Subtotal")
+                Text(loc.str(.receiptSubtotal))
                 Spacer()
                 Text(String(format: "$%.2f", amount))
                     .fontWeight(.medium)
             }
 
             HStack {
-                Text("Service Fee")
+                Text(loc.str(.receiptServiceFee))
                 Spacer()
                 Text(String(format: "$%.2f", fees))
                     .fontWeight(.medium)
@@ -164,7 +165,7 @@ struct EReceiptView: View {
             Divider()
 
             HStack {
-                Text("Total")
+                Text(loc.str(.reviewTotal))
                     .fontWeight(.semibold)
                 Spacer()
                 Text(String(format: "$%.2f", total))
@@ -178,12 +179,12 @@ struct EReceiptView: View {
     // MARK: - Payment Info Section
     private var paymentInfoSection: some View {
         VStack(spacing: 12) {
-            infoRow(title: "Payment Method", value: paymentMethod.displayName)
-            infoRow(title: "Date", value: startTime.fullDateTime)
+            infoRow(title: loc.str(.receiptPaymentMethod), value: paymentMethod.displayName)
+            infoRow(title: loc.str(.receiptDate), value: startTime.fullDateTime)
             infoRow(
-                title: "Reservation ID",
+                title: loc.str(.successReservationId),
                 value: String(reservationId.uuidString.prefix(8)).uppercased())
-            infoRow(title: "Status", value: "Confirmed ✓")
+            infoRow(title: loc.str(.receiptStatus), value: loc.str(.receiptConfirmed))
         }
     }
 
@@ -199,7 +200,7 @@ struct EReceiptView: View {
                 } else {
                     Image(systemName: "arrow.down.doc.fill")
                 }
-                Text("Download E-Receipt")
+                Text(loc.str(.receiptDownload))
             }
             .fontWeight(.semibold)
             .foregroundColor(.white)
@@ -257,7 +258,7 @@ struct EReceiptView: View {
                 .font: UIFont.boldSystemFont(ofSize: 24),
                 .foregroundColor: UIColor.black,
             ]
-            let title = "Smart Parking E-Receipt"
+            let title = loc.str(.receiptTitle)
             title.draw(at: CGPoint(x: margin, y: yPosition), withAttributes: titleAttributes)
             yPosition += 40
 
@@ -286,19 +287,19 @@ struct EReceiptView: View {
                 yPosition += 25
             }
 
-            drawRow("Reservation ID:", reservationId.uuidString.prefix(8).uppercased())
-            drawRow("Parking:", parking.name)
-            drawRow("Address:", parking.address ?? "N/A")
-            drawRow("Vehicle:", "\(vehicle.name) (\(vehicle.plateNumber))")
-            drawRow("Start Time:", startTime.fullDateTime)
-            drawRow("End Time:", endTime.fullDateTime)
-            drawRow("Duration:", formatDuration(selectedMinutes))
+            drawRow(loc.str(.successReservationId), reservationId.uuidString.prefix(8).uppercased())
+            drawRow("\(loc.str(.receiptParking)):", parking.name)
+            drawRow("\(loc.str(.receiptAddress)):", parking.address ?? loc.str(.unknown))
+            drawRow("\(loc.str(.reviewVehicle)):", "\(vehicle.name) (\(vehicle.plateNumber))")
+            drawRow("\(loc.str(.reviewArrivingTime)):", startTime.fullDateTime)
+            drawRow("\(loc.str(.reviewExitTime)):", endTime.fullDateTime)
+            drawRow("\(loc.str(.reviewDuration)):", formatDuration(selectedMinutes))
 
             yPosition += 20
 
-            drawRow("Rate:", String(format: "$%.2f/hr", parking.price_per_hour))
-            drawRow("Subtotal:", String(format: "$%.2f", amount))
-            drawRow("Service Fee:", String(format: "$%.2f", fees))
+            drawRow("\(loc.str(.receiptRate)):", String(format: "$%.2f/hr", parking.price_per_hour))
+            drawRow("\(loc.str(.receiptSubtotal)):", String(format: "$%.2f", amount))
+            drawRow("\(loc.str(.receiptServiceFee)):", String(format: "$%.2f", fees))
 
             yPosition += 10
 
@@ -307,7 +308,8 @@ struct EReceiptView: View {
                 .font: UIFont.boldSystemFont(ofSize: 18),
                 .foregroundColor: UIColor.systemPurple,
             ]
-            "Total:".draw(at: CGPoint(x: margin, y: yPosition), withAttributes: valueAttributes)
+            "\(loc.str(.reviewTotal)):".draw(
+                at: CGPoint(x: margin, y: yPosition), withAttributes: valueAttributes)
             String(format: "$%.2f", total).draw(
                 at: CGPoint(x: pageWidth / 2, y: yPosition), withAttributes: totalAttributes)
             yPosition += 40
@@ -336,9 +338,9 @@ struct EReceiptView: View {
     private func formatDuration(_ minutes: Int) -> String {
         let h = minutes / 60
         let m = minutes % 60
-        if h == 0 { return "\(m) min" }
-        if m == 0 { return "\(h) hour\(h > 1 ? "s" : "")" }
-        return "\(h)h \(m)m"
+        if h == 0 { return "\(m) \(loc.str(.bookingMin))" }
+        if m == 0 { return "\(h) \(h > 1 ? loc.str(.bookingHours) : loc.str(.bookingHour))" }
+        return "\(h)\(loc.str(.bookingHour)) \(m)\(loc.str(.bookingMin))"
     }
 }
 

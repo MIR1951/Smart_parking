@@ -43,6 +43,7 @@ let carBrands: [CarBrand] = [
 struct AddVehicleView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var store: VehiclesStore
+    private let loc = LocalizationManager.shared
 
     @State private var selectedBrand: CarBrand?
     @State private var selectedModel: String?
@@ -70,7 +71,7 @@ struct AddVehicleView: View {
 
                 // Select Brand
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Select Brand")
+                    Text(loc.str(.vehicleSelectBrand))
                         .font(.subheadline)
                         .fontWeight(.semibold)
 
@@ -78,7 +79,7 @@ struct AddVehicleView: View {
                         showBrandPicker = true
                     } label: {
                         HStack {
-                            Text(selectedBrand?.name ?? "Select brand")
+                            Text(selectedBrand?.name ?? loc.str(.vehicleSelectBrand))
                                 .foregroundColor(selectedBrand == nil ? .gray : .black)
                             Spacer()
                             Image(systemName: "chevron.right")
@@ -96,7 +97,7 @@ struct AddVehicleView: View {
 
                 // Select Car (Model)
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Select Car")
+                    Text(loc.str(.vehicleSelectCar))
                         .font(.subheadline)
                         .fontWeight(.semibold)
 
@@ -106,7 +107,7 @@ struct AddVehicleView: View {
                         }
                     } label: {
                         HStack {
-                            Text(selectedModel ?? "Select model")
+                            Text(selectedModel ?? loc.str(.vehicleSelectModel))
                                 .foregroundColor(selectedModel == nil ? .gray : .black)
                             Spacer()
                             Image(systemName: "chevron.right")
@@ -126,11 +127,11 @@ struct AddVehicleView: View {
 
                 // Car Number Plate
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Car Number Plate")
+                    Text(loc.str(.vehiclePlateNumber))
                         .font(.subheadline)
                         .fontWeight(.semibold)
 
-                    TextField("Ex. GR 789-IJKL", text: $plateNumber)
+                    TextField(loc.str(.vehiclePlatePlaceholder), text: $plateNumber)
                         .textFieldStyle(.plain)
                         .padding()
                         .background(AppTheme.Palette.surface)
@@ -180,7 +181,7 @@ struct AddVehicleView: View {
 
             Spacer()
 
-            Text("Add Vehicle")
+            Text(loc.str(.vehicleAddTitle))
                 .font(.headline)
 
             Spacer()
@@ -202,7 +203,7 @@ struct AddVehicleView: View {
             store.add(vehicle)
             dismiss()
         } label: {
-            Text("Add Vehicle")
+            Text(loc.str(.vehicleAdd))
                 .fontWeight(.semibold)
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity, minHeight: 52)
@@ -236,6 +237,7 @@ private struct BrandPickerSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var selectedBrand: CarBrand?
     @Binding var selectedModel: String?
+    private let loc = LocalizationManager.shared
 
     var body: some View {
         NavigationStack {
@@ -258,11 +260,11 @@ private struct BrandPickerSheet: View {
                     dismiss()
                 }
             }
-            .navigationTitle("Select Brand")
+            .navigationTitle(loc.str(.vehicleSelectBrand))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(loc.str(.cancel)) { dismiss() }
                 }
             }
         }
@@ -274,6 +276,7 @@ private struct ModelPickerSheet: View {
     @Environment(\.dismiss) private var dismiss
     let brand: CarBrand
     @Binding var selectedModel: String?
+    private let loc = LocalizationManager.shared
 
     var body: some View {
         NavigationStack {
@@ -295,11 +298,11 @@ private struct ModelPickerSheet: View {
                     dismiss()
                 }
             }
-            .navigationTitle("Select \(brand.name)")
+            .navigationTitle("\(loc.str(.vehicleSelectModel)): \(brand.name)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(loc.str(.cancel)) { dismiss() }
                 }
             }
         }

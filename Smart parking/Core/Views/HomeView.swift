@@ -6,6 +6,7 @@ struct HomeView: View {
     @EnvironmentObject var parkings: ParkingsStore
     @EnvironmentObject var favorites: FavoritesStore
     @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
+    @Environment(AppCoordinator.self) private var coordinator
 
     @State private var search = ""
     @StateObject private var locationManager = LocationManager()
@@ -41,104 +42,100 @@ struct HomeView: View {
     @State private var isScrolled = false
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                AppTheme.Palette.pageBackground.ignoresSafeArea()
+        ZStack {
+            AppTheme.Palette.pageBackground.ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    // MARK: - Sticky Header
-                    headerSection
-                        .padding(.bottom, 8)
+            VStack(spacing: 0) {
+                // MARK: - Sticky Header
+                headerSection
+                    .padding(.bottom, 8)
 
-                    // MARK: - Sticky Search Bar
-                    searchSection
-                        .padding(.bottom, 4)
-                        .background(AppTheme.Palette.pageBackground)
-                        .shadow(
-                            color: isScrolled ? Color.black.opacity(0.06) : Color.clear,
-                            radius: isScrolled ? 6 : 0,
-                            y: isScrolled ? 3 : 0
-                        )
-                        .zIndex(1)
+                // MARK: - Sticky Search Bar
+                searchSection
+                    .padding(.bottom, 4)
+                    .background(AppTheme.Palette.pageBackground)
+                    .shadow(
+                        color: isScrolled ? Color.black.opacity(0.06) : Color.clear,
+                        radius: isScrolled ? 6 : 0,
+                        y: isScrolled ? 3 : 0
+                    )
+                    .zIndex(1)
 
-                    // MARK: - Scrollable Content
-                    ScrollView(showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 20) {
-                            if isRefreshing || isInitialLoading {
-                                HomeShimmerView()
-                            } else if let error = parkings.errorMessage, parkings.all.isEmpty {
-                                AppStateView(
-                                    kind: .error(
-                                        title: loc.str(.homeLoadFailed),
-                                        subtitle: error,
-                                        actionTitle: loc.str(.homeRetry),
-                                        action: {
-                                            parkings.load(
-                                                userLocation: locationManager.location, force: true)
-                                        }
-                                    )
+                // MARK: - Scrollable Content
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        if isRefreshing || isInitialLoading {
+                            HomeShimmerView()
+                        } else if let error = parkings.errorMessage, parkings.all.isEmpty {
+                            AppStateView(
+                                kind: .error(
+                                    title: loc.str(.homeLoadFailed),
+                                    subtitle: error,
+                                    actionTitle: loc.str(.homeRetry),
+                                    action: {
+                                        parkings.load(
+                                            userLocation: locationManager.location, force: true)
+                                    }
                                 )
-                                .padding(.top, 30)
-                            } else if !parkings.isLoading && parkings.all.isEmpty {
-                                AppStateView(
-                                    kind: .empty(
-                                        icon: "car",
-                                        title: loc.str(.homeNoParking),
-                                        subtitle: loc.str(.homeCheckInternet)
-                                    )
+                            )
+                            .padding(.top, 30)
+                        } else if !parkings.isLoading && parkings.all.isEmpty {
+                            AppStateView(
+                                kind: .empty(
+                                    icon: "car",
+                                    title: loc.str(.homeNoParking),
+                                    subtitle: loc.str(.homeCheckInternet)
                                 )
-                                .padding(.top, 30)
-                            } else {
-                                popularSection
-                                nearbySection
-                            }
-                        }
-                        .padding(.vertical, 12)
-                        .background(
-                            GeometryReader { geo in
-                                Color.clear.preference(
-                                    key: ScrollOffsetKey.self,
-                                    value: geo.frame(in: .named("homeScroll")).minY
-                                )
-                            }
-                        )
-                    }
-                    .coordinateSpace(name: "homeScroll")
-                    .onPreferenceChange(ScrollOffsetKey.self) { value in
-                        withAnimation(.easeOut(duration: 0.15)) {
-                            isScrolled = value < -10
+                            )
+                            .padding(.top, 30)
+                        } else {
+                            popularSection
+                            nearbySection
                         }
                     }
-                    .id(parkings.reloadToken)
+                    .padding(.vertical, 12)
+                    .background(
+                        GeometryReader { geo in
+                            Color.clear.preference(
+                                key: ScrollOffsetKey.self,
+                                value: geo.frame(in: .named("homeScroll")).minY
+                            )
+                        }
+                    )
                 }
-            }
-
-            .onAppear {
-                if !didRequestLocation {
-                    didRequestLocation = true
-                    locationManager.requestPermission()
+                .coordinateSpace(name: "homeScroll")
+                .onPreferenceChange(ScrollOffsetKey.self) { value in
+                    withAnimation(.easeOut(duration: 0.15)) {
+                        isScrolled = value < -10
+                    }
                 }
+                .id(parkings.reloadToken)
             }
-            .onChange(of: locationManager.location) { _, newValue in
-                guard let loc = newValue else { return }
-                parkings.load(userLocation: loc)
-            }
+        }
 
-            .refreshable {
-                withAnimation { isRefreshing = true }
-                await parkings.refresh(userLocation: locationManager.location)
-                availabilityStore.initialLoad(force: true)
-                try? await Task.sleep(nanoseconds: 600_000_000)
-                withAnimation(.easeOut(duration: 0.3)) { isRefreshing = false }
+        .onAppear {
+            if !didRequestLocation {
+                didRequestLocation = true
+                locationManager.requestPermission()
             }
+        }
+        .onChange(of: locationManager.location) { _, newValue in
+            guard let loc = newValue else { return }
+            parkings.load(userLocation: loc)
+        }
 
-            .task {
-                availabilityStore.initialLoad(force: false)
-                availabilityStore.startRealtime()
-                // Load notifications so badge shows immediately
-                await notifManager.load()
-                notifManager.startRealtime()
-            }
+        .refreshable {
+            withAnimation { isRefreshing = true }
+            await parkings.refresh(userLocation: locationManager.location)
+            availabilityStore.initialLoad(force: true)
+            try? await Task.sleep(nanoseconds: 600_000_000)
+            withAnimation(.easeOut(duration: 0.3)) { isRefreshing = false }
+        }
+
+        .task {
+            availabilityStore.initialLoad(force: false)
+            availabilityStore.startRealtime()
+            parkings.load(userLocation: locationManager.location)
         }
     }
 
@@ -160,7 +157,9 @@ struct HomeView: View {
                 }
             }
             Spacer()
-            NavigationLink(destination: NotificationsView()) {
+            Button {
+                coordinator.showNotifications()
+            } label: {
                 ZStack(alignment: .topTrailing) {
                     Circle()
                         .fill(AppTheme.Palette.brandSoft)
@@ -179,6 +178,7 @@ struct HomeView: View {
                     }
                 }
             }
+            .buttonStyle(.plain)
         }
         .padding(.horizontal)
     }
@@ -231,11 +231,12 @@ struct HomeView: View {
                     ForEach(filteredPopular) { parking in
                         ZStack(alignment: .topTrailing) {
 
-                            NavigationLink {
-                                ParkingDetailView(parking: parking)
+                            Button {
+                                coordinator.showParkingDetail(parking)
                             } label: {
                                 PopularParkingCard(parking: parking)
                             }
+                            .buttonStyle(.plain)
 
                             Button {
                                 AppTheme.Haptic.medium()
@@ -276,8 +277,8 @@ struct HomeView: View {
 
             VStack(spacing: 16) {
                 ForEach(filteredNearby) { parking in
-                    NavigationLink {
-                        ParkingDetailView(parking: parking)
+                    Button {
+                        coordinator.showParkingDetail(parking)
                     } label: {
                         NearbyParkingCard(
                             parking: parking,

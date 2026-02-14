@@ -11,12 +11,13 @@ import SwiftUI
 struct DurationPicker: View {
     @Binding var duration: Int
     let presets = [30, 60, 90, 120]
+    private let loc = LocalizationManager.shared
 
     var body: some View {
         VStack {
             HStack {
                 ForEach(presets, id: \.self) { m in
-                    Button("\(m)m") {
+                    Button("\(m)\(loc.str(.bookingMin))") {
                         duration = m
                     }
                     .padding()
@@ -31,7 +32,7 @@ struct DurationPicker: View {
                 set: { duration = Int($0) }
             ), in: 30...240, step: 15)
 
-            Text("Tanlangan: \(duration) daqiqa")
+            Text("\(loc.str(.bookingSelectDuration)): \(duration) \(loc.str(.bookingMin))")
         }
         .padding()
     }

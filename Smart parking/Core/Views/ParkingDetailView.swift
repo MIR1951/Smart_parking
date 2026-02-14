@@ -5,9 +5,9 @@ struct ParkingDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
     @EnvironmentObject var favorites: FavoritesStore
+    @Environment(AppCoordinator.self) private var coordinator
 
     let parking: Parking
-    @State private var showBooking = false
     @State private var showShareSheet = false
     @State private var selectedTab: DetailTab = .about
 
@@ -129,14 +129,14 @@ extension ParkingDetailView {
                     .foregroundColor(AppTheme.Palette.textSecondary)
                 Text("•")
                     .foregroundColor(AppTheme.Palette.textSecondary)
-                Text("\(parking.total_spots) total spots")
+                Text("\(parking.total_spots) \(loc.str(.detailTotalSpots))")
                     .font(.subheadline)
                     .foregroundColor(AppTheme.Palette.textSecondary)
             }
 
-            HStack(spacing: 6) {
-                Image(systemName: "mappin.and.ellipse")
-                Text(parking.address ?? "Unknown")
+                HStack(spacing: 6) {
+                    Image(systemName: "mappin.and.ellipse")
+                Text(parking.address ?? loc.str(.unknown))
             }
             .foregroundColor(AppTheme.Palette.textSecondary)
             .font(.subheadline)
@@ -149,9 +149,9 @@ extension ParkingDetailView {
     // MARK: Tabs
     private var tabSelector: some View {
         HStack {
-            ForEach(DetailTab.allCases, id: \.rawValue) { tab in
+            ForEach(DetailTab.allCases, id: \.self) { tab in
                 VStack {
-                    Text(tab.rawValue)
+                    Text(tab.title)
                         .font(.headline)
                         .foregroundColor(
                             selectedTab == tab
@@ -185,7 +185,7 @@ extension ParkingDetailView {
                 HStack(spacing: 4) {
                     Image(systemName: "car.fill")
                         .foregroundColor(isAvailable ? .green : .red)
-                    Text("\(availableSpots) Spots Available")
+                    Text("\(availableSpots) \(loc.str(.detailSpotsAvailable))")
                         .foregroundColor(isAvailable ? .green : .red)
                 }
 
@@ -414,7 +414,7 @@ extension ParkingDetailView {
             }
             Spacer()
 
-            Button(action: { showBooking = true }) {
+            Button(action: { coordinator.startBookingFlow(parking) }) {
                 Text(isAvailable ? loc.str(.detailBookSlot) : loc.str(.detailFullyBooked))
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
@@ -423,9 +423,6 @@ extension ParkingDetailView {
                     .cornerRadius(14)
             }
             .disabled(!isAvailable)
-            .fullScreenCover(isPresented: $showBooking) {
-                BookingFlowView(parking: parking)
-            }
         }
         .padding(.horizontal)
         .padding(.top, 12)
@@ -449,10 +446,22 @@ extension ParkingDetailView {
 
 // MARK: — TABS ENUM
 
-enum DetailTab: String, CaseIterable {
-    case about = "About"
-    case gallery = "Gallery"
-    case review = "Review"
+enum DetailTab: CaseIterable {
+    case about
+    case gallery
+    case review
+
+    var title: String {
+        let loc = LocalizationManager.shared
+        switch self {
+        case .about:
+            return loc.str(.detailAbout)
+        case .gallery:
+            return loc.str(.detailGallery)
+        case .review:
+            return loc.str(.detailReview)
+        }
+    }
 }
 
 // MARK: - Parking Extension for images

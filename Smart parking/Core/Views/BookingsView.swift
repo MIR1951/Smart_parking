@@ -110,75 +110,74 @@ struct BookingsView: View {
     @State private var bookingToCancel: BookingItem?
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
 
-                // Top segmented (Ongoing/Completed/Cancelled)
-                bookingTabs
+            // Top segmented (Ongoing/Completed/Cancelled)
+            bookingTabs
 
-                // Content
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 16) {
-                        if vm.isLoading && vm.items.isEmpty {
-                            BookingsShimmerView()
-                                .padding(.top, 8)
-                        } else if let error = vm.error {
-                            AppStateView(
-                                kind: .error(
-                                    title: LocalizationManager.shared.str(.bookingsLoadFailed),
-                                    subtitle: error,
-                                    actionTitle: LocalizationManager.shared.str(.bookingsRetry),
-                                    action: { Task { await vm.load() } }
-                                )
+            // Content
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 16) {
+                    if vm.isLoading && vm.items.isEmpty {
+                        BookingsShimmerView()
+                            .padding(.top, 8)
+                    } else if let error = vm.error {
+                        AppStateView(
+                            kind: .error(
+                                title: LocalizationManager.shared.str(.bookingsLoadFailed),
+                                subtitle: error,
+                                actionTitle: LocalizationManager.shared.str(.bookingsRetry),
+                                action: { Task { await vm.load() } }
                             )
-                            .padding(.top, 40)
-                        } else if vm.filtered(tab).isEmpty {
-                            emptyState
-                        } else {
-                            ForEach(vm.filtered(tab)) { item in
-                                BookingCard(
-                                    item: item,
-                                    tab: tab,
-                                    onLeftTap: { handleLeftButton(item) },
-                                    onTicketTap: { openTicket(item) }
-                                )
-                            }
+                        )
+                        .padding(.top, 40)
+                    } else if vm.filtered(tab).isEmpty {
+                        emptyState
+                    } else {
+                        ForEach(vm.filtered(tab)) { item in
+                            BookingCard(
+                                item: item,
+                                tab: tab,
+                                onLeftTap: { handleLeftButton(item) },
+                                onTicketTap: { openTicket(item) }
+                            )
                         }
                     }
-                    .padding(.horizontal)
-                    .padding(.top, 16)
-                    .padding(.bottom, 24)
+                }
+                .padding(.horizontal)
+                .padding(.top, 16)
+                .padding(.bottom, 24)
+            }
+
+        }
+        .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
+        .navigationTitle(LocalizationManager.shared.str(.bookingsTitle))
+        .navigationBarTitleDisplayMode(.inline)
+        .task { await vm.load() }
+        .refreshable { await vm.load() }
+        .alert(
+            LocalizationManager.shared.str(.bookingsCancelTitle), isPresented: $showCancelAlert
+        ) {
+            Button(LocalizationManager.shared.str(.bookingsYesCancel), role: .destructive) {
+                if let booking = bookingToCancel {
+                    cancelBooking(booking)
                 }
             }
-            .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
-            .navigationTitle(LocalizationManager.shared.str(.bookingsTitle))
-            .navigationBarTitleDisplayMode(.inline)
-            .task { await vm.load() }
-            .refreshable { await vm.load() }
-            .alert(
-                LocalizationManager.shared.str(.bookingsCancelTitle), isPresented: $showCancelAlert
-            ) {
-                Button(LocalizationManager.shared.str(.bookingsYesCancel), role: .destructive) {
-                    if let booking = bookingToCancel {
-                        cancelBooking(booking)
-                    }
-                }
-                Button(LocalizationManager.shared.str(.bookingsNo), role: .cancel) {}
-            } message: {
-                Text(LocalizationManager.shared.str(.bookingsCancelMessage))
-            }
-            .alert(LocalizationManager.shared.str(.error), isPresented: $showCancelError) {
-                Button(LocalizationManager.shared.str(.ok)) {}
-            } message: {
-                Text(cancelErrorMessage)
-            }
-            .sheet(item: $sheetItem) { item in
-                switch item.type {
-                case .ticket:
-                    BookingETicketView(item: item.booking)
-                case .detail:
-                    BookingDetailSheet(item: item.booking)
-                }
+            Button(LocalizationManager.shared.str(.bookingsNo), role: .cancel) {}
+        } message: {
+            Text(LocalizationManager.shared.str(.bookingsCancelMessage))
+        }
+        .alert(LocalizationManager.shared.str(.error), isPresented: $showCancelError) {
+            Button(LocalizationManager.shared.str(.ok)) {}
+        } message: {
+            Text(cancelErrorMessage)
+        }
+        .sheet(item: $sheetItem) { item in
+            switch item.type {
+            case .ticket:
+                BookingETicketView(item: item.booking)
+            case .detail:
+                BookingDetailSheet(item: item.booking)
             }
         }
     }

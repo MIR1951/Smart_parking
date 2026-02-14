@@ -16,14 +16,22 @@ struct SupabaseStorageManager {
     }
     
     func uploadProfilePhoto(for user: User, imageData : Data) async throws -> String {
-        let path = "\(user.id)/avatars.jpg"
+        let path = "\(user.id)/avatars/latest.jpg"
         
         try await client.storage
             .from("avatars")
-            .upload(path, data: imageData)
+            .upload(
+                path,
+                data: imageData,
+                options: FileOptions(
+                    cacheControl: "60",
+                    contentType: "image/jpeg",
+                    upsert: true
+                )
+            )
         
         let publicURL = try  client.storage.from("avatars").getPublicURL(path: path)
-        print ("DEBUG: public url:\(publicURL.absoluteString)")
-        return publicURL.absoluteString
+        let cacheBustedURL = "\(publicURL.absoluteString)?v=\(Int(Date().timeIntervalSince1970))"
+        return cacheBustedURL
     }
 }

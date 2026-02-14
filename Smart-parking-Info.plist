@@ -2,17 +2,9 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLName</key>
-			<string></string>
-			<key>CFBundleURLSchemes</key>
-			<array/>
-		</dict>
-		<dict/>
-	</array>
+	<key>SUPABASE_ANON_KEY</key>
+	<string>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhYW5vcHF1cHNmd3h2cWtpcW9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0NDc0NTIsImV4cCI6MjA4MDAyMzQ1Mn0.BkgRWEEjjWkVeX7hIuIgG8-180ZUq-0o9_ktIBxt3Zc</string>
+	<key>SUPABASE_URL</key>
+	<string>https://eaanopqupsfwxvqkiqor.supabase.co</string>
 </dict>
 </plist>

@@ -16,6 +16,7 @@ struct SelectVehicleView: View {
 
     @StateObject private var store = VehiclesStore.shared
     @State private var showAddVehicle = false
+    private let loc = LocalizationManager.shared
 
     var body: some View {
         VStack(spacing: 0) {
@@ -29,8 +30,8 @@ struct SelectVehicleView: View {
                         AppStateView(
                             kind: .empty(
                                 icon: "car",
-                                title: "Vehicle topilmadi",
-                                subtitle: "Davom etish uchun avval mashina qo'shing."
+                                title: loc.str(.vehicleNotFound),
+                                subtitle: loc.str(.vehicleAddFirst)
                             )
                         )
                         .padding(.top, 40)
@@ -80,7 +81,7 @@ struct SelectVehicleView: View {
 
             Spacer()
 
-            Text("Select Vehicle")
+            Text(loc.str(.vehicleSelectTitle))
                 .font(.headline)
 
             Spacer()
@@ -103,7 +104,7 @@ struct SelectVehicleView: View {
     // MARK: - Continue Button
     private var continueButton: some View {
         AppPrimaryButton(
-            title: "Continue",
+            title: loc.str(.bookingContinue),
             isEnabled: selectedVehicle != nil
         ) {
             onContinue()

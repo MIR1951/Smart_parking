@@ -17,17 +17,19 @@ struct PaymentSuccessView: View {
     // Callback to dismiss entire booking flow
     var onBackToHome: (() -> Void)?
 
+    @Environment(AppCoordinator.self) private var coordinator
     @State private var showEReceipt = false
+    private let loc = LocalizationManager.shared
 
     var body: some View {
         VStack(spacing: 0) {
             // Header - faqat title
-            HStack {
-                Spacer()
-                Text(LocalizationManager.shared.str(.successPayment))
-                    .font(.headline)
-                Spacer()
-            }
+                HStack {
+                    Spacer()
+                    Text(loc.str(.successPayment))
+                        .font(.headline)
+                    Spacer()
+                }
             .padding(.horizontal)
             .padding(.top, 16)
 
@@ -48,12 +50,12 @@ struct PaymentSuccessView: View {
                     .foregroundColor(.white)
             }
 
-            Text(LocalizationManager.shared.str(.successTitle))
+            Text(loc.str(.successTitle))
                 .font(.title2)
                 .fontWeight(.bold)
                 .padding(.top, 24)
 
-            Text(LocalizationManager.shared.str(.successMessage))
+            Text(loc.str(.successMessage))
                 .font(.subheadline)
                 .foregroundColor(AppTheme.Palette.textSecondary)
                 .multilineTextAlignment(.center)
@@ -75,17 +77,17 @@ struct PaymentSuccessView: View {
             // Buttons
             VStack(spacing: 12) {
                 // View E-Receipt (opens sheet)
-                AppPrimaryButton(title: "View E-Receipt") {
+                AppPrimaryButton(title: loc.str(.successViewReceipt)) {
                     showEReceipt = true
                 }
 
                 // Back to Home
-                AppGhostButton(title: "Back to Home") {
+                AppGhostButton(title: loc.str(.successBackToHome)) {
                     if let onBackToHome {
                         onBackToHome()
                     } else {
                         // Fallback - coordinator orqali
-                        AppCoordinator.shared.goToHome()
+                        coordinator.goToHome()
                     }
                 }
             }

@@ -45,10 +45,6 @@ struct NotificationsView: View {
         .toolbar(.hidden, for: .navigationBar)
         .task {
             await manager.load()
-            manager.startRealtime()
-        }
-        .onDisappear {
-            manager.stopRealtime()
         }
         .refreshable {
             await manager.load()

@@ -71,6 +71,7 @@ final class NotificationManager: ObservableObject {
 
     private var realtimeChannel: RealtimeChannelV2?
     private var streamTask: Task<Void, Never>?
+    private var realtimeUserID: String?
 
     private init() {
         requestPushPermission()
@@ -104,11 +105,18 @@ final class NotificationManager: ObservableObject {
 
     // MARK: - Start Realtime
     func startRealtime() {
-        guard realtimeChannel == nil else { return }
-
         Task {
             do {
                 let userID = try await currentUserID()
+
+                if realtimeUserID == userID, realtimeChannel != nil {
+                    return
+                }
+
+                if realtimeChannel != nil {
+                    stopRealtime()
+                }
+
                 let channel = SB.shared.client.realtimeV2.channel("notifications_\(userID)")
 
                 let insertions = channel.postgresChange(
@@ -120,6 +128,7 @@ final class NotificationManager: ObservableObject {
 
                 try await channel.subscribeWithError()
                 self.realtimeChannel = channel
+                self.realtimeUserID = userID
 
                 streamTask?.cancel()
                 streamTask = Task { [weak self] in
@@ -142,8 +151,15 @@ final class NotificationManager: ObservableObject {
                 streamTask = nil
                 await channel.unsubscribe()
                 self.realtimeChannel = nil
+                self.realtimeUserID = nil
             }
         }
+    }
+
+    func resetState() {
+        notifications = []
+        unreadCount = 0
+        isLoading = false
     }
 
     // MARK: - Handle New Notification

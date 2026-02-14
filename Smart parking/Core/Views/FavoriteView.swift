@@ -8,6 +8,7 @@ struct FavoriteView: View {
     @EnvironmentObject var favorites: FavoritesStore
     @EnvironmentObject var parkings: ParkingsStore
     @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
+    @Environment(AppCoordinator.self) private var coordinator
 
     @State private var selectedToRemove: Parking?
 
@@ -16,65 +17,63 @@ struct FavoriteView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                AppTheme.Palette.pageBackground
-                    .ignoresSafeArea()
+        ZStack {
+            AppTheme.Palette.pageBackground
+                .ignoresSafeArea()
 
-                if favoriteParkings.isEmpty {
-                    AppStateView(
-                        kind: .empty(
-                            icon: "heart.slash",
-                            title: loc.str(.favoriteNoFavorites),
-                            subtitle: loc.str(.favoriteNoFavoritesSub)
-                        )
+            if favoriteParkings.isEmpty {
+                AppStateView(
+                    kind: .empty(
+                        icon: "heart.slash",
+                        title: loc.str(.favoriteNoFavorites),
+                        subtitle: loc.str(.favoriteNoFavoritesSub)
                     )
-                } else {
-                    ScrollView(showsIndicators: false) {
-                        VStack(spacing: 16) {
-                            ForEach(favoriteParkings) { parking in
-                                NavigationLink {
-                                    ParkingDetailView(parking: parking)
-                                } label: {
-                                    NearbyParkingCard(
-                                        availabilityStore: _availabilityStore,
-                                        parking: parking,
-                                        isFavorite: true,
-                                        onHeartTap: {
-                                            selectedToRemove = parking
-                                        }
-                                    )
-                                }
-                                .buttonStyle(.plain)
+                )
+            } else {
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 16) {
+                        ForEach(favoriteParkings) { parking in
+                            Button {
+                                coordinator.showParkingDetail(parking)
+                            } label: {
+                                NearbyParkingCard(
+                                    availabilityStore: _availabilityStore,
+                                    parking: parking,
+                                    isFavorite: true,
+                                    onHeartTap: {
+                                        selectedToRemove = parking
+                                    }
+                                )
                             }
+                            .buttonStyle(.plain)
                         }
-                        .padding(.horizontal)
-                        .padding(.top, 12)
-                        .padding(.bottom, 24)
                     }
+                    .padding(.horizontal)
+                    .padding(.top, 12)
+                    .padding(.bottom, 24)
                 }
             }
-            .navigationTitle("Favorites")
-            .navigationBarTitleDisplayMode(.inline)
+        }
+        .navigationTitle(loc.str(.favoriteTitle))
+        .navigationBarTitleDisplayMode(.inline)
 
-            // Realtime + initial load (agar root’da start qilingan bo‘lsa ham zarar qilmaydi)
-            .task {
-                availabilityStore.initialLoad()
-                availabilityStore.startRealtime()
-            }
+        // Realtime + initial load (agar root’da start qilingan bo‘lsa ham zarar qilmaydi)
+        .task {
+            availabilityStore.initialLoad()
+            availabilityStore.startRealtime()
+        }
 
-            .sheet(item: $selectedToRemove) { p in
-                RemoveFavoriteSheet(
-                    parking: p,
-                    onCancel: { selectedToRemove = nil },
-                    onRemove: {
-                        favorites.remove(p.id)
-                        selectedToRemove = nil
-                    }
-                )
-                .presentationDetents([.height(260)])
-                .presentationDragIndicator(.visible)
-            }
+        .sheet(item: $selectedToRemove) { p in
+            RemoveFavoriteSheet(
+                parking: p,
+                onCancel: { selectedToRemove = nil },
+                onRemove: {
+                    favorites.remove(p.id)
+                    selectedToRemove = nil
+                }
+            )
+            .presentationDetents([.height(260)])
+            .presentationDragIndicator(.visible)
         }
     }
 }

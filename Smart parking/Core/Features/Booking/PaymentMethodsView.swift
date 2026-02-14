@@ -11,6 +11,7 @@ struct PaymentMethodsView: View {
     @Binding var selectedMethod: PaymentMethod?
     let onBack: () -> Void
     let onConfirm: () -> Void
+    private let loc = LocalizationManager.shared
 
     var body: some View {
         VStack(spacing: 0) {
@@ -24,7 +25,7 @@ struct PaymentMethodsView: View {
                     Section {
                         paymentRow(method: .wallet)
                     } header: {
-                        Text("Wallet")
+                        Text(loc.str(.paymentWallet))
                             .font(.subheadline)
                             .fontWeight(.semibold)
                             .foregroundColor(AppTheme.Palette.textSecondary)
@@ -34,7 +35,7 @@ struct PaymentMethodsView: View {
                     Section {
                         addCardRow
                     } header: {
-                        Text("Credit & Debit Card")
+                        Text(loc.str(.paymentCreditDebit))
                             .font(.subheadline)
                             .fontWeight(.semibold)
                             .foregroundColor(AppTheme.Palette.textSecondary)
@@ -48,7 +49,7 @@ struct PaymentMethodsView: View {
                             paymentRow(method: .googlePay)
                         }
                     } header: {
-                        Text("More Payment Options")
+                        Text(loc.str(.paymentMoreOptions))
                             .font(.subheadline)
                             .fontWeight(.semibold)
                             .foregroundColor(AppTheme.Palette.textSecondary)
@@ -83,7 +84,7 @@ struct PaymentMethodsView: View {
 
             Spacer()
 
-            Text("Payment Methods")
+            Text(loc.str(.paymentTitle))
                 .font(.headline)
 
             Spacer()
@@ -140,7 +141,7 @@ struct PaymentMethodsView: View {
                 .background(AppTheme.Palette.brandSoft)
                 .cornerRadius(10)
 
-            Text("Add Card")
+            Text(loc.str(.paymentAddCard))
                 .font(.body)
 
             Spacer()
@@ -159,7 +160,7 @@ struct PaymentMethodsView: View {
     // MARK: - Confirm Button
     private var confirmButton: some View {
         AppPrimaryButton(
-            title: "Confirm Payment",
+            title: loc.str(.paymentConfirm),
             isEnabled: selectedMethod != nil
         ) {
             onConfirm()
