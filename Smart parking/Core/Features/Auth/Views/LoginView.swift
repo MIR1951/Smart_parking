@@ -5,22 +5,43 @@
 //  Created by Kenjaboy Xajiyev on 02/12/25.
 //
 
- import SwiftUI
+import SwiftUI
 
 struct LoginView: View {
     @Environment(AuthManager.self) private var authManager
+    @Environment(LocalizationManager.self) private var loc
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var isPasswordVisible: Bool = false
     @State private var showAuthError = false
     @State private var showInfoAlert = false
     @State private var infoMessage = ""
+    @State private var emailTouched = false
+    @State private var passwordTouched = false
+    @FocusState private var focusedField: AuthField?
+
+    private enum AuthField { case email, password }
 
     private var isValidCredentials: Bool {
         !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && password.count >= 6
     }
-    
+
+    private var emailError: String? {
+        guard emailTouched else { return nil }
+        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return loc.str(.valEmailRequired) }
+        if !trimmed.contains("@") || !trimmed.contains(".") { return loc.str(.valEmailInvalid) }
+        return nil
+    }
+
+    private var passwordError: String? {
+        guard passwordTouched else { return nil }
+        if password.isEmpty { return loc.str(.valPasswordRequired) }
+        if password.count < 6 { return loc.str(.valPasswordMin) }
+        return nil
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -30,35 +51,45 @@ struct LoginView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: AppTheme.Spacing.xLarge) {
                         VStack(spacing: AppTheme.Spacing.small) {
-                            Text("Sign In")
+                            Text(loc.str(.loginTitle))
                                 .font(.system(size: 34, weight: .bold))
                                 .foregroundColor(AppTheme.Palette.textPrimary)
-                            Text("Hi! Welcome back, you've been missed")
+                            Text(loc.str(.loginSubtitle))
                                 .foregroundColor(AppTheme.Palette.textSecondary)
                         }
                         .padding(.top, 28)
 
                         VStack(spacing: AppTheme.Spacing.medium) {
                             AppInputField(
-                                title: "Email",
-                                placeholder: "example@gmail.com",
+                                title: loc.str(.loginEmail),
+                                placeholder: loc.str(.loginEmailPlaceholder),
                                 text: $email,
                                 keyboardType: .emailAddress,
-                                autocapitalization: .never
+                                autocapitalization: .never,
+                                errorMessage: emailError
                             )
+                            .focused($focusedField, equals: .email)
+                            .onChange(of: focusedField) { _, newValue in
+                                if newValue != .email { emailTouched = true }
+                            }
 
                             AppInputField(
-                                title: "Password",
-                                placeholder: "**********",
+                                title: loc.str(.loginPassword),
+                                placeholder: loc.str(.loginPasswordPlaceholder),
                                 text: $password,
                                 isSecure: true,
-                                revealSecureText: $isPasswordVisible
+                                revealSecureText: $isPasswordVisible,
+                                errorMessage: passwordError
                             )
+                            .focused($focusedField, equals: .password)
+                            .onChange(of: focusedField) { _, newValue in
+                                if newValue != .password { passwordTouched = true }
+                            }
 
                             HStack {
                                 Spacer()
-                                Button("Forgot Password?") {
-                                    forgotPassword()
+                                NavigationLink(loc.str(.loginForgotPassword)) {
+                                    ForgotPasswordView()
                                 }
                                 .font(.footnote)
                                 .foregroundColor(AppTheme.Palette.brand)
@@ -66,7 +97,8 @@ struct LoginView: View {
                         }
 
                         AppPrimaryButton(
-                            title: authManager.isLoading ? "Signing In..." : "Sign In",
+                            title: authManager.isLoading
+                                ? loc.str(.loginSigningIn) : loc.str(.loginSignIn),
                             isLoading: authManager.isLoading,
                             isEnabled: isValidCredentials && !authManager.isLoading
                         ) {
@@ -78,7 +110,7 @@ struct LoginView: View {
                                 Rectangle()
                                     .fill(AppTheme.Palette.border)
                                     .frame(height: 1)
-                                Text("Or sign in with")
+                                Text(loc.str(.loginOrWith))
                                     .font(.caption)
                                     .foregroundColor(AppTheme.Palette.textSecondary)
                                 Rectangle()
@@ -98,9 +130,9 @@ struct LoginView: View {
                                 .navigationBarBackButtonHidden()
                         } label: {
                             HStack(spacing: 4) {
-                                Text("Don't have an account?")
+                                Text(loc.str(.loginNoAccount))
                                     .foregroundColor(AppTheme.Palette.textSecondary)
-                                Text("Sign Up")
+                                Text(loc.str(.loginSignUp))
                                     .foregroundColor(AppTheme.Palette.brand)
                                     .fontWeight(.semibold)
                             }
@@ -114,15 +146,15 @@ struct LoginView: View {
             .onChange(of: authManager.authError) { _, newValue in
                 showAuthError = newValue != nil
             }
-            .alert("Sign In Error", isPresented: $showAuthError) {
-                Button("OK") {
+            .alert(loc.str(.loginErrorTitle), isPresented: $showAuthError) {
+                Button(loc.str(.ok)) {
                     authManager.clearAuthError()
                 }
             } message: {
-                Text(authManager.authError ?? "Unknown error")
+                Text(authManager.authError ?? loc.str(.error))
             }
-            .alert("Info", isPresented: $showInfoAlert) {
-                Button("OK") {}
+            .alert(loc.str(.info), isPresented: $showInfoAlert) {
+                Button(loc.str(.ok)) {}
             } message: {
                 Text(infoMessage)
             }
@@ -132,11 +164,9 @@ struct LoginView: View {
 
 // Ijtimoiy tarmoq tugmalari uchun yordamchi struct (rasmlar SF Symbols orqali shartli ravishda berilgan)
 struct SocialSignInButton: View {
-    var imageName: String
-    
+    let imageName: String
+
     var body: some View {
-        // Haqiqiy ilovada Apple, Google, Facebook logotiplari alohida rasm resurslari sifatida yuklanadi.
-        // Bu erda namuna sifatida SF Symbols ishlatilgan.
         if imageName == "applelogo" {
             Image(systemName: imageName)
                 .resizable()
@@ -146,8 +176,33 @@ struct SocialSignInButton: View {
                 .background(AppTheme.Palette.surface)
                 .clipShape(Circle())
                 .overlay(Circle().stroke(AppTheme.Palette.border, lineWidth: 1))
+        } else if imageName == "google" {
+            // Google logo — styled "G"
+            Text("G")
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [
+                            Color(hex: "#EA4335"), Color(hex: "#4285F4"), Color(hex: "#34A853"),
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 52, height: 52)
+                .background(AppTheme.Palette.surface)
+                .clipShape(Circle())
+                .overlay(Circle().stroke(AppTheme.Palette.border, lineWidth: 1))
+        } else if imageName == "facebook" {
+            // Facebook logo — styled "f"
+            Text("f")
+                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .foregroundColor(Color(hex: "#1877F2"))
+                .frame(width: 52, height: 52)
+                .background(AppTheme.Palette.surface)
+                .clipShape(Circle())
+                .overlay(Circle().stroke(AppTheme.Palette.border, lineWidth: 1))
         } else {
-            // Google va Facebook logolari uchun joy egasi
             Text(imageName.prefix(1).uppercased())
                 .font(.title2)
                 .fontWeight(.bold)
@@ -159,47 +214,31 @@ struct SocialSignInButton: View {
         }
     }
 }
-private extension LoginView {
-    func signIn(){
+extension LoginView {
+    fileprivate func signIn() {
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedEmail.isEmpty, password.count >= 6, !authManager.isLoading else { return }
 
-        Task{
+        Task {
             await authManager.signIn(email: trimmedEmail, password: password)
         }
     }
 
-    func forgotPassword() {
-        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedEmail.isEmpty else {
-            showInfo("Avval email kiriting.")
-            return
-        }
-
-        Task {
-            let didSend = await authManager.resetPassword(email: trimmedEmail)
-            if didSend {
-                showInfo("Parolni tiklash havolasi emailingizga yuborildi.")
-            }
-        }
-    }
-
-    func showInfo(_ message: String) {
+    fileprivate func showInfo(_ message: String) {
         infoMessage = message
         showInfoAlert = true
     }
 
     @ViewBuilder
-    func socialButton(_ imageName: String) -> some View {
+    fileprivate func socialButton(_ imageName: String) -> some View {
         Button {
-            showInfo("Social sign in hozircha yoqilmagan.")
+            showInfo(loc.str(.loginSocialDisabled))
         } label: {
             SocialSignInButton(imageName: imageName)
         }
         .buttonStyle(.plain)
     }
 }
-
 
 #Preview {
     LoginView()

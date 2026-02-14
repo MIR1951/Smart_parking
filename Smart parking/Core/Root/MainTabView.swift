@@ -5,26 +5,27 @@
 //  Created by Kenjaboy Xajiyev on 23/01/26.
 //
 
-
 import SwiftUI
 
 struct MainTabView: View {
+    @Environment(LocalizationManager.self) private var loc
+
     var body: some View {
         TabView {
             HomeView()
-                .tabItem { Label("Home", systemImage: "house") }
+                .tabItem { Label(loc.str(.tabHome), systemImage: "house") }
 
             ExploreView()
-                .tabItem { Label("Explore", systemImage: "location") }
+                .tabItem { Label(loc.str(.tabExplore), systemImage: "location") }
+
             FavoriteView()
-               
-                .tabItem { Label("Favorite", systemImage: "heart") }
+                .tabItem { Label(loc.str(.tabFavorite), systemImage: "heart") }
 
             BookingsView()
-                .tabItem { Label("Bookings", systemImage: "doc.text") }
+                .tabItem { Label(loc.str(.tabBookings), systemImage: "doc.text") }
 
             ProfileView()
-                .tabItem { Label("Profile", systemImage: "person") }
+                .tabItem { Label(loc.str(.tabProfile), systemImage: "person") }
         }
         .tint(AppTheme.Palette.brand)
     }

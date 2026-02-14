@@ -13,63 +13,95 @@ struct PopularParkingCard: View {
 
     private var availableSpots: Int {
         availabilityStore.availability(for: parking.id)?.availableSpots
-        ?? availabilityStore.available[parking.id]
-        ?? max(parking.total_spots - (parking.live_occupancy ?? 0), 0)
+            ?? availabilityStore.available[parking.id]
+            ?? max(parking.total_spots - (parking.live_occupancy ?? 0), 0)
     }
 
+    private var isAvailable: Bool { availableSpots > 0 }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
 
+            // Image + overlay
             ZStack(alignment: .topLeading) {
-
                 CachedAsyncImage(url: URL(string: parking.thumbnail_url ?? "")) { image in
                     image
                         .resizable()
                         .scaledToFill()
                 } placeholder: {
                     Rectangle()
-                        .fill(Color.gray.opacity(0.2))
+                        .fill(AppTheme.Palette.surfaceSecondary)
+                        .overlay(
+                            Image(systemName: "car.fill")
+                                .font(.title)
+                                .foregroundColor(AppTheme.Palette.textTertiary)
+                        )
                 }
                 .frame(width: 220, height: 140)
                 .clipped()
-                .cornerRadius(15)
+                .overlay(AppTheme.Gradient.cardOverlay)
+                .cornerRadius(AppTheme.Radius.medium)
 
                 // Rating badge
-                HStack {
+                HStack(spacing: 4) {
                     Image(systemName: "star.fill")
                         .foregroundColor(.yellow)
+                        .font(.caption2)
                     Text("\(parking.rating ?? 1.0, specifier: "%.1f")")
                         .foregroundColor(.white)
-                        .font(.caption)
+                        .font(AppTheme.Typography.captionBold)
                 }
-                .padding(6)
-                .background(Color.black.opacity(0.6))
-                .cornerRadius(10)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(.ultraThinMaterial)
+                .cornerRadius(AppTheme.Radius.xSmall)
                 .padding(8)
+
+                // Availability badge (bottom-right of image)
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(
+                                    isAvailable ? AppTheme.Palette.success : AppTheme.Palette.danger
+                                )
+                                .frame(width: 6, height: 6)
+                            Text("\(availableSpots) spots")
+                                .font(AppTheme.Typography.captionBold)
+                                .foregroundColor(.white)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(AppTheme.Radius.xSmall)
+                        .padding(8)
+                    }
+                }
+                .frame(width: 220, height: 140)
             }
 
-            Text("Car Parking")
-                .font(.caption)
+            // Category
+            Text(LocalizationManager.shared.str(.detailCarParking))
+                .font(AppTheme.Typography.captionBold)
                 .foregroundColor(AppTheme.Palette.brand)
 
+            // Name
             Text(parking.name)
-                .font(.headline)
+                .font(AppTheme.Typography.headline)
                 .foregroundColor(AppTheme.Palette.textPrimary)
+                .lineLimit(1)
 
-            HStack {
+            // Price
+            HStack(spacing: 2) {
                 Text("$\(parking.price_per_hour, specifier: "%.2f")")
+                    .font(AppTheme.Typography.headline)
                     .foregroundColor(AppTheme.Palette.brand)
-                Text("/hr")
+                Text(LocalizationManager.shared.str(.bookingsPerHour))
+                    .font(AppTheme.Typography.caption)
                     .foregroundColor(AppTheme.Palette.textSecondary)
             }
-
-            HStack {
-                Label("5 mins", systemImage: "clock")
-                Spacer()
-                Label("\(availableSpots) Spots", systemImage: "car.fill")
-            }
-            .foregroundColor(AppTheme.Palette.textSecondary)
-            .font(.caption)
         }
         .frame(width: 220)
         .padding(12)

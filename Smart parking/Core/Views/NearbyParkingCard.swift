@@ -9,14 +9,16 @@ struct NearbyParkingCard: View {
 
     private var availableSpots: Int {
         availabilityStore.availability(for: parking.id)?.availableSpots
-        ?? availabilityStore.available[parking.id]
-        ?? max(parking.total_spots - (parking.live_occupancy ?? 0), 0)
+            ?? availabilityStore.available[parking.id]
+            ?? max(parking.total_spots - (parking.live_occupancy ?? 0), 0)
     }
+
+    private var isAvailable: Bool { availableSpots > 0 }
 
     var body: some View {
         HStack(spacing: 15) {
 
-            // ✅ Image + heart overlay (rasm ustida)
+            // Image + heart overlay
             ZStack(alignment: .topTrailing) {
                 CachedAsyncImage(url: URL(string: parking.thumbnail_url ?? "")) { image in
                     image
@@ -24,34 +26,40 @@ struct NearbyParkingCard: View {
                         .scaledToFill()
                 } placeholder: {
                     Rectangle()
-                        .fill(Color.gray.opacity(0.2))
+                        .fill(AppTheme.Palette.surfaceSecondary)
+                        .overlay(
+                            Image(systemName: "car.fill")
+                                .foregroundColor(AppTheme.Palette.textTertiary)
+                        )
                 }
                 .frame(width: 90, height: 90)
-                .cornerRadius(15)
+                .overlay(AppTheme.Gradient.cardOverlay)
+                .cornerRadius(AppTheme.Radius.medium)
                 .clipped()
 
                 if let onHeartTap {
                     Button(action: onHeartTap) {
                         Image(systemName: isFavorite ? "heart.fill" : "heart")
+                            .font(.caption)
                             .foregroundColor(isFavorite ? .red : AppTheme.Palette.textPrimary)
-                            .padding(8)
+                            .padding(6)
                             .background(AppTheme.Palette.surface)
                             .clipShape(Circle())
                             .shadow(radius: 2)
                     }
                     .buttonStyle(.plain)
-                    .padding(6) // ✅ image ichida joylashadi
+                    .padding(4)
                 }
             }
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 5) {
 
                 HStack {
-                    Text("Car Parking")
-                        .font(.caption)
+                    Text(LocalizationManager.shared.str(.detailCarParking))
+                        .font(AppTheme.Typography.captionBold)
                         .foregroundColor(AppTheme.Palette.brand)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
                         .background(AppTheme.Palette.brandSoft)
                         .clipShape(Capsule())
 
@@ -59,48 +67,53 @@ struct NearbyParkingCard: View {
 
                     HStack(spacing: 4) {
                         Image(systemName: "star.fill")
-                            .font(.caption)
+                            .font(.caption2)
                             .foregroundColor(.yellow)
                         Text(String(format: "%.1f", parking.rating ?? 5))
-                            .font(.caption)
+                            .font(AppTheme.Typography.caption)
                             .foregroundColor(AppTheme.Palette.textSecondary)
                     }
                 }
 
                 Text(parking.name)
-                    .font(.headline)
+                    .font(AppTheme.Typography.headline)
                     .foregroundColor(AppTheme.Palette.textPrimary)
                     .lineLimit(1)
 
-                HStack(spacing: 6) {
+                HStack(spacing: 4) {
                     Image(systemName: "mappin.and.ellipse")
-                        .font(.caption)
-                        .foregroundColor(AppTheme.Palette.textSecondary)
+                        .font(.caption2)
+                        .foregroundColor(AppTheme.Palette.textTertiary)
                     Text(parking.address ?? "Unknown")
-                        .font(.caption)
+                        .font(AppTheme.Typography.caption)
                         .foregroundColor(AppTheme.Palette.textSecondary)
                         .lineLimit(1)
                 }
 
-                HStack(spacing: 4) {
-                    Text("$\(parking.price_per_hour, specifier: "%.2f")")
-                        .font(.headline)
-                        .foregroundColor(AppTheme.Palette.brand)
-                    Text("/hr")
-                        .font(.caption)
-                        .foregroundColor(AppTheme.Palette.textSecondary)
-                }
-
                 HStack {
-                    Label("04 Mins", systemImage: "clock")
-                        .foregroundColor(AppTheme.Palette.brand)
+                    // Price
+                    HStack(spacing: 2) {
+                        Text("$\(parking.price_per_hour, specifier: "%.2f")")
+                            .font(AppTheme.Typography.headline)
+                            .foregroundColor(AppTheme.Palette.brand)
+                        Text(LocalizationManager.shared.str(.bookingsPerHour))
+                            .font(AppTheme.Typography.caption)
+                            .foregroundColor(AppTheme.Palette.textSecondary)
+                    }
 
                     Spacer()
 
-                    Label("\(availableSpots) Spots", systemImage: "car.fill")
-                        .foregroundColor(AppTheme.Palette.brand)
+                    // Availability
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(isAvailable ? AppTheme.Palette.success : AppTheme.Palette.danger)
+                            .frame(width: 6, height: 6)
+                        Text("\(availableSpots) Spots")
+                            .font(AppTheme.Typography.captionBold)
+                            .foregroundColor(
+                                isAvailable ? AppTheme.Palette.success : AppTheme.Palette.danger)
+                    }
                 }
-                .font(.caption)
             }
 
             Spacer()

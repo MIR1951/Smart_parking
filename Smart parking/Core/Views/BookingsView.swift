@@ -5,6 +5,8 @@
 //  Mening bandlarim sahifasi - Ongoing, Completed, Cancelled
 //
 
+import CoreImage
+import CoreImage.CIFilterBuiltins
 import Supabase
 import SwiftUI
 
@@ -78,18 +80,34 @@ enum BookingTab: String, CaseIterable {
     case ongoing = "Ongoing"
     case completed = "Completed"
     case cancelled = "Cancelled"
+
+    var displayName: String {
+        switch self {
+        case .ongoing: return LocalizationManager.shared.str(.bookingsOngoing)
+        case .completed: return LocalizationManager.shared.str(.bookingsCompleted)
+        case .cancelled: return LocalizationManager.shared.str(.bookingsCancelled)
+        }
+    }
 }
 
 // MARK: - Main View
 struct BookingsView: View {
 
+    // Sheet types
+    enum SheetType { case detail, ticket }
+    struct SheetItem: Identifiable {
+        let id = UUID()
+        let booking: BookingItem
+        let type: SheetType
+    }
+
     @StateObject private var vm = BookingsVM()
     @State private var tab: BookingTab = .ongoing
-    @State private var selectedBooking: BookingItem?
-    @State private var showETicket = false
+    @State private var sheetItem: SheetItem?
     @State private var showCancelAlert = false
     @State private var showCancelError = false
     @State private var cancelErrorMessage = ""
+    @State private var bookingToCancel: BookingItem?
 
     var body: some View {
         NavigationStack {
@@ -107,9 +125,9 @@ struct BookingsView: View {
                         } else if let error = vm.error {
                             AppStateView(
                                 kind: .error(
-                                    title: "Bandlar yuklanmadi",
+                                    title: LocalizationManager.shared.str(.bookingsLoadFailed),
                                     subtitle: error,
-                                    actionTitle: "Retry",
+                                    actionTitle: LocalizationManager.shared.str(.bookingsRetry),
                                     action: { Task { await vm.load() } }
                                 )
                             )
@@ -133,28 +151,33 @@ struct BookingsView: View {
                 }
             }
             .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
-            .navigationTitle("My Bookings")
+            .navigationTitle(LocalizationManager.shared.str(.bookingsTitle))
             .navigationBarTitleDisplayMode(.inline)
             .task { await vm.load() }
             .refreshable { await vm.load() }
-            .alert("Cancel Booking", isPresented: $showCancelAlert) {
-                Button("Yes, Cancel", role: .destructive) {
-                    if let booking = selectedBooking {
+            .alert(
+                LocalizationManager.shared.str(.bookingsCancelTitle), isPresented: $showCancelAlert
+            ) {
+                Button(LocalizationManager.shared.str(.bookingsYesCancel), role: .destructive) {
+                    if let booking = bookingToCancel {
                         cancelBooking(booking)
                     }
                 }
-                Button("No", role: .cancel) {}
+                Button(LocalizationManager.shared.str(.bookingsNo), role: .cancel) {}
             } message: {
-                Text("Are you sure you want to cancel this booking?")
+                Text(LocalizationManager.shared.str(.bookingsCancelMessage))
             }
-            .alert("Error", isPresented: $showCancelError) {
-                Button("OK") {}
+            .alert(LocalizationManager.shared.str(.error), isPresented: $showCancelError) {
+                Button(LocalizationManager.shared.str(.ok)) {}
             } message: {
                 Text(cancelErrorMessage)
             }
-            .sheet(isPresented: $showETicket) {
-                if let booking = selectedBooking {
-                    BookingETicketView(item: booking)
+            .sheet(item: $sheetItem) { item in
+                switch item.type {
+                case .ticket:
+                    BookingETicketView(item: item.booking)
+                case .detail:
+                    BookingDetailSheet(item: item.booking)
                 }
             }
         }
@@ -167,11 +190,11 @@ struct BookingsView: View {
                 .font(.system(size: 60))
                 .foregroundColor(.gray.opacity(0.5))
 
-            Text("No \(tab.rawValue) Bookings")
+            Text(LocalizationManager.shared.str(.bookingsNoBookings))
                 .font(.headline)
                 .foregroundColor(AppTheme.Palette.textPrimary)
 
-            Text("Your \(tab.rawValue.lowercased()) bookings will appear here")
+            Text(LocalizationManager.shared.str(.bookingsEmptySubtitle))
                 .font(.caption)
                 .foregroundColor(AppTheme.Palette.textSecondary)
         }
@@ -183,7 +206,7 @@ struct BookingsView: View {
         HStack(spacing: 0) {
             ForEach(BookingTab.allCases, id: \.self) { t in
                 VStack(spacing: 8) {
-                    Text(t.rawValue)
+                    Text(t.displayName)
                         .font(.headline)
                         .foregroundColor(
                             tab == t ? AppTheme.Palette.brand : AppTheme.Palette.textSecondary)
@@ -207,30 +230,23 @@ struct BookingsView: View {
 
     // MARK: - Actions
     private func handleLeftButton(_ item: BookingItem) {
-        selectedBooking = item
-
         switch tab {
         case .ongoing:
             if item.isInParking {
-                // Timer - parkingda, cancel qilolmaydi
-                showETicket = true
+                sheetItem = SheetItem(booking: item, type: .ticket)
             } else if item.canCancel {
-                // Cancel qilish mumkin
+                bookingToCancel = item
                 showCancelAlert = true
             } else {
-                // Boshqa holat - faqat ko'rish
-                showETicket = true
+                sheetItem = SheetItem(booking: item, type: .detail)
             }
-
         case .completed, .cancelled:
-            // Faqat ko'rish
-            showETicket = true
+            sheetItem = SheetItem(booking: item, type: .detail)
         }
     }
 
     private func openTicket(_ item: BookingItem) {
-        selectedBooking = item
-        showETicket = true
+        sheetItem = SheetItem(booking: item, type: .ticket)
     }
 
     private func cancelBooking(_ item: BookingItem) {
@@ -239,7 +255,8 @@ struct BookingsView: View {
                 try await ReservationManager.shared.cancelReservation(reservationId: item.id)
                 await vm.load()
             } catch {
-                cancelErrorMessage = "Cannot cancel: \(error.localizedDescription)"
+                cancelErrorMessage =
+                    "\(LocalizationManager.shared.str(.bookingsCannotCancel)): \(error.localizedDescription)"
                 showCancelError = true
             }
         }
@@ -257,27 +274,27 @@ struct BookingCard: View {
         switch tab {
         case .ongoing:
             if item.isInParking {
-                return "Timer"
+                return LocalizationManager.shared.str(.bookingsTimer)
             } else if item.canCancel {
-                return "Cancel"
+                return LocalizationManager.shared.str(.bookingsCancel)
             } else {
-                return "View"
+                return LocalizationManager.shared.str(.bookingsView)
             }
         case .completed:
-            return "View"
+            return LocalizationManager.shared.str(.bookingsView)
         case .cancelled:
-            return "View"
+            return LocalizationManager.shared.str(.bookingsView)
         }
     }
 
     private var rightButtonTitle: String {
         switch tab {
         case .ongoing:
-            return "E-Ticket"
+            return LocalizationManager.shared.str(.bookingsETicket)
         case .completed:
-            return "View Receipt"
+            return LocalizationManager.shared.str(.bookingsViewReceipt)
         case .cancelled:
-            return "Details"
+            return LocalizationManager.shared.str(.bookingsDetails)
         }
     }
 
@@ -312,7 +329,7 @@ struct BookingCard: View {
                 VStack(alignment: .leading, spacing: 6) {
 
                     HStack {
-                        Text("Car Parking")
+                        Text(LocalizationManager.shared.str(.detailCarParking))
                             .font(.caption)
                             .foregroundColor(AppTheme.Palette.brand)
                             .padding(.horizontal, 10)
@@ -341,17 +358,19 @@ struct BookingCard: View {
                         Image(systemName: "mappin.and.ellipse")
                             .font(.caption)
                             .foregroundColor(AppTheme.Palette.textSecondary)
-                        Text(item.parking.address ?? "Unknown")
-                            .font(.caption)
-                            .foregroundColor(AppTheme.Palette.textSecondary)
-                            .lineLimit(1)
+                        Text(
+                            item.parking.address ?? LocalizationManager.shared.str(.bookingsUnknown)
+                        )
+                        .font(.caption)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
+                        .lineLimit(1)
                     }
 
                     HStack(spacing: 4) {
                         Text("$\(item.parking.price_per_hour, specifier: "%.2f")")
                             .font(.headline)
                             .foregroundColor(AppTheme.Palette.brand)
-                        Text("/hr")
+                        Text(LocalizationManager.shared.str(.bookingsPerHour))
                             .font(.caption)
                             .foregroundColor(AppTheme.Palette.textSecondary)
                     }
@@ -399,7 +418,7 @@ struct BookingCard: View {
         HStack(spacing: 16) {
             // Start Time
             VStack(alignment: .leading, spacing: 2) {
-                Text("Start")
+                Text(LocalizationManager.shared.str(.bookingsStart))
                     .font(.caption2)
                     .foregroundColor(AppTheme.Palette.textSecondary)
 
@@ -414,7 +433,7 @@ struct BookingCard: View {
 
             // End Time
             VStack(alignment: .leading, spacing: 2) {
-                Text("End")
+                Text(LocalizationManager.shared.str(.bookingsEnd))
                     .font(.caption2)
                     .foregroundColor(AppTheme.Palette.textSecondary)
 
@@ -426,7 +445,7 @@ struct BookingCard: View {
             Spacer()
 
             // Duration
-            Text("\(item.durationMinutes) min")
+            Text("\(item.durationMinutes) \(LocalizationManager.shared.str(.bookingMin))")
                 .font(.caption)
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.Palette.brand)
@@ -448,14 +467,16 @@ struct BookingCard: View {
                 .foregroundColor(.orange)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Overtime!")
+                Text(LocalizationManager.shared.str(.bookingsOvertime))
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(.orange)
 
-                Text("Extra charge: $\(item.overtimeAmount, specifier: "%.2f")")
-                    .font(.caption2)
-                    .foregroundColor(AppTheme.Palette.textSecondary)
+                Text(
+                    "\(LocalizationManager.shared.str(.bookingsExtraCharge)): $\(item.overtimeAmount, specifier: "%.2f")"
+                )
+                .font(.caption2)
+                .foregroundColor(AppTheme.Palette.textSecondary)
             }
 
             Spacer()
@@ -503,11 +524,11 @@ struct BookingETicketView: View {
                 .padding()
             }
             .background(AppTheme.Palette.pageBackground)
-            .navigationTitle("E-Ticket")
+            .navigationTitle(LocalizationManager.shared.str(.bookingsETicket))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
+                    Button(LocalizationManager.shared.str(.bookingsClose)) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
@@ -525,17 +546,16 @@ struct BookingETicketView: View {
 
     private var ticketText: String {
         """
-        Parking: \(item.parking.name)
-        Status: \(item.status)
-        Start: \(formatDateTime(item.start_time))
-        End: \(formatDateTime(item.end_time))
-        Reservation ID: \(item.id.uuidString)
+         \(item.parking.name)
+        \(LocalizationManager.shared.str(.bookingsStart)): \(formatDateTime(item.start_time))
+        \(LocalizationManager.shared.str(.bookingsEnd)): \(formatDateTime(item.end_time))
+         \(item.id.uuidString)
         """
     }
 
     private var statusBadge: some View {
         HStack {
-            Text(item.status.capitalized)
+            Text(localizedStatus(item.status))
                 .font(.caption)
                 .fontWeight(.semibold)
                 .foregroundColor(statusColor)
@@ -557,28 +577,46 @@ struct BookingETicketView: View {
     }
 
     private var barcodeSection: some View {
-        VStack {
-            HStack(spacing: 2) {
-                ForEach(0..<40, id: \.self) { index in
-                    Rectangle()
-                        .fill(Color.black)
-                        .frame(width: barcodeWidth(for: index), height: 60)
-                }
+        VStack(spacing: 12) {
+            if let qrImage = generateQRCode(from: ticketText) {
+                Image(uiImage: qrImage)
+                    .interpolation(.none)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 180, height: 180)
+            } else {
+                // Fallback if QR code generation fails
+                Image(systemName: "qrcode")
+                    .font(.system(size: 100))
+                    .foregroundColor(AppTheme.Palette.textTertiary)
             }
 
             Text(item.id.uuidString.prefix(12).uppercased())
-                .font(.caption)
+                .font(AppTheme.Typography.caption)
                 .foregroundColor(AppTheme.Palette.textSecondary)
+                .tracking(2)
         }
         .padding()
+        .frame(maxWidth: .infinity)
         .background(AppTheme.Palette.surface)
-        .cornerRadius(16)
+        .cornerRadius(AppTheme.Radius.large)
     }
 
-    private func barcodeWidth(for index: Int) -> CGFloat {
-        let hash = item.id.hashValue
-        let seed = abs(hash >> (index % 8)) % 4
-        return CGFloat(seed + 1)
+    private func generateQRCode(from string: String) -> UIImage? {
+        guard let data = string.data(using: .utf8),
+            let filter = CIFilter(name: "CIQRCodeGenerator")
+        else { return nil }
+        filter.setValue(data, forKey: "inputMessage")
+        filter.setValue("M", forKey: "inputCorrectionLevel")
+
+        guard let ciImage = filter.outputImage else { return nil }
+        let scale = CGAffineTransform(scaleX: 10, y: 10)
+        let scaledImage = ciImage.transformed(by: scale)
+        let context = CIContext()
+        guard let cgImage = context.createCGImage(scaledImage, from: scaledImage.extent) else {
+            return nil
+        }
+        return UIImage(cgImage: cgImage)
     }
 
     private var parkingInfoSection: some View {
@@ -586,17 +624,17 @@ struct BookingETicketView: View {
             CachedAsyncImage(url: URL(string: item.parking.thumbnail_url ?? "")) { image in
                 image.resizable().scaledToFill()
             } placeholder: {
-                Rectangle().fill(Color.gray.opacity(0.2))
+                Rectangle().fill(AppTheme.Palette.surfaceSecondary)
             }
             .frame(width: 80, height: 60)
-            .cornerRadius(10)
+            .cornerRadius(AppTheme.Radius.small)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.parking.name)
-                    .font(.headline)
+                    .font(AppTheme.Typography.headline)
 
                 Text(item.parking.address ?? "")
-                    .font(.caption)
+                    .font(AppTheme.Typography.caption)
                     .foregroundColor(AppTheme.Palette.textSecondary)
             }
 
@@ -606,15 +644,25 @@ struct BookingETicketView: View {
 
     private var timeInfoSection: some View {
         VStack(spacing: 12) {
-            infoRow(title: "Start Time", value: formatDateTime(item.start_time))
-            infoRow(title: "End Time", value: formatDateTime(item.end_time))
-            infoRow(title: "Duration", value: "\(item.durationMinutes) minutes")
+            infoRow(
+                title: LocalizationManager.shared.str(.bookingsStart),
+                value: formatDateTime(item.start_time))
+            infoRow(
+                title: LocalizationManager.shared.str(.bookingsEnd),
+                value: formatDateTime(item.end_time))
+            infoRow(
+                title: LocalizationManager.shared.str(.bookingsDuration),
+                value: "\(item.durationMinutes) \(LocalizationManager.shared.str(.bookingMin))")
 
             if item.actual_start_time != nil {
-                infoRow(title: "Actual Entry", value: formatDateTime(item.actual_start_time))
+                infoRow(
+                    title: LocalizationManager.shared.str(.bookingsActualEntry),
+                    value: formatDateTime(item.actual_start_time))
             }
             if item.actual_end_time != nil {
-                infoRow(title: "Actual Exit", value: formatDateTime(item.actual_end_time))
+                infoRow(
+                    title: LocalizationManager.shared.str(.bookingsActualExit),
+                    value: formatDateTime(item.actual_end_time))
             }
         }
     }
@@ -622,14 +670,14 @@ struct BookingETicketView: View {
     private var priceInfoSection: some View {
         VStack(spacing: 12) {
             HStack {
-                Text("Price per Hour")
+                Text(LocalizationManager.shared.str(.bookingsPricePerHour))
                 Spacer()
                 Text(String(format: "$%.2f", item.parking.price_per_hour))
                     .fontWeight(.medium)
             }
 
             HStack {
-                Text("Base Amount")
+                Text(LocalizationManager.shared.str(.bookingsBaseAmount))
                 Spacer()
                 Text(String(format: "$%.2f", item.totalAmount))
                     .fontWeight(.medium)
@@ -637,7 +685,7 @@ struct BookingETicketView: View {
 
             if item.overtimeAmount > 0 {
                 HStack {
-                    Text("Overtime Charge")
+                    Text(LocalizationManager.shared.str(.bookingsOvertimeCharge))
                     Spacer()
                     Text(String(format: "+$%.2f", item.overtimeAmount))
                         .fontWeight(.medium)
@@ -648,7 +696,7 @@ struct BookingETicketView: View {
             Divider()
 
             HStack {
-                Text("Total")
+                Text(LocalizationManager.shared.str(.reviewTotal))
                     .fontWeight(.semibold)
                 Spacer()
                 Text(String(format: "$%.2f", item.totalAmount + item.overtimeAmount))
@@ -672,5 +720,194 @@ struct BookingETicketView: View {
     private func formatDateTime(_ date: Date?) -> String {
         guard let date = date else { return "--" }
         return DateFormatter.fullDateTime.string(from: date)
+    }
+
+    private func localizedStatus(_ status: String) -> String {
+        switch status {
+        case "active": return LocalizationManager.shared.str(.statusActive)
+        case "in_use": return LocalizationManager.shared.str(.statusInUse)
+        case "completed": return LocalizationManager.shared.str(.statusCompleted)
+        case "cancelled", "canceled": return LocalizationManager.shared.str(.statusCancelled)
+        case "expired": return LocalizationManager.shared.str(.statusExpired)
+        case "no_show": return LocalizationManager.shared.str(.statusNoShow)
+        default: return status.capitalized
+        }
+    }
+}
+
+// MARK: - Booking Detail Sheet (View button — no QR)
+struct BookingDetailSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let item: BookingItem
+
+    var body: some View {
+        NavigationStack {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 20) {
+                    // Status badge
+                    statusBadge
+
+                    // Parking info
+                    parkingInfoSection
+
+                    Divider().padding(.horizontal)
+
+                    // Time info
+                    timeInfoSection
+
+                    Divider().padding(.horizontal)
+
+                    // Price info
+                    priceInfoSection
+                }
+                .padding()
+            }
+            .background(AppTheme.Palette.pageBackground)
+            .navigationTitle(LocalizationManager.shared.str(.bookingsDetails))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(LocalizationManager.shared.str(.bookingsClose)) { dismiss() }
+                }
+            }
+        }
+    }
+
+    private var statusBadge: some View {
+        HStack {
+            Text(localizedStatus(item.status))
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(statusColor)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(statusColor.opacity(0.12))
+                .cornerRadius(20)
+        }
+    }
+
+    private var statusColor: Color {
+        switch item.status {
+        case "active", "in_use": return .green
+        case "completed": return .blue
+        case "cancelled", "canceled": return .red
+        case "expired", "no_show": return .orange
+        default: return .gray
+        }
+    }
+
+    private var parkingInfoSection: some View {
+        HStack(spacing: 12) {
+            CachedAsyncImage(url: URL(string: item.parking.thumbnail_url ?? "")) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                Rectangle().fill(AppTheme.Palette.surfaceSecondary)
+            }
+            .frame(width: 80, height: 60)
+            .cornerRadius(AppTheme.Radius.small)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.parking.name)
+                    .font(AppTheme.Typography.headline)
+
+                Text(item.parking.address ?? "")
+                    .font(AppTheme.Typography.caption)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
+            }
+
+            Spacer()
+        }
+    }
+
+    private var timeInfoSection: some View {
+        VStack(spacing: 12) {
+            infoRow(
+                title: LocalizationManager.shared.str(.bookingsStart),
+                value: formatDateTime(item.start_time))
+            infoRow(
+                title: LocalizationManager.shared.str(.bookingsEnd),
+                value: formatDateTime(item.end_time))
+            infoRow(
+                title: LocalizationManager.shared.str(.bookingsDuration),
+                value: "\(item.durationMinutes) \(LocalizationManager.shared.str(.bookingMin))")
+
+            if item.actual_start_time != nil {
+                infoRow(
+                    title: LocalizationManager.shared.str(.bookingsActualEntry),
+                    value: formatDateTime(item.actual_start_time))
+            }
+            if item.actual_end_time != nil {
+                infoRow(
+                    title: LocalizationManager.shared.str(.bookingsActualExit),
+                    value: formatDateTime(item.actual_end_time))
+            }
+        }
+    }
+
+    private var priceInfoSection: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text(LocalizationManager.shared.str(.bookingsPricePerHour))
+                Spacer()
+                Text(String(format: "$%.2f", item.parking.price_per_hour))
+                    .fontWeight(.medium)
+            }
+
+            HStack {
+                Text(LocalizationManager.shared.str(.bookingsBaseAmount))
+                Spacer()
+                Text(String(format: "$%.2f", item.totalAmount))
+                    .fontWeight(.medium)
+            }
+
+            if item.overtimeAmount > 0 {
+                HStack {
+                    Text(LocalizationManager.shared.str(.bookingsOvertimeCharge))
+                    Spacer()
+                    Text(String(format: "+$%.2f", item.overtimeAmount))
+                        .fontWeight(.medium)
+                        .foregroundColor(.orange)
+                }
+            }
+
+            Divider()
+
+            HStack {
+                Text(LocalizationManager.shared.str(.reviewTotal))
+                    .fontWeight(.semibold)
+                Spacer()
+                Text(String(format: "$%.2f", item.totalAmount + item.overtimeAmount))
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(AppTheme.Palette.brand)
+            }
+        }
+    }
+
+    private func infoRow(title: String, value: String) -> some View {
+        HStack {
+            Text(title)
+                .foregroundColor(AppTheme.Palette.textSecondary)
+            Spacer()
+            Text(value)
+                .fontWeight(.medium)
+        }
+    }
+
+    private func formatDateTime(_ date: Date?) -> String {
+        guard let date = date else { return "--" }
+        return DateFormatter.fullDateTime.string(from: date)
+    }
+
+    private func localizedStatus(_ status: String) -> String {
+        switch status {
+        case "active": return LocalizationManager.shared.str(.statusActive)
+        case "in_use": return LocalizationManager.shared.str(.statusInUse)
+        case "completed": return LocalizationManager.shared.str(.statusCompleted)
+        case "cancelled", "canceled": return LocalizationManager.shared.str(.statusCancelled)
+        case "expired": return LocalizationManager.shared.str(.statusExpired)
+        case "no_show": return LocalizationManager.shared.str(.statusNoShow)
+        default: return status.capitalized
+        }
     }
 }

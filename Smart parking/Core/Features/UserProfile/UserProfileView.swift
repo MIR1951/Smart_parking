@@ -31,48 +31,75 @@ struct UserProfileView: View {
                     profileHeader
 
                     // Account Section
-                    settingsSection(title: "Account") {
-                        SettingsRow(icon: "person", title: "Edit Profile", color: .purple) {
+                    settingsSection(title: LocalizationManager.shared.str(.profileAccount)) {
+                        SettingsRow(
+                            icon: "person",
+                            title: LocalizationManager.shared.str(.profileEditProfile),
+                            color: .purple
+                        ) {
                             showEditProfile = true
                         }
-                        SettingsRow(icon: "car.fill", title: "My Vehicles", color: .blue) {
+                        SettingsRow(
+                            icon: "car.fill",
+                            title: LocalizationManager.shared.str(.profileMyVehicles), color: .blue
+                        ) {
                             showVehicles = true
                         }
-                        SettingsRow(icon: "creditcard", title: "Payment Methods", color: .green) {
+                        SettingsRow(
+                            icon: "creditcard",
+                            title: LocalizationManager.shared.str(.profilePaymentMethods),
+                            color: .green
+                        ) {
                             showPaymentMethods = true
                         }
                     }
 
                     // Preferences Section
-                    settingsSection(title: "Preferences") {
-                        SettingsRow(icon: "bell", title: "Notifications", color: .orange) {
+                    settingsSection(title: LocalizationManager.shared.str(.profilePreferences)) {
+                        SettingsRow(
+                            icon: "bell",
+                            title: LocalizationManager.shared.str(.profileNotifications),
+                            color: .orange
+                        ) {
                             showNotificationSettings = true
                         }
                         SettingsRow(
-                            icon: "globe", title: "Language", subtitle: "English", color: .cyan
+                            icon: "globe", title: LocalizationManager.shared.str(.profileLanguage),
+                            subtitle: "English", color: .cyan
                         ) {}
                         SettingsRow(
-                            icon: "moon", title: "Dark Mode", color: .indigo, hasToggle: true
+                            icon: "moon", title: LocalizationManager.shared.str(.profileDarkMode),
+                            color: .indigo, hasToggle: true
                         ) {}
                     }
 
                     // Support Section
-                    settingsSection(title: "Support") {
-                        SettingsRow(icon: "questionmark.circle", title: "Help Center", color: .teal)
-                        {
+                    settingsSection(title: LocalizationManager.shared.str(.profileSupport)) {
+                        SettingsRow(
+                            icon: "questionmark.circle",
+                            title: LocalizationManager.shared.str(.profileHelpCenter), color: .teal
+                        ) {
                             showHelpCenter = true
                         }
-                        SettingsRow(icon: "shield", title: "Privacy Policy", color: .gray) {
+                        SettingsRow(
+                            icon: "shield",
+                            title: LocalizationManager.shared.str(.profilePrivacyPolicy),
+                            color: .gray
+                        ) {
                             showPrivacyPolicy = true
                         }
-                        SettingsRow(icon: "doc.text", title: "Terms of Service", color: .gray) {}
+                        SettingsRow(
+                            icon: "doc.text",
+                            title: LocalizationManager.shared.str(.profileTermsOfService),
+                            color: .gray
+                        ) {}
                     }
 
                     // Sign Out Button
                     signOutButton
 
                     // App Version
-                    Text("Version 1.0.0")
+                    Text(LocalizationManager.shared.str(.profileVersion))
                         .font(.caption)
                         .foregroundColor(.gray)
                         .padding(.bottom, 20)
@@ -80,7 +107,7 @@ struct UserProfileView: View {
                 .padding(.horizontal)
             }
             .background(Color(.systemGroupedBackground).ignoresSafeArea())
-            .navigationTitle("Profile")
+            .navigationTitle(LocalizationManager.shared.str(.profileTitle))
             .navigationBarTitleDisplayMode(.inline)
             .photosPicker(isPresented: $showPhotoPicker, selection: $selectedItem)
             .sheet(isPresented: $showEditProfile) {
@@ -95,13 +122,14 @@ struct UserProfileView: View {
             .sheet(isPresented: $showNotificationSettings) {
                 NotificationSettingsView()
             }
-            .alert("Sign Out", isPresented: $showSignOutAlert) {
-                Button("Cancel", role: .cancel) {}
-                Button("Sign Out", role: .destructive) {
+            .alert(LocalizationManager.shared.str(.profileSignOut), isPresented: $showSignOutAlert)
+            {
+                Button(LocalizationManager.shared.str(.cancel), role: .cancel) {}
+                Button(LocalizationManager.shared.str(.profileSignOut), role: .destructive) {
                     Task { await authManager.signOut() }
                 }
             } message: {
-                Text("Are you sure you want to sign out?")
+                Text(LocalizationManager.shared.str(.profileSignOutConfirm))
             }
         }
         .task {
@@ -191,7 +219,7 @@ struct UserProfileView: View {
             HStack {
                 Image(systemName: "rectangle.portrait.and.arrow.right")
                     .foregroundColor(.red)
-                Text("Sign Out")
+                Text(LocalizationManager.shared.str(.profileSignOut))
                     .fontWeight(.medium)
                     .foregroundColor(.red)
             }
@@ -297,30 +325,30 @@ struct EditProfileView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Personal Information") {
-                    TextField("Username", text: $username)
-                    TextField("Email", text: $email)
+                Section(LocalizationManager.shared.str(.profilePersonalInfo)) {
+                    TextField(LocalizationManager.shared.str(.profileUsername), text: $username)
+                    TextField(LocalizationManager.shared.str(.profileEmail), text: $email)
                         .keyboardType(.emailAddress)
                         .disabled(true)
-                    TextField("Phone", text: $phone)
+                    TextField(LocalizationManager.shared.str(.profilePhone), text: $phone)
                         .keyboardType(.phonePad)
                         .disabled(true)
                 }
 
                 Section {
-                    Text("Hozircha faqat username yangilanadi.")
+                    Text(LocalizationManager.shared.str(.profileOnlyUsername))
                         .font(.caption)
                         .foregroundColor(.gray)
                 }
             }
-            .navigationTitle("Edit Profile")
+            .navigationTitle(LocalizationManager.shared.str(.profileEditProfile))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(LocalizationManager.shared.str(.cancel)) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button(LocalizationManager.shared.str(.profileSave)) {
                         Task { await saveProfile() }
                     }
                     .disabled(isSaving)
@@ -330,8 +358,8 @@ struct EditProfileView: View {
                 username = userManager.currentUser?.username ?? ""
                 email = userManager.currentUser?.email ?? ""
             }
-            .alert("Error", isPresented: $showError) {
-                Button("OK") {}
+            .alert(LocalizationManager.shared.str(.error), isPresented: $showError) {
+                Button(LocalizationManager.shared.str(.ok)) {}
             } message: {
                 Text(errorMessage)
             }
@@ -341,7 +369,7 @@ struct EditProfileView: View {
     private func saveProfile() async {
         let trimmedUsername = username.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedUsername.isEmpty else {
-            errorMessage = "Username bo'sh bo'lishi mumkin emas."
+            errorMessage = LocalizationManager.shared.str(.profileUsernameEmpty)
             showError = true
             return
         }
@@ -353,7 +381,8 @@ struct EditProfileView: View {
             try await userManager.updateUsername(trimmedUsername)
             dismiss()
         } catch {
-            errorMessage = "Profilni saqlab bo'lmadi: \(error.localizedDescription)"
+            errorMessage =
+                "\(LocalizationManager.shared.str(.profileSaveFailed)): \(error.localizedDescription)"
             showError = true
         }
     }
@@ -397,16 +426,16 @@ struct MyVehiclesView: View {
                         Image(systemName: "car")
                             .font(.system(size: 50))
                             .foregroundColor(.gray.opacity(0.5))
-                        Text("No vehicles added")
+                        Text(LocalizationManager.shared.str(.profileNoVehicles))
                             .foregroundColor(.gray)
                     }
                 }
             }
-            .navigationTitle("My Vehicles")
+            .navigationTitle(LocalizationManager.shared.str(.profileMyVehicles))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
+                    Button(LocalizationManager.shared.str(.profileDone)) { dismiss() }
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button {
@@ -443,23 +472,23 @@ struct PaymentMethodsSettingsView: View {
                         HStack {
                             Image(systemName: "plus.circle.fill")
                                 .foregroundColor(.purple)
-                            Text("Add Payment Method")
+                            Text(LocalizationManager.shared.str(.profileAddPayment))
                                 .foregroundColor(.purple)
                         }
                     }
                 }
             }
-            .navigationTitle("Payment Methods")
+            .navigationTitle(LocalizationManager.shared.str(.profilePaymentMethods))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
+                    Button(LocalizationManager.shared.str(.profileDone)) { dismiss() }
                 }
             }
-            .alert("Info", isPresented: $showInfo) {
-                Button("OK") {}
+            .alert(LocalizationManager.shared.str(.info), isPresented: $showInfo) {
+                Button(LocalizationManager.shared.str(.ok)) {}
             } message: {
-                Text("Yangi karta qo'shish backend qismi hali yoqilmagan.")
+                Text(LocalizationManager.shared.str(.profilePaymentNotReady))
             }
         }
     }
@@ -481,7 +510,7 @@ struct PaymentMethodRow: View {
             Spacer()
 
             if isDefault {
-                Text("Default")
+                Text(LocalizationManager.shared.str(.profileDefault))
                     .font(.caption)
                     .foregroundColor(.white)
                     .padding(.horizontal, 8)
@@ -505,21 +534,25 @@ struct NotificationSettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Push Notifications") {
-                    Toggle("Booking Alerts", isOn: $bookingAlerts)
-                    Toggle("Time Reminders", isOn: $timeReminders)
-                    Toggle("Promotions & Offers", isOn: $promotions)
+                Section(LocalizationManager.shared.str(.profilePushNotifications)) {
+                    Toggle(
+                        LocalizationManager.shared.str(.profileBookingAlerts), isOn: $bookingAlerts)
+                    Toggle(
+                        LocalizationManager.shared.str(.profileTimeReminders), isOn: $timeReminders)
+                    Toggle(LocalizationManager.shared.str(.profilePromotions), isOn: $promotions)
                 }
 
-                Section("Email") {
-                    Toggle("Email Notifications", isOn: $emailNotifications)
+                Section(LocalizationManager.shared.str(.profileEmailSection)) {
+                    Toggle(
+                        LocalizationManager.shared.str(.profileEmailNotif),
+                        isOn: $emailNotifications)
                 }
             }
-            .navigationTitle("Notifications")
+            .navigationTitle(LocalizationManager.shared.str(.profileNotifications))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
+                    Button(LocalizationManager.shared.str(.profileDone)) { dismiss() }
                 }
             }
         }

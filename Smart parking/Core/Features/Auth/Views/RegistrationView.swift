@@ -5,11 +5,12 @@
 //  Created by Kenjaboy Xajiyev on 02/12/25.
 //
 
- import SwiftUI
+import SwiftUI
 
 struct RegistrationView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthManager.self) private var authManager
+    @Environment(LocalizationManager.self) private var loc
     @State private var username: String = ""
     @State private var email: String = ""
     @State private var password: String = ""
@@ -18,6 +19,12 @@ struct RegistrationView: View {
     @State private var showAuthError = false
     @State private var showInfoAlert = false
     @State private var infoMessage = ""
+    @State private var nameTouched = false
+    @State private var emailTouched = false
+    @State private var passwordTouched = false
+    @FocusState private var focusedField: RegField?
+
+    private enum RegField { case name, email, password }
 
     private var isValidForm: Bool {
         !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -25,7 +32,30 @@ struct RegistrationView: View {
             && password.count >= 6
             && agreedToTerms
     }
-    
+
+    private var nameError: String? {
+        guard nameTouched else { return nil }
+        let trimmed = username.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return loc.str(.valNameRequired) }
+        if trimmed.count < 2 { return loc.str(.valNameMin) }
+        return nil
+    }
+
+    private var emailError: String? {
+        guard emailTouched else { return nil }
+        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return loc.str(.valEmailRequired) }
+        if !trimmed.contains("@") || !trimmed.contains(".") { return loc.str(.valEmailInvalid) }
+        return nil
+    }
+
+    private var passwordError: String? {
+        guard passwordTouched else { return nil }
+        if password.isEmpty { return loc.str(.valPasswordRequired) }
+        if password.count < 6 { return loc.str(.valPasswordMin) }
+        return nil
+    }
+
     var body: some View {
         ZStack {
             AppTheme.Palette.pageBackground
@@ -34,10 +64,10 @@ struct RegistrationView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: AppTheme.Spacing.xLarge) {
                     VStack(spacing: AppTheme.Spacing.small) {
-                        Text("Create Account")
+                        Text(loc.str(.registerTitle))
                             .font(.system(size: 34, weight: .bold))
                             .foregroundColor(AppTheme.Palette.textPrimary)
-                        Text("Fill your information below or register with your social account.")
+                        Text(loc.str(.registerSubtitle))
                             .foregroundColor(AppTheme.Palette.textSecondary)
                             .multilineTextAlignment(.center)
                     }
@@ -45,39 +75,54 @@ struct RegistrationView: View {
 
                     VStack(spacing: AppTheme.Spacing.medium) {
                         AppInputField(
-                            title: "Name",
-                            placeholder: "Ex. John Doe",
+                            title: loc.str(.registerName),
+                            placeholder: loc.str(.registerNamePlaceholder),
                             text: $username,
                             keyboardType: .default,
-                            autocapitalization: .words
+                            autocapitalization: .words,
+                            errorMessage: nameError
                         )
+                        .focused($focusedField, equals: .name)
+                        .onChange(of: focusedField) { _, newValue in
+                            if newValue != .name { nameTouched = true }
+                        }
 
                         AppInputField(
-                            title: "Email",
-                            placeholder: "example@gmail.com",
+                            title: loc.str(.loginEmail),
+                            placeholder: loc.str(.loginEmailPlaceholder),
                             text: $email,
                             keyboardType: .emailAddress,
-                            autocapitalization: .never
+                            autocapitalization: .never,
+                            errorMessage: emailError
                         )
+                        .focused($focusedField, equals: .email)
+                        .onChange(of: focusedField) { _, newValue in
+                            if newValue != .email { emailTouched = true }
+                        }
 
                         AppInputField(
-                            title: "Password",
-                            placeholder: "**********",
+                            title: loc.str(.loginPassword),
+                            placeholder: loc.str(.loginPasswordPlaceholder),
                             text: $password,
                             isSecure: true,
-                            revealSecureText: $isPasswordVisible
+                            revealSecureText: $isPasswordVisible,
+                            errorMessage: passwordError
                         )
+                        .focused($focusedField, equals: .password)
+                        .onChange(of: focusedField) { _, newValue in
+                            if newValue != .password { passwordTouched = true }
+                        }
 
                         HStack(spacing: AppTheme.Spacing.small) {
                             Toggle("", isOn: $agreedToTerms)
                                 .labelsHidden()
                                 .toggleStyle(CheckboxToggleStyle())
 
-                            Text("Agree with")
+                            Text(loc.str(.registerAgreeWith))
                                 .foregroundColor(AppTheme.Palette.textSecondary)
 
-                            Button("Terms & Condition") {
-                                showInfo("Terms sahifasi keyingi versiyada qo'shiladi.")
+                            Button(loc.str(.registerTerms)) {
+                                showInfo(loc.str(.profileComingSoon))
                             }
                             .foregroundColor(AppTheme.Palette.brand)
                             .fontWeight(.semibold)
@@ -87,7 +132,8 @@ struct RegistrationView: View {
                     }
 
                     AppPrimaryButton(
-                        title: authManager.isLoading ? "Creating..." : "Sign Up",
+                        title: authManager.isLoading
+                            ? loc.str(.registerSigningUp) : loc.str(.registerSignUp),
                         isLoading: authManager.isLoading,
                         isEnabled: isValidForm && !authManager.isLoading
                     ) {
@@ -99,7 +145,7 @@ struct RegistrationView: View {
                             Rectangle()
                                 .fill(AppTheme.Palette.border)
                                 .frame(height: 1)
-                            Text("Or sign up with")
+                            Text(loc.str(.loginOrWith))
                                 .font(.caption)
                                 .foregroundColor(AppTheme.Palette.textSecondary)
                             Rectangle()
@@ -115,9 +161,9 @@ struct RegistrationView: View {
                     }
 
                     HStack(spacing: 4) {
-                        Text("Already have an account?")
+                        Text(loc.str(.registerHaveAccount))
                             .foregroundColor(AppTheme.Palette.textSecondary)
-                        Button("Sign In") {
+                        Button(loc.str(.registerSignIn)) {
                             dismiss()
                         }
                         .foregroundColor(AppTheme.Palette.brand)
@@ -132,15 +178,15 @@ struct RegistrationView: View {
         .onChange(of: authManager.authError) { _, newValue in
             showAuthError = newValue != nil
         }
-        .alert("Sign Up Error", isPresented: $showAuthError) {
-            Button("OK") {
+        .alert(loc.str(.registerErrorTitle), isPresented: $showAuthError) {
+            Button(loc.str(.ok)) {
                 authManager.clearAuthError()
             }
         } message: {
-            Text(authManager.authError ?? "Unknown error")
+            Text(authManager.authError ?? loc.str(.error))
         }
-        .alert("Info", isPresented: $showInfoAlert) {
-            Button("OK") {}
+        .alert(loc.str(.info), isPresented: $showInfoAlert) {
+            Button(loc.str(.ok)) {}
         } message: {
             Text(infoMessage)
         }
@@ -160,8 +206,8 @@ struct CheckboxToggleStyle: ToggleStyle {
     }
 }
 
-private extension RegistrationView {
-    func signUp(){
+extension RegistrationView {
+    fileprivate func signUp() {
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedUsername = username.trimmingCharacters(in: .whitespacesAndNewlines)
         guard
@@ -181,22 +227,21 @@ private extension RegistrationView {
         }
     }
 
-    func showInfo(_ message: String) {
+    fileprivate func showInfo(_ message: String) {
         infoMessage = message
         showInfoAlert = true
     }
 
     @ViewBuilder
-    func socialButton(_ imageName: String) -> some View {
+    fileprivate func socialButton(_ imageName: String) -> some View {
         Button {
-            showInfo("Social sign up hozircha yoqilmagan.")
+            showInfo(loc.str(.loginSocialDisabled))
         } label: {
             SocialSignInButton(imageName: imageName)
         }
         .buttonStyle(.plain)
     }
 }
-
 
 #Preview {
     RegistrationView()

@@ -76,7 +76,7 @@ struct ReviewSummaryView: View {
 
             Spacer()
 
-            Text("Review Summary")
+            Text(LocalizationManager.shared.str(.reviewTitle))
                 .font(.headline)
 
             Spacer()
@@ -100,7 +100,7 @@ struct ReviewSummaryView: View {
             .clipped()
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("Car Parking")
+                Text(LocalizationManager.shared.str(.detailCarParking))
                     .font(.caption)
                     .foregroundColor(AppTheme.Palette.brand)
                     .padding(.horizontal, 8)
@@ -154,7 +154,7 @@ struct ReviewSummaryView: View {
     private var priceInfo: some View {
         VStack(spacing: 12) {
             HStack {
-                Text("Amount")
+                Text(LocalizationManager.shared.str(.reviewAmount))
                 Spacer()
                 Text(String(format: "$%.2f", parking.price_per_hour))
                     .fontWeight(.medium)
@@ -163,14 +163,14 @@ struct ReviewSummaryView: View {
             }
 
             HStack {
-                Text("Total Hours")
+                Text(LocalizationManager.shared.str(.reviewTotalHours))
                 Spacer()
                 Text(formatDuration(selectedMinutes))
                     .fontWeight(.medium)
             }
 
             HStack {
-                Text("Fees")
+                Text(LocalizationManager.shared.str(.reviewFees))
                 Spacer()
                 Text(String(format: "$%.2f", fees))
                     .fontWeight(.medium)
@@ -179,7 +179,7 @@ struct ReviewSummaryView: View {
             Divider()
 
             HStack {
-                Text("Total")
+                Text(LocalizationManager.shared.str(.reviewTotal))
                     .fontWeight(.semibold)
                 Spacer()
                 Text(String(format: "$%.2f", total))

@@ -1,8 +1,10 @@
+internal import Combine
 import CoreLocation
 import MapKit
 import SwiftUI
 
 struct ExploreView: View {
+    private let loc = LocalizationManager.shared
 
     @EnvironmentObject var parkings: ParkingsStore
     @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
@@ -39,9 +41,15 @@ struct ExploreView: View {
                         Annotation(
                             "", coordinate: .init(latitude: p.latitude, longitude: p.longitude)
                         ) {
-                            Circle()
-                                .fill(AppTheme.Palette.brand)
-                                .frame(width: 12, height: 12)
+                            NavigationLink {
+                                ParkingDetailView(parking: p)
+                            } label: {
+                                ParkingMarkerView(
+                                    price: p.price_per_hour,
+                                    spots: availabilityStore.availability(for: p.id)?.availableSpots
+                                )
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -52,8 +60,8 @@ struct ExploreView: View {
                         AppStateView(
                             kind: .empty(
                                 icon: "magnifyingglass",
-                                title: "Natija topilmadi",
-                                subtitle: "Qidiruv matnini o'zgartirib ko'ring."
+                                title: loc.str(.exploreNoResults),
+                                subtitle: loc.str(.exploreChangeSearch)
                             )
                         )
                         .padding(.top, 120)
@@ -69,8 +77,21 @@ struct ExploreView: View {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(AppTheme.Palette.textSecondary)
 
-                        TextField("Search Parking", text: $search)
+                        TextField(loc.str(.exploreSearch), text: $search)
                             .autocorrectionDisabled()
+                            .foregroundColor(AppTheme.Palette.textPrimary)
+
+                        if !search.isEmpty {
+                            Button {
+                                AppTheme.Haptic.light()
+                                withAnimation(AppTheme.Anim.smooth) { search = "" }
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(AppTheme.Palette.textTertiary)
+                            }
+                            .buttonStyle(.plain)
+                            .transition(.scale.combined(with: .opacity))
+                        }
                     }
                     .padding(.horizontal, 14)
                     .padding(.vertical, 12)
@@ -118,15 +139,15 @@ struct ExploreView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 8)
                 .background(AppTheme.Palette.pageBackground.opacity(0.9))
-                .alert("Info", isPresented: $showFilterInfo) {
-                    Button("OK") {}
+                .alert(loc.str(.info), isPresented: $showFilterInfo) {
+                    Button(loc.str(.ok)) {}
                 } message: {
-                    Text("Filter bo'limi keyingi versiyada qo'shiladi.")
+                    Text(loc.str(.exploreFilterInfo))
                 }
             }
 
-            // BOTTOM CARDS
-            .safeAreaInset(edge: .bottom) {
+            // BOTTOM CARDS — overlay so map stays fullscreen
+            .overlay(alignment: .bottom) {
                 if isRefreshing {
                     // Shimmer skeleton cards
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -136,11 +157,17 @@ struct ExploreView: View {
                             }
                         }
                         .padding(.horizontal)
-                        .padding(.top, 8)
+                        .padding(.top, 12)
                         .padding(.bottom, 12)
                     }
-                    .background(Color.clear)
-                } else {
+                    .background(
+                        LinearGradient(
+                            colors: [Color.clear, AppTheme.Palette.pageBackground.opacity(0.9)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                } else if !filtered.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 16) {
                             ForEach(filtered.prefix(10)) { parking in
@@ -153,10 +180,16 @@ struct ExploreView: View {
                             }
                         }
                         .padding(.horizontal)
-                        .padding(.top, 8)
+                        .padding(.top, 12)
                         .padding(.bottom, 12)
                     }
-                    .background(Color.clear)
+                    .background(
+                        LinearGradient(
+                            colors: [Color.clear, AppTheme.Palette.pageBackground.opacity(0.85)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
                 }
             }
 

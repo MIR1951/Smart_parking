@@ -5,10 +5,10 @@
 //  Real-time notification manager - Supabase Realtime bilan
 //
 
+internal import Combine
 import Supabase
 import SwiftUI
 import UserNotifications
-internal import Combine
 
 // MARK: - Notification Model
 struct UserNotification: Codable, Identifiable, Equatable {
@@ -51,10 +51,12 @@ struct UserNotification: Codable, Identifiable, Equatable {
 
     var timeAgo: String {
         let diff = Date().timeIntervalSince(created_at)
-        if diff < 60 { return "now" }
-        if diff < 3600 { return "\(Int(diff/60))m" }
-        if diff < 86400 { return "\(Int(diff/3600))h" }
-        return "\(Int(diff/86400))d"
+        if diff < 60 { return LocalizationManager.shared.str(.timeNow) }
+        if diff < 3600 { return "\(Int(diff/60))\(LocalizationManager.shared.str(.timeMinAgo))" }
+        if diff < 86400 {
+            return "\(Int(diff/3600))\(LocalizationManager.shared.str(.timeHourAgo))"
+        }
+        return "\(Int(diff/86400))\(LocalizationManager.shared.str(.timeDayAgo))"
     }
 }
 

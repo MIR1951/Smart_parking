@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ParkingDetailView: View {
+    private let loc = LocalizationManager.shared
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
     @EnvironmentObject var favorites: FavoritesStore
@@ -71,7 +72,7 @@ struct ParkingDetailView: View {
     }
 
     private var shareText: String {
-        "\(parking.name)\n\(parking.address ?? "Unknown address")\nPrice: $\(String(format: "%.2f", parking.price_per_hour))/hr"
+        "\(parking.name)\n\(parking.address ?? "")\n\(loc.str(.detailPrice)): $\(String(format: "%.2f", parking.price_per_hour))\(loc.str(.bookingsPerHour))"
     }
 }
 
@@ -123,9 +124,9 @@ extension ParkingDetailView {
                 Image(systemName: "star.fill")
                     .foregroundColor(.yellow)
                     .font(.caption)
-                    Text(String(format: "%.1f", parking.rating ?? 4.5))
-                        .font(.subheadline)
-                        .foregroundColor(AppTheme.Palette.textSecondary)
+                Text(String(format: "%.1f", parking.rating ?? 4.5))
+                    .font(.subheadline)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
                 Text("•")
                     .foregroundColor(AppTheme.Palette.textSecondary)
                 Text("\(parking.total_spots) total spots")
@@ -152,7 +153,9 @@ extension ParkingDetailView {
                 VStack {
                     Text(tab.rawValue)
                         .font(.headline)
-                        .foregroundColor(selectedTab == tab ? AppTheme.Palette.brand : AppTheme.Palette.textSecondary)
+                        .foregroundColor(
+                            selectedTab == tab
+                                ? AppTheme.Palette.brand : AppTheme.Palette.textSecondary)
 
                     if selectedTab == tab {
                         Rectangle()
@@ -190,7 +193,8 @@ extension ParkingDetailView {
 
                 HStack(spacing: 4) {
                     Image(systemName: "dollarsign.circle")
-                    Text(String(format: "$%.2f/hr", parking.price_per_hour))
+                    Text(
+                        String(format: "$%.2f", parking.price_per_hour) + loc.str(.bookingsPerHour))
                 }
                 .foregroundColor(AppTheme.Palette.brand)
             }
@@ -199,37 +203,39 @@ extension ParkingDetailView {
 
             // Description from DB
             VStack(alignment: .leading, spacing: 6) {
-                Text("Description")
+                Text(loc.str(.detailDescription))
                     .font(.headline)
-                Text(parking.description ?? "No description available for this parking location.")
+                Text(parking.description ?? loc.str(.detailNoDescription))
                     .foregroundColor(AppTheme.Palette.textSecondary)
             }
 
             // Features
             VStack(alignment: .leading, spacing: 8) {
-                Text("Features")
+                Text(loc.str(.detailFeatures))
                     .font(.headline)
 
                 LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 12) {
-                    featureItem(icon: "shield.checkered", title: "24/7 Security")
-                    featureItem(icon: "video.fill", title: "CCTV")
-                    featureItem(icon: "lightbulb.fill", title: "Good Lighting")
-                    featureItem(icon: "figure.walk", title: "Covered Parking")
+                    featureItem(icon: "shield.checkered", title: loc.str(.detailSecurity))
+                    featureItem(icon: "video.fill", title: loc.str(.detailCCTV))
+                    featureItem(icon: "lightbulb.fill", title: loc.str(.detailLighting))
+                    featureItem(icon: "figure.walk", title: loc.str(.detailCovered))
                 }
             }
 
             // Parking Info
             VStack(alignment: .leading, spacing: 8) {
-                Text("Parking Info")
+                Text(loc.str(.detailParkingInfo))
                     .font(.headline)
 
                 HStack {
-                    infoItem(title: "Total Spots", value: "\(parking.total_spots)")
+                    infoItem(title: loc.str(.detailTotalSpots), value: "\(parking.total_spots)")
                     Spacer()
-                    infoItem(title: "Available", value: "\(availableSpots)")
+                    infoItem(title: loc.str(.detailAvailable), value: "\(availableSpots)")
                     Spacer()
                     infoItem(
-                        title: "Price", value: String(format: "$%.2f/hr", parking.price_per_hour))
+                        title: loc.str(.detailPrice),
+                        value: String(format: "$%.2f", parking.price_per_hour)
+                            + loc.str(.bookingsPerHour))
                 }
             }
 
@@ -266,7 +272,7 @@ extension ParkingDetailView {
     private var gallerySection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Gallery")
+                Text(loc.str(.detailGallery))
                     .font(.headline)
                 Spacer()
             }
@@ -289,7 +295,7 @@ extension ParkingDetailView {
                     Image(systemName: "photo.on.rectangle.angled")
                         .font(.largeTitle)
                         .foregroundColor(AppTheme.Palette.textSecondary)
-                    Text("No gallery images available")
+                    Text(loc.str(.detailNoGallery))
                         .foregroundColor(AppTheme.Palette.textSecondary)
                 }
                 .frame(maxWidth: .infinity)
@@ -303,10 +309,10 @@ extension ParkingDetailView {
         VStack(alignment: .leading, spacing: 12) {
 
             HStack {
-                Text("Reviews")
+                Text(loc.str(.detailReviews))
                     .font(.headline)
                 Spacer()
-                Button("Add Review") {}
+                Button(loc.str(.detailAddReview)) {}
                     .foregroundColor(AppTheme.Palette.brand)
                     .font(.subheadline)
             }
@@ -324,7 +330,7 @@ extension ParkingDetailView {
                                 .font(.caption)
                         }
                     }
-                    Text("Based on reviews")
+                    Text(loc.str(.detailBasedOnReviews))
                         .font(.caption)
                         .foregroundColor(AppTheme.Palette.textSecondary)
                 }
@@ -398,10 +404,10 @@ extension ParkingDetailView {
     private var bottomBookingBar: some View {
         HStack {
             VStack(alignment: .leading) {
-                Text("Total Price")
+                Text(loc.str(.detailTotalPrice))
                     .foregroundColor(AppTheme.Palette.textSecondary)
                     .font(.caption)
-                Text("$\(parking.price_per_hour, specifier: "%.2f") /hr")
+                Text("$\(parking.price_per_hour, specifier: "%.2f") \(loc.str(.bookingsPerHour))")
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.Palette.textPrimary)
@@ -409,7 +415,7 @@ extension ParkingDetailView {
             Spacer()
 
             Button(action: { showBooking = true }) {
-                Text(isAvailable ? "Book Slot" : "Fully Booked")
+                Text(isAvailable ? loc.str(.detailBookSlot) : loc.str(.detailFullyBooked))
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
                     .frame(width: 160, height: 48)

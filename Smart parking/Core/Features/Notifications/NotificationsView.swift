@@ -6,10 +6,11 @@
 //
 
 import SwiftUI
-
+internal import Combine
 struct NotificationsView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var manager = NotificationManager.shared
+    private var loc = LocalizationManager.shared
 
     private var todayNotifications: [UserNotification] {
         manager.notifications.filter { Calendar.current.isDateInToday($0.created_at) }
@@ -32,7 +33,7 @@ struct NotificationsView: View {
 
             if manager.isLoading && manager.notifications.isEmpty {
                 Spacer(minLength: 24)
-                AppStateView(kind: .loading(title: "Bildirishnomalar yuklanmoqda..."))
+                AppStateView(kind: .loading(title: loc.str(.notifLoading)))
                 Spacer()
             } else if manager.notifications.isEmpty {
                 emptyState
@@ -41,7 +42,7 @@ struct NotificationsView: View {
             }
         }
         .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
-        .navigationBarHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
         .task {
             await manager.load()
             manager.startRealtime()
@@ -70,11 +71,11 @@ struct NotificationsView: View {
 
             Spacer()
 
-            Text("Notifications")
+            Text(loc.str(.notifTitle))
                 .font(.headline)
 
             if manager.unreadCount > 0 {
-                Text("\(manager.unreadCount) NEW")
+                Text("\(manager.unreadCount) \(loc.str(.notifNew))")
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
@@ -98,7 +99,7 @@ struct NotificationsView: View {
             VStack(alignment: .leading, spacing: 16) {
 
                 if !todayNotifications.isEmpty {
-                    sectionHeader("TODAY")
+                    sectionHeader(loc.str(.notifToday))
                     ForEach(todayNotifications) { notification in
                         NotificationRow(notification: notification) {
                             Task { await manager.markAsRead(notification.id) }
@@ -107,7 +108,7 @@ struct NotificationsView: View {
                 }
 
                 if !yesterdayNotifications.isEmpty {
-                    sectionHeader("YESTERDAY")
+                    sectionHeader(loc.str(.notifYesterday))
                     ForEach(yesterdayNotifications) { notification in
                         NotificationRow(notification: notification) {
                             Task { await manager.markAsRead(notification.id) }
@@ -116,7 +117,7 @@ struct NotificationsView: View {
                 }
 
                 if !olderNotifications.isEmpty {
-                    sectionHeader("OLDER")
+                    sectionHeader(loc.str(.notifOlder))
                     ForEach(olderNotifications) { notification in
                         NotificationRow(notification: notification) {
                             Task { await manager.markAsRead(notification.id) }
@@ -135,8 +136,8 @@ struct NotificationsView: View {
         AppStateView(
             kind: .empty(
                 icon: "bell.slash",
-                title: "No Notifications",
-                subtitle: "You're all caught up!"
+                title: loc.str(.notifEmpty),
+                subtitle: loc.str(.notifAllCaughtUp)
             )
         )
     }
@@ -152,7 +153,7 @@ struct NotificationsView: View {
             Spacer()
 
             if manager.unreadCount > 0 {
-                Button("Mark all read") {
+                Button(loc.str(.notifMarkAllRead)) {
                     Task { await manager.markAllAsRead() }
                 }
                 .font(.caption)

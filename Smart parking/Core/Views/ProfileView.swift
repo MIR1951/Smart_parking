@@ -5,87 +5,111 @@
 //  Created by Kenjaboy Xajiyev on 23/01/26.
 //
 
-
 import SwiftUI
 
 struct ProfileView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(UserManager.self) private var userManager
+    @Environment(LocalizationManager.self) private var loc
     @State private var showLogoutAlert = false
     @State private var showEditProfile = false
     @State private var showPaymentMethods = false
-    @State private var showNotificationSettings = false
     @State private var showInfoAlert = false
     @State private var infoMessage = ""
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
-                VStack(spacing: 10) {
-                    Circle()
-                        .fill(AppTheme.Palette.brandSoft)
-                        .frame(width: 90, height: 90)
-                        .overlay {
-                            Text(userInitial)
-                                .font(.title)
-                                .fontWeight(.bold)
-                                .foregroundColor(AppTheme.Palette.brand)
+            ScrollView {
+                VStack(spacing: AppTheme.Spacing.xLarge) {
+
+                    // MARK: - Avatar Header
+                    profileHeader
+
+                    // MARK: - Account Section
+                    sectionCard(
+                        title: loc.str(.profileAccount),
+                        rows: [
+                            ProfileRowData(
+                                icon: "person", title: loc.str(.profileYourProfile),
+                                color: AppTheme.Palette.brand
+                            ) {
+                                showEditProfile = true
+                            },
+                            ProfileRowData(
+                                icon: "creditcard", title: loc.str(.profilePaymentMethods),
+                                color: AppTheme.Palette.brand
+                            ) {
+                                showPaymentMethods = true
+                            },
+                            ProfileRowData(
+                                icon: "wallet.pass", title: loc.str(.profileMyWallet),
+                                color: AppTheme.Palette.warning
+                            ) {
+                                showComingSoon(loc.str(.profileComingSoon))
+                            },
+                        ])
+
+                    // MARK: - Preferences Section
+                    sectionCard(
+                        title: loc.str(.profilePreferences),
+                        rows: [
+                            ProfileRowData(
+                                icon: "gearshape", title: loc.str(.profileSettings),
+                                color: AppTheme.Palette.textSecondary,
+                                destination: AnyView(SettingsView())
+                            )
+                        ])
+
+                    // MARK: - Support Section
+                    sectionCard(
+                        title: loc.str(.profileSupport),
+                        rows: [
+                            ProfileRowData(
+                                icon: "questionmark.circle", title: loc.str(.profileHelpCenter),
+                                color: AppTheme.Palette.success
+                            ) {
+                                showComingSoon(loc.str(.profileComingSoon))
+                            },
+                            ProfileRowData(
+                                icon: "lock.shield", title: loc.str(.profilePrivacyPolicy),
+                                color: AppTheme.Palette.textSecondary
+                            ) {
+                                showComingSoon(loc.str(.profileComingSoon))
+                            },
+                            ProfileRowData(
+                                icon: "person.2", title: loc.str(.profileInviteFriends),
+                                color: AppTheme.Palette.brand
+                            ) {
+                                showComingSoon(loc.str(.profileComingSoon))
+                            },
+                        ])
+
+                    // MARK: - Log Out
+                    Button {
+                        AppTheme.Haptic.medium()
+                        showLogoutAlert = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "arrow.right.square")
+                                .font(.body)
+                            Text(loc.str(.profileLogout))
+                                .font(AppTheme.Typography.headline)
                         }
-
-                    Text(userManager.currentUser?.username ?? "User")
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                        .foregroundColor(AppTheme.Palette.textPrimary)
-
-                    Text(userManager.currentUser?.email ?? "")
-                        .font(.caption)
-                        .foregroundColor(AppTheme.Palette.textSecondary)
+                        .foregroundColor(AppTheme.Palette.danger)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(AppTheme.Palette.dangerSoft)
+                        .clipShape(
+                            RoundedRectangle(
+                                cornerRadius: AppTheme.Radius.medium, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal)
+                    .padding(.bottom, AppTheme.Spacing.large)
                 }
-                .padding(.top, 20)
-
-                VStack(spacing: 0) {
-                    ProfileRow(icon: "person", title: "Your profile")
-                        .onTapGesture {
-                            showEditProfile = true
-                        }
-                    ProfileRow(icon: "creditcard", title: "Payment Methods")
-                        .onTapGesture {
-                            showPaymentMethods = true
-                        }
-                    ProfileRow(icon: "wallet.pass", title: "My Wallet")
-                        .onTapGesture {
-                            showComingSoon("My Wallet bo'limi keyingi versiyada ochiladi.")
-                        }
-                    ProfileRow(icon: "gearshape", title: "Settings")
-                        .onTapGesture {
-                            showNotificationSettings = true
-                        }
-                    ProfileRow(icon: "questionmark.circle", title: "Help Center")
-                        .onTapGesture {
-                            showComingSoon("Help Center bo'limi keyingi versiyada ochiladi.")
-                        }
-                    ProfileRow(icon: "lock", title: "Privacy Policy")
-                        .onTapGesture {
-                            showComingSoon("Privacy Policy bo'limi keyingi versiyada ochiladi.")
-                        }
-                    ProfileRow(icon: "person.2", title: "Invites Friends")
-                        .onTapGesture {
-                            showComingSoon("Invite funksiyasi keyingi versiyada ochiladi.")
-                        }
-
-                    // 🔴 LOG OUT
-                    ProfileRow(icon: "arrow.right.square", title: "Log out", isDestructive: true)
-                        .onTapGesture {
-                            showLogoutAlert = true
-                        }
-                }
-                .appCard()
-                .padding(.horizontal)
-
-                Spacer()
             }
             .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
-            .navigationTitle("Profile")
+            .navigationTitle(loc.str(.profileTitle))
             .task {
                 await userManager.fetchCurrentUser()
             }
@@ -95,26 +119,101 @@ struct ProfileView: View {
             .sheet(isPresented: $showPaymentMethods) {
                 PaymentMethodsSettingsView()
             }
-            .sheet(isPresented: $showNotificationSettings) {
-                NotificationSettingsView()
-            }
-            .alert("Info", isPresented: $showInfoAlert) {
-                Button("OK") {}
+            .alert(loc.str(.info), isPresented: $showInfoAlert) {
+                Button(loc.str(.ok)) {}
             } message: {
                 Text(infoMessage)
             }
-            .alert("Log out", isPresented: $showLogoutAlert) {
-                Button("Cancel", role: .cancel) {}
+            .alert(loc.str(.profileLogout), isPresented: $showLogoutAlert) {
+                Button(loc.str(.cancel), role: .cancel) {}
 
-                Button("Log out", role: .destructive) {
+                Button(loc.str(.profileLogout), role: .destructive) {
                     Task {
                         await authManager.signOut()
                     }
                 }
             } message: {
-                Text("Are you sure you want to log out?")
+                Text(loc.str(.profileLogoutConfirm))
             }
         }
+    }
+
+    // MARK: - Profile Header
+    private var profileHeader: some View {
+        VStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .stroke(
+                        LinearGradient(
+                            colors: [AppTheme.Palette.brand, AppTheme.Palette.brandDark],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 3
+                    )
+                    .frame(width: 100, height: 100)
+
+                Circle()
+                    .fill(AppTheme.Palette.brandSoft)
+                    .frame(width: 90, height: 90)
+                    .overlay {
+                        Text(userInitial)
+                            .font(.system(size: 36, weight: .bold, design: .rounded))
+                            .foregroundColor(AppTheme.Palette.brand)
+                    }
+            }
+
+            Text(userManager.currentUser?.username ?? "User")
+                .font(AppTheme.Typography.title2)
+                .foregroundColor(AppTheme.Palette.textPrimary)
+
+            Text(userManager.currentUser?.email ?? "")
+                .font(AppTheme.Typography.caption)
+                .foregroundColor(AppTheme.Palette.textSecondary)
+        }
+        .padding(.top, 20)
+    }
+
+    // MARK: - Section Card Builder
+    private func sectionCard(title: String, rows: [ProfileRowData]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title)
+                .font(AppTheme.Typography.captionBold)
+                .foregroundColor(AppTheme.Palette.textTertiary)
+                .textCase(.uppercase)
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+
+            VStack(spacing: 0) {
+                ForEach(rows.indices, id: \.self) { index in
+                    let row = rows[index]
+                    Group {
+                        if let dest = row.destination {
+                            NavigationLink {
+                                dest
+                            } label: {
+                                ProfileRow(icon: row.icon, title: row.title, color: row.color)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            Button {
+                                AppTheme.Haptic.light()
+                                row.action?()
+                            } label: {
+                                ProfileRow(icon: row.icon, title: row.title, color: row.color)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+
+                    if index < rows.count - 1 {
+                        Divider().padding(.leading, 56)
+                    }
+                }
+            }
+            .appCard()
+        }
+        .padding(.horizontal)
     }
 
     private var userInitial: String {
@@ -128,26 +227,59 @@ struct ProfileView: View {
     }
 }
 
+// MARK: - Profile Row Data
+
+struct ProfileRowData {
+    let icon: String
+    let title: String
+    let color: Color
+    var destination: AnyView? = nil
+    var action: (() -> Void)? = nil
+
+    init(icon: String, title: String, color: Color, destination: AnyView) {
+        self.icon = icon
+        self.title = title
+        self.color = color
+        self.destination = destination
+    }
+
+    init(icon: String, title: String, color: Color, action: @escaping () -> Void) {
+        self.icon = icon
+        self.title = title
+        self.color = color
+        self.action = action
+    }
+}
+
+// MARK: - Profile Row View
 
 struct ProfileRow: View {
     let icon: String
     let title: String
-    var isDestructive: Bool = false
+    var color: Color = AppTheme.Palette.textPrimary
 
     var body: some View {
-        HStack {
+        HStack(spacing: 14) {
             Image(systemName: icon)
-                .foregroundColor(isDestructive ? AppTheme.Palette.danger : AppTheme.Palette.textPrimary)
+                .font(.body)
+                .foregroundColor(color)
+                .frame(width: 34, height: 34)
+                .background(color.opacity(0.1))
+                .clipShape(
+                    RoundedRectangle(cornerRadius: AppTheme.Radius.xSmall, style: .continuous))
 
             Text(title)
-                .foregroundColor(isDestructive ? AppTheme.Palette.danger : AppTheme.Palette.textPrimary)
+                .font(AppTheme.Typography.body)
+                .foregroundColor(AppTheme.Palette.textPrimary)
 
             Spacer()
 
             Image(systemName: "chevron.right")
-                .foregroundColor(AppTheme.Palette.textSecondary)
+                .font(.caption)
+                .foregroundColor(AppTheme.Palette.textTertiary)
         }
-        .padding()
-        Divider()
+        .padding(.horizontal)
+        .padding(.vertical, 13)
+        .contentShape(Rectangle())
     }
 }

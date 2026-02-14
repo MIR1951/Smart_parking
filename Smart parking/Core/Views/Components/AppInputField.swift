@@ -2,7 +2,7 @@
 //  AppInputField.swift
 //  Smart parking
 //
-//  Shared form controls.
+//  Shared form controls with inline validation.
 //
 
 import SwiftUI
@@ -15,6 +15,9 @@ struct AppInputField: View {
     @Binding var revealSecureText: Bool
     var keyboardType: UIKeyboardType = .default
     var autocapitalization: TextInputAutocapitalization = .never
+    var errorMessage: String? = nil
+
+    private var hasError: Bool { errorMessage != nil && !(errorMessage?.isEmpty ?? true) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.xSmall) {
@@ -49,9 +52,24 @@ struct AppInputField: View {
             .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous)
-                    .stroke(AppTheme.Palette.border, lineWidth: 1)
+                    .stroke(
+                        hasError ? AppTheme.Palette.danger : AppTheme.Palette.border,
+                        lineWidth: hasError ? 1.5 : 1
+                    )
             )
+
+            if let error = errorMessage, !error.isEmpty {
+                HStack(spacing: 4) {
+                    Image(systemName: "exclamationmark.circle.fill")
+                        .font(.caption2)
+                    Text(error)
+                        .font(.caption)
+                }
+                .foregroundColor(AppTheme.Palette.danger)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
+        .animation(AppTheme.Anim.smooth, value: errorMessage)
     }
 }
 
@@ -61,7 +79,8 @@ extension AppInputField {
         placeholder: String,
         text: Binding<String>,
         keyboardType: UIKeyboardType = .default,
-        autocapitalization: TextInputAutocapitalization = .never
+        autocapitalization: TextInputAutocapitalization = .never,
+        errorMessage: String? = nil
     ) {
         self.title = title
         self.placeholder = placeholder
@@ -70,5 +89,6 @@ extension AppInputField {
         self._revealSecureText = .constant(false)
         self.keyboardType = keyboardType
         self.autocapitalization = autocapitalization
+        self.errorMessage = errorMessage
     }
 }

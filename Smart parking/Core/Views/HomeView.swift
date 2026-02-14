@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct HomeView: View {
+    private let loc = LocalizationManager.shared
 
     @EnvironmentObject var parkings: ParkingsStore
     @EnvironmentObject var favorites: FavoritesStore
@@ -10,6 +11,12 @@ struct HomeView: View {
     @StateObject private var locationManager = LocationManager()
     @State private var didRequestLocation = false
     @State private var isRefreshing = false
+    @ObservedObject private var notifManager = NotificationManager.shared
+
+    /// Initial load holati — data hali kelmaguncha shimmer ko'rsatish uchun
+    private var isInitialLoading: Bool {
+        parkings.all.isEmpty && parkings.errorMessage == nil
+    }
 
     private var searchQuery: String {
         search.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -31,48 +38,79 @@ struct HomeView: View {
         }
     }
 
+    @State private var isScrolled = false
+
     var body: some View {
         NavigationStack {
             ZStack {
                 AppTheme.Palette.pageBackground.ignoresSafeArea()
 
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 20) {
-                        headerSection
-                        searchSection
-                        if isRefreshing || (parkings.isLoading && parkings.all.isEmpty) {
-                            // Shimmer skeleton
-                            HomeShimmerView()
-                        } else if let error = parkings.errorMessage, parkings.all.isEmpty {
-                            AppStateView(
-                                kind: .error(
-                                    title: "Parkinglar yuklanmadi",
-                                    subtitle: error,
-                                    actionTitle: "Qayta urinish",
-                                    action: {
-                                        parkings.load(
-                                            userLocation: locationManager.location, force: true)
-                                    }
+                VStack(spacing: 0) {
+                    // MARK: - Sticky Header
+                    headerSection
+                        .padding(.bottom, 8)
+
+                    // MARK: - Sticky Search Bar
+                    searchSection
+                        .padding(.bottom, 4)
+                        .background(AppTheme.Palette.pageBackground)
+                        .shadow(
+                            color: isScrolled ? Color.black.opacity(0.06) : Color.clear,
+                            radius: isScrolled ? 6 : 0,
+                            y: isScrolled ? 3 : 0
+                        )
+                        .zIndex(1)
+
+                    // MARK: - Scrollable Content
+                    ScrollView(showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 20) {
+                            if isRefreshing || isInitialLoading {
+                                HomeShimmerView()
+                            } else if let error = parkings.errorMessage, parkings.all.isEmpty {
+                                AppStateView(
+                                    kind: .error(
+                                        title: loc.str(.homeLoadFailed),
+                                        subtitle: error,
+                                        actionTitle: loc.str(.homeRetry),
+                                        action: {
+                                            parkings.load(
+                                                userLocation: locationManager.location, force: true)
+                                        }
+                                    )
                                 )
-                            )
-                            .padding(.top, 30)
-                        } else if !parkings.isLoading && parkings.all.isEmpty {
-                            AppStateView(
-                                kind: .empty(
-                                    icon: "car",
-                                    title: "Parking topilmadi",
-                                    subtitle: "Internet yoki joylashuvni tekshirib ko'ring."
+                                .padding(.top, 30)
+                            } else if !parkings.isLoading && parkings.all.isEmpty {
+                                AppStateView(
+                                    kind: .empty(
+                                        icon: "car",
+                                        title: loc.str(.homeNoParking),
+                                        subtitle: loc.str(.homeCheckInternet)
+                                    )
                                 )
-                            )
-                            .padding(.top, 30)
-                        } else {
-                            popularSection
-                            nearbySection
+                                .padding(.top, 30)
+                            } else {
+                                popularSection
+                                nearbySection
+                            }
+                        }
+                        .padding(.vertical, 12)
+                        .background(
+                            GeometryReader { geo in
+                                Color.clear.preference(
+                                    key: ScrollOffsetKey.self,
+                                    value: geo.frame(in: .named("homeScroll")).minY
+                                )
+                            }
+                        )
+                    }
+                    .coordinateSpace(name: "homeScroll")
+                    .onPreferenceChange(ScrollOffsetKey.self) { value in
+                        withAnimation(.easeOut(duration: 0.15)) {
+                            isScrolled = value < -10
                         }
                     }
-                    .padding(.vertical)
+                    .id(parkings.reloadToken)
                 }
-                .id(parkings.reloadToken)
             }
 
             .onAppear {
@@ -97,6 +135,9 @@ struct HomeView: View {
             .task {
                 availabilityStore.initialLoad(force: false)
                 availabilityStore.startRealtime()
+                // Load notifications so badge shows immediately
+                await notifManager.load()
+                notifManager.startRealtime()
             }
         }
     }
@@ -106,7 +147,8 @@ struct HomeView: View {
     private var headerSection: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Location").foregroundColor(AppTheme.Palette.textSecondary).font(.caption)
+                Text(loc.str(.homeLocation)).foregroundColor(AppTheme.Palette.textSecondary).font(
+                    .caption)
                 HStack {
                     Image(systemName: "location.fill").foregroundColor(AppTheme.Palette.brand)
                     Text(locationManager.placeName)
@@ -126,8 +168,8 @@ struct HomeView: View {
                         .overlay(Image(systemName: "bell").foregroundColor(AppTheme.Palette.brand))
 
                     // Notification Badge
-                    if NotificationManager.shared.unreadCount > 0 {
-                        Text("\(min(NotificationManager.shared.unreadCount, 99))")
+                    if notifManager.unreadCount > 0 {
+                        Text("\(min(notifManager.unreadCount, 99))")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.white)
                             .frame(minWidth: 16, minHeight: 16)
@@ -144,8 +186,21 @@ struct HomeView: View {
     private var searchSection: some View {
         HStack {
             Image(systemName: "magnifyingglass").foregroundColor(AppTheme.Palette.textSecondary)
-            TextField("Search parking", text: $search).autocorrectionDisabled()
+            TextField(loc.str(.homeSearchParking), text: $search).autocorrectionDisabled()
                 .foregroundColor(AppTheme.Palette.textPrimary)
+
+            if !search.isEmpty {
+                Button {
+                    AppTheme.Haptic.light()
+                    withAnimation(AppTheme.Anim.smooth) { search = "" }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(AppTheme.Palette.textTertiary)
+                        .font(.body)
+                }
+                .buttonStyle(.plain)
+                .transition(.scale.combined(with: .opacity))
+            }
         }
         .padding(.horizontal, AppTheme.Spacing.medium)
         .padding(.vertical, 12)
@@ -161,7 +216,7 @@ struct HomeView: View {
     private var popularSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Popular Parking").font(.title3).fontWeight(.semibold)
+                Text(loc.str(.homePopularParking)).font(AppTheme.Typography.title3)
                 Spacer()
                 if !filteredPopular.isEmpty {
                     Text("\(filteredPopular.count)")
@@ -183,15 +238,17 @@ struct HomeView: View {
                             }
 
                             Button {
+                                AppTheme.Haptic.medium()
                                 favorites.toggle(parking.id)
                             } label: {
                                 Image(
                                     systemName: favorites.isFavorite(parking.id)
                                         ? "heart.fill" : "heart"
                                 )
+                                .font(.callout)
                                 .foregroundColor(favorites.isFavorite(parking.id) ? .red : .white)
                                 .padding(10)
-                                .background(Color.black.opacity(0.35))
+                                .background(.ultraThinMaterial)
                                 .clipShape(Circle())
                             }
                             .buttonStyle(.plain)
@@ -207,7 +264,7 @@ struct HomeView: View {
     private var nearbySection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Nearby Parking").font(.title3).fontWeight(.semibold)
+                Text(loc.str(.homeNearbyParking)).font(AppTheme.Typography.title3)
                 Spacer()
                 if !filteredNearby.isEmpty {
                     Text("\(filteredNearby.count)")
@@ -239,12 +296,20 @@ struct HomeView: View {
                 AppStateView(
                     kind: .empty(
                         icon: "magnifyingglass",
-                        title: "Natija topilmadi",
-                        subtitle: "Boshqa nom yoki manzil bilan qidirib ko'ring."
+                        title: loc.str(.homeSearchNoResults),
+                        subtitle: loc.str(.homeSearchNoResultsSub)
                     )
                 )
                 .padding(.top, 20)
             }
         }
+    }
+}
+
+// MARK: - Scroll Offset Preference Key
+private struct ScrollOffsetKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }

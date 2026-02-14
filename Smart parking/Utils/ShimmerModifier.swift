@@ -192,7 +192,7 @@ struct BookingCardSkeleton: View {
             }
         }
         .padding(14)
-        .background(Color.white)
+        .background(AppTheme.Palette.surface)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .shadow(color: Color.black.opacity(0.04), radius: 10, x: 0, y: 4)
     }

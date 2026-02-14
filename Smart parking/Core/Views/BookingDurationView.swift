@@ -5,24 +5,26 @@
 //  Created by Kenjaboy Xajiyev on 23/01/26.
 //
 
-
-import SwiftUI
 import CoreLocation
+import SwiftUI
 
 struct BookingDurationView: View {
+    private let loc = LocalizationManager.shared
     let parking: Parking
     @Environment(\.dismiss) private var dismiss
 
     @StateObject private var vm = BookingViewModel()
 
-    private let durations = [30, 60, 90, 120, 150, 180] // 30 min step
+    private let durations = [30, 60, 90, 120, 150, 180]  // 30 min step
 
     var body: some View {
         VStack(spacing: 16) {
 
             // Header
             HStack {
-                Button { dismiss() } label: {
+                Button {
+                    dismiss()
+                } label: {
                     Image(systemName: "chevron.left")
                         .foregroundColor(AppTheme.Palette.textPrimary)
                         .padding(10)
@@ -31,7 +33,7 @@ struct BookingDurationView: View {
                         .shadow(radius: 2)
                 }
                 Spacer()
-                Text("Book Slot")
+                Text(loc.str(.bookingBookSlot))
                     .font(.headline)
                 Spacer()
                 Color.clear.frame(width: 44, height: 44)
@@ -42,7 +44,7 @@ struct BookingDurationView: View {
             // Info
             VStack(alignment: .leading, spacing: 8) {
                 Text(parking.name).font(.title3).fontWeight(.semibold)
-                Text("Reservation starts now. Arriving late reduces prepaid time usable inside.")
+                Text(loc.str(.bookingReservationInfo))
                     .font(.caption)
                     .foregroundColor(AppTheme.Palette.textSecondary)
             }
@@ -50,7 +52,7 @@ struct BookingDurationView: View {
 
             // Duration chips
             VStack(alignment: .leading, spacing: 10) {
-                Text("Select duration")
+                Text(loc.str(.bookingSelectDuration))
                     .font(.headline)
                     .padding(.horizontal)
 
@@ -68,7 +70,7 @@ struct BookingDurationView: View {
 
             // Price
             VStack(alignment: .leading, spacing: 6) {
-                Text("Prepaid amount")
+                Text(loc.str(.bookingPrepaidAmount))
                     .font(.caption)
                     .foregroundColor(AppTheme.Palette.textSecondary)
 
@@ -87,7 +89,7 @@ struct BookingDurationView: View {
             } label: {
                 HStack {
                     if vm.isProcessing { ProgressView().tint(.white) }
-                    Text(vm.isProcessing ? "Processing..." : "Pay & Reserve")
+                    Text(vm.isProcessing ? loc.str(.bookingProcessing) : loc.str(.bookingContinue))
                         .fontWeight(.semibold)
                 }
                 .foregroundColor(.white)
@@ -101,16 +103,16 @@ struct BookingDurationView: View {
 
         }
         .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
-        .alert("Reservation", isPresented: $vm.showAlert) {
-            Button("OK") { if vm.didSucceed { dismiss() } }
+        .alert(loc.str(.info), isPresented: $vm.showAlert) {
+            Button(loc.str(.ok)) { if vm.didSucceed { dismiss() } }
         } message: {
             Text(vm.alertMessage)
         }
     }
 
     private func labelFor(minutes: Int) -> String {
-        if minutes < 60 { return "\(minutes) min" }
-        if minutes % 60 == 0 { return "\(minutes/60) hour" }
+        if minutes < 60 { return "\(minutes) \(loc.str(.bookingMin))" }
+        if minutes % 60 == 0 { return "\(minutes/60) \(loc.str(.bookingHour))" }
         return "\(minutes/60)h \(minutes%60)m"
     }
 }

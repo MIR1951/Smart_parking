@@ -47,7 +47,7 @@ final class BookingsVM: ObservableObject {
             self.items = rows
         } catch {
             if let urlError = error as? URLError, urlError.code == .cancelled { return }
-            self.error = "Bookings yuklanmadi"
+            self.error = LocalizationManager.shared.str(.bookingsLoadFailed)
             print("❌ bookings load error:", error)
         }
     }

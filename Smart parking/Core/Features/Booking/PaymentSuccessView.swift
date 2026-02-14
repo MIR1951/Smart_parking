@@ -24,7 +24,7 @@ struct PaymentSuccessView: View {
             // Header - faqat title
             HStack {
                 Spacer()
-                Text("Payment")
+                Text(LocalizationManager.shared.str(.successPayment))
                     .font(.headline)
                 Spacer()
             }
@@ -48,12 +48,12 @@ struct PaymentSuccessView: View {
                     .foregroundColor(.white)
             }
 
-            Text("Payment Successful!")
+            Text(LocalizationManager.shared.str(.successTitle))
                 .font(.title2)
                 .fontWeight(.bold)
                 .padding(.top, 24)
 
-            Text("Your Parking Slot Successfully Booked.\nYou can check your booking on Home Menu.")
+            Text(LocalizationManager.shared.str(.successMessage))
                 .font(.subheadline)
                 .foregroundColor(AppTheme.Palette.textSecondary)
                 .multilineTextAlignment(.center)
@@ -62,7 +62,7 @@ struct PaymentSuccessView: View {
 
             // Reservation ID
             HStack {
-                Text("Reservation ID:")
+                Text(LocalizationManager.shared.str(.successReservationId))
                     .foregroundColor(AppTheme.Palette.textSecondary)
                 Text(reservationId.uuidString.prefix(8).uppercased())
                     .fontWeight(.semibold)

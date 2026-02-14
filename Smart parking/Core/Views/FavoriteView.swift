@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - FavoriteView
 
 struct FavoriteView: View {
+    private let loc = LocalizationManager.shared
 
     @EnvironmentObject var favorites: FavoritesStore
     @EnvironmentObject var parkings: ParkingsStore
@@ -24,8 +25,8 @@ struct FavoriteView: View {
                     AppStateView(
                         kind: .empty(
                             icon: "heart.slash",
-                            title: "Favorites yo'q",
-                            subtitle: "Yoqtirgan parkinglaringiz shu yerda chiqadi."
+                            title: loc.str(.favoriteNoFavorites),
+                            subtitle: loc.str(.favoriteNoFavoritesSub)
                         )
                     )
                 } else {
@@ -82,9 +83,11 @@ struct RemoveFavoriteSheet: View {
     let onCancel: () -> Void
     let onRemove: () -> Void
 
+    private let loc = LocalizationManager.shared
+
     var body: some View {
         VStack(spacing: 14) {
-            Text("Remove from Favorites?")
+            Text(loc.str(.favoriteRemoveTitle))
                 .font(.headline)
                 .padding(.top, 6)
 
@@ -100,7 +103,7 @@ struct RemoveFavoriteSheet: View {
 
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
-                        Text("Car Parking")
+                        Text(loc.str(.detailCarParking))
                             .font(.caption)
                             .foregroundColor(AppTheme.Palette.brand)
 
@@ -121,9 +124,11 @@ struct RemoveFavoriteSheet: View {
                         .fontWeight(.semibold)
                         .lineLimit(1)
 
-                    Text("$\(parking.price_per_hour, specifier: "%.2f") /hr")
-                        .font(.subheadline)
-                        .foregroundColor(AppTheme.Palette.brand)
+                    Text(
+                        "$\(parking.price_per_hour, specifier: "%.2f") \(loc.str(.bookingsPerHour))"
+                    )
+                    .font(.subheadline)
+                    .foregroundColor(AppTheme.Palette.brand)
                 }
             }
             .padding()
@@ -132,7 +137,7 @@ struct RemoveFavoriteSheet: View {
 
             HStack(spacing: 12) {
                 Button(action: onCancel) {
-                    Text("Cancel")
+                    Text(loc.str(.favoriteCancel))
                         .fontWeight(.semibold)
                         .foregroundColor(AppTheme.Palette.brand)
                         .frame(maxWidth: .infinity)
@@ -142,7 +147,7 @@ struct RemoveFavoriteSheet: View {
                 }
 
                 Button(action: onRemove) {
-                    Text("Yes, Remove")
+                    Text(loc.str(.favoriteYesRemove))
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
