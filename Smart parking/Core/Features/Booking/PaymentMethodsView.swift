@@ -108,14 +108,23 @@ struct PaymentMethodsView: View {
                 .background(AppTheme.Palette.brandSoft)
                 .cornerRadius(10)
 
-            Text(method.displayName)
-                .font(.body)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(method.displayName)
+                    .font(.body)
+
+                if method == .wallet {
+                    Text("\(loc.str(.walletBalance)): \(WalletManager.shared.formattedBalance)")
+                        .font(.caption)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
+                }
+            }
 
             Spacer()
 
             Circle()
                 .stroke(
-                    selectedMethod == method ? AppTheme.Palette.brand : Color.gray.opacity(0.3), lineWidth: 2
+                    selectedMethod == method ? AppTheme.Palette.brand : Color.gray.opacity(0.3),
+                    lineWidth: 2
                 )
                 .frame(width: 24, height: 24)
                 .overlay {

@@ -24,6 +24,7 @@ final class ParkingsStore: ObservableObject {
     private var loadTask: Task<Void, Never>?
     private var hasLoadedOnce = false
     private var lastUserLocation: CLLocation?
+    private var activeRequestID = UUID()
 
     func load(userLocation: CLLocation?, force: Bool = false) {
         if hasLoadedOnce && !force {
@@ -41,27 +42,29 @@ final class ParkingsStore: ObservableObject {
     private func loadAsync(userLocation: CLLocation?, force: Bool) async {
         if hasLoadedOnce && !force { return }
 
+        let requestID = UUID()
+        activeRequestID = requestID
+
         isLoading = true
         errorMessage = nil
 
         // 1) Avval cache dan yuklaymiz (tezkor UI)
         if !force, let cached = ParkingCache.shared.load() {
+            guard activeRequestID == requestID else { return }
             updateParkings(cached, userLocation: userLocation)
-            hasLoadedOnce = true
-            isLoading = false
-
-            // Agar cache fresh bo'lsa, network ga bormaymiz
-            if ParkingCache.shared.isFresh() {
-                return
-            }
-            // Cache stale - background da yangilaymiz
+            // Darhol UI ko'rsatamiz, lekin network dan ham yangilaymiz
         }
 
-        defer { isLoading = false }
+        defer {
+            if activeRequestID == requestID {
+                isLoading = false
+            }
+        }
 
-        // 2) Network dan yuklaymiz
+        // 2) Har doim network dan yuklaymiz (yangi parkinglar ko'rinishi uchun)
         do {
             let items = try await service.fetchParkings()
+            guard !Task.isCancelled, activeRequestID == requestID else { return }
 
             // Cache ga saqlaymiz
             ParkingCache.shared.save(items)
@@ -71,12 +74,16 @@ final class ParkingsStore: ObservableObject {
             self.reloadToken = UUID()
 
         } catch {
+            guard !Task.isCancelled, activeRequestID == requestID else { return }
             if let urlError = error as? URLError, urlError.code == .cancelled { return }
             // Agar cache dan yuklangan bo'lsa, xato ko'rsatmaymiz
             if all.isEmpty {
                 errorMessage = "Ma'lumotlar yuklanmadi"
             }
-
+            // Cache dan yuklagan bo'lsak, hasLoadedOnce ni belgilaymiz
+            if !all.isEmpty {
+                hasLoadedOnce = true
+            }
         }
     }
 

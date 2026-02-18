@@ -96,7 +96,7 @@ struct PopularParkingCard: View {
 
             // Price
             HStack(spacing: 2) {
-                Text("$\(parking.price_per_hour, specifier: "%.2f")")
+                Text("\(Int(parking.price_per_hour)) so'm")
                     .font(AppTheme.Typography.headline)
                     .foregroundColor(AppTheme.Palette.brand)
                 Text(LocalizationManager.shared.str(.bookingsPerHour))

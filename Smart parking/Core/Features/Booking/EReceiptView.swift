@@ -26,8 +26,7 @@ struct EReceiptView: View {
     private var endTime: Date { startTime.addingTimeInterval(Double(selectedMinutes) * 60) }
     private var hours: Double { Double(selectedMinutes) / 60.0 }
     private var amount: Double { hours * parking.price_per_hour }
-    private var fees: Double { 2.0 }
-    private var total: Double { amount + fees }
+    private var total: Double { amount }
 
     var body: some View {
         NavigationStack {
@@ -118,7 +117,8 @@ struct EReceiptView: View {
     // MARK: - Vehicle Info Section
     private var vehicleInfoSection: some View {
         VStack(spacing: 12) {
-            infoRow(title: loc.str(.receiptCar), value: "\(vehicle.name) (\(vehicle.type.rawValue))")
+            infoRow(
+                title: loc.str(.receiptCar), value: "\(vehicle.name) (\(vehicle.type.rawValue))")
             infoRow(title: loc.str(.receiptPlate), value: vehicle.plateNumber)
             infoRow(title: loc.str(.receiptParking), value: parking.name)
             infoRow(title: loc.str(.receiptAddress), value: parking.address ?? loc.str(.unknown))
@@ -140,7 +140,7 @@ struct EReceiptView: View {
             HStack {
                 Text(loc.str(.receiptRate))
                 Spacer()
-                Text(String(format: "$%.2f", parking.price_per_hour))
+                Text("\(Int(parking.price_per_hour)) so'm")
                     .fontWeight(.medium)
                 Text("/hr")
                     .foregroundColor(AppTheme.Palette.textSecondary)
@@ -156,14 +156,7 @@ struct EReceiptView: View {
             HStack {
                 Text(loc.str(.receiptSubtotal))
                 Spacer()
-                Text(String(format: "$%.2f", amount))
-                    .fontWeight(.medium)
-            }
-
-            HStack {
-                Text(loc.str(.receiptServiceFee))
-                Spacer()
-                Text(String(format: "$%.2f", fees))
+                Text("\(Int(amount)) so'm")
                     .fontWeight(.medium)
             }
 
@@ -173,7 +166,7 @@ struct EReceiptView: View {
                 Text(loc.str(.reviewTotal))
                     .fontWeight(.semibold)
                 Spacer()
-                Text(String(format: "$%.2f", total))
+                Text("\(Int(total)) so'm")
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.Palette.brand)
@@ -303,9 +296,8 @@ struct EReceiptView: View {
 
             yPosition += 20
 
-            drawRow("\(loc.str(.receiptRate)):", String(format: "$%.2f/hr", parking.price_per_hour))
-            drawRow("\(loc.str(.receiptSubtotal)):", String(format: "$%.2f", amount))
-            drawRow("\(loc.str(.receiptServiceFee)):", String(format: "$%.2f", fees))
+            drawRow("\(loc.str(.receiptRate)):", "\(Int(parking.price_per_hour)) so'm/hr")
+            drawRow("\(loc.str(.receiptSubtotal)):", "\(Int(amount)) so'm")
 
             yPosition += 10
 
@@ -316,7 +308,7 @@ struct EReceiptView: View {
             ]
             "\(loc.str(.reviewTotal)):".draw(
                 at: CGPoint(x: margin, y: yPosition), withAttributes: valueAttributes)
-            String(format: "$%.2f", total).draw(
+            "\(Int(total)) so'm".draw(
                 at: CGPoint(x: pageWidth / 2, y: yPosition), withAttributes: totalAttributes)
             yPosition += 40
 

@@ -17,105 +17,134 @@ struct ProfileView: View {
     @State private var showPaymentMethods = false
     @State private var showInfoAlert = false
     @State private var infoMessage = ""
+    @State private var scrollOffset: CGFloat = 0
+
+    // Scroll offset asosida header qisqaradi
+    private var headerProgress: CGFloat {
+        min(max(scrollOffset / 120, 0), 1)
+    }
 
     var body: some View {
         ZStack {
             AppAnimatedBackground()
 
-            ScrollView {
-                VStack(spacing: AppTheme.Spacing.xLarge) {
+            VStack(spacing: 0) {
+                // MARK: - Sticky Profile Header
+                profileHeader
+                    .padding(.bottom, 8)
 
-                    // MARK: - Avatar Header
-                    profileHeader
-                        .appReveal(0.02)
+                // MARK: - Scrollable Content
+                ScrollView(showsIndicators: false) {
+                    // Scroll offset o'lchash uchun
+                    GeometryReader { geo in
+                        Color.clear
+                            .preference(
+                                key: ScrollOffsetPreferenceKey.self,
+                                value: -geo.frame(in: .named("profileScroll")).minY
+                            )
+                    }
+                    .frame(height: 0)
 
-                    // MARK: - Account Section
-                    sectionCard(
-                        title: loc.str(.profileAccount),
-                        rows: [
-                            ProfileRowData(
-                                icon: "person", title: loc.str(.profileYourProfile),
-                                color: AppTheme.Palette.brand
-                            ) {
-                                showEditProfile = true
-                            },
-                            ProfileRowData(
-                                icon: "creditcard", title: loc.str(.profilePaymentMethods),
-                                color: AppTheme.Palette.brand
-                            ) {
-                                showPaymentMethods = true
-                            },
-                            ProfileRowData(
-                                icon: "wallet.pass", title: loc.str(.profileMyWallet),
-                                color: AppTheme.Palette.warning
-                            ) {
-                                showComingSoon(loc.str(.profileComingSoon))
-                            },
-                        ])
+                    VStack(spacing: AppTheme.Spacing.xLarge) {
+
+                        // MARK: - Account Section
+                        sectionCard(
+                            title: loc.str(.profileAccount),
+                            rows: [
+                                ProfileRowData(
+                                    icon: "person", title: loc.str(.profileYourProfile),
+                                    color: AppTheme.Palette.brand
+                                ) {
+                                    showEditProfile = true
+                                },
+                                ProfileRowData(
+                                    icon: "creditcard", title: loc.str(.profilePaymentMethods),
+                                    color: AppTheme.Palette.brand
+                                ) {
+                                    showPaymentMethods = true
+                                },
+                                ProfileRowData(
+                                    icon: "wallet.pass", title: loc.str(.profileMyWallet),
+                                    color: AppTheme.Palette.warning,
+                                    subtitle: WalletManager.shared.formattedBalance
+                                ) {
+                                    coordinator.showWallet()
+                                },
+                            ]
+                        )
                         .appReveal(0.06)
 
-                    // MARK: - Preferences Section
-                    sectionCard(
-                        title: loc.str(.profilePreferences),
-                        rows: [
-                            ProfileRowData(
-                                icon: "gearshape", title: loc.str(.profileSettings),
-                                color: AppTheme.Palette.textSecondary
-                            ) {
-                                coordinator.showSettings()
-                            }
-                        ])
+                        // MARK: - Preferences Section
+                        sectionCard(
+                            title: loc.str(.profilePreferences),
+                            rows: [
+                                ProfileRowData(
+                                    icon: "gearshape", title: loc.str(.profileSettings),
+                                    color: AppTheme.Palette.textSecondary
+                                ) {
+                                    coordinator.showSettings()
+                                }
+                            ]
+                        )
                         .appReveal(0.10)
 
-                    // MARK: - Support Section
-                    sectionCard(
-                        title: loc.str(.profileSupport),
-                        rows: [
-                            ProfileRowData(
-                                icon: "questionmark.circle", title: loc.str(.profileHelpCenter),
-                                color: AppTheme.Palette.success
-                            ) {
-                                showComingSoon(loc.str(.profileComingSoon))
-                            },
-                            ProfileRowData(
-                                icon: "lock.shield", title: loc.str(.profilePrivacyPolicy),
-                                color: AppTheme.Palette.textSecondary
-                            ) {
-                                showComingSoon(loc.str(.profileComingSoon))
-                            },
-                            ProfileRowData(
-                                icon: "person.2", title: loc.str(.profileInviteFriends),
-                                color: AppTheme.Palette.brand
-                            ) {
-                                showComingSoon(loc.str(.profileComingSoon))
-                            },
-                        ])
+                        // MARK: - Support Section
+                        sectionCard(
+                            title: loc.str(.profileSupport),
+                            rows: [
+                                ProfileRowData(
+                                    icon: "questionmark.circle", title: loc.str(.profileHelpCenter),
+                                    color: AppTheme.Palette.success
+                                ) {
+                                    showComingSoon(loc.str(.profileComingSoon))
+                                },
+                                ProfileRowData(
+                                    icon: "lock.shield", title: loc.str(.profilePrivacyPolicy),
+                                    color: AppTheme.Palette.textSecondary
+                                ) {
+                                    showComingSoon(loc.str(.profileComingSoon))
+                                },
+                                ProfileRowData(
+                                    icon: "person.2", title: loc.str(.profileInviteFriends),
+                                    color: AppTheme.Palette.brand
+                                ) {
+                                    showComingSoon(loc.str(.profileComingSoon))
+                                },
+                            ]
+                        )
                         .appReveal(0.14)
 
-                    // MARK: - Log Out
-                    Button {
-                        AppTheme.Haptic.medium()
-                        showLogoutAlert = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "arrow.right.square")
-                                .font(.body)
-                            Text(loc.str(.profileLogout))
-                                .font(AppTheme.Typography.headline)
+                        // MARK: - Log Out
+                        Button {
+                            AppTheme.Haptic.medium()
+                            showLogoutAlert = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "arrow.right.square")
+                                    .font(.body)
+                                Text(loc.str(.profileLogout))
+                                    .font(AppTheme.Typography.headline)
+                            }
+                            .foregroundColor(AppTheme.Palette.danger)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(AppTheme.Palette.dangerSoft)
+                            .clipShape(
+                                RoundedRectangle(
+                                    cornerRadius: AppTheme.Radius.medium, style: .continuous))
                         }
-                        .foregroundColor(AppTheme.Palette.danger)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(AppTheme.Palette.dangerSoft)
-                        .clipShape(
-                            RoundedRectangle(
-                                cornerRadius: AppTheme.Radius.medium, style: .continuous))
+                        .buttonStyle(.plain)
+                        .pressStyle()
+                        .appReveal(0.18)
+                        .padding(.horizontal)
+                        .padding(.bottom, AppTheme.Spacing.large)
                     }
-                    .buttonStyle(.plain)
-                    .pressStyle()
-                    .appReveal(0.18)
-                    .padding(.horizontal)
-                    .padding(.bottom, AppTheme.Spacing.large)
+                }
+                .coordinateSpace(name: "profileScroll")
+                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                    withAnimation(.easeOut(duration: 0.15)) {
+                        scrollOffset = value
+                    }
                 }
             }
         }
@@ -147,9 +176,14 @@ struct ProfileView: View {
         }
     }
 
-    // MARK: - Profile Header
+    // MARK: - Profile Header (sticky, animatsion bilan kichrayadi)
     private var profileHeader: some View {
-        VStack(spacing: 12) {
+        let avatarSize: CGFloat = 100 - (headerProgress * 50)  // 100 → 50
+        let nameSize: CGFloat = 22 - (headerProgress * 6)  // 22 → 16
+        let showEmail = headerProgress < 0.5
+
+        return HStack(spacing: 14) {
+            // Avatar
             ZStack {
                 Circle()
                     .stroke(
@@ -158,29 +192,65 @@ struct ProfileView: View {
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: 3
+                        lineWidth: 3 - headerProgress
                     )
-                    .frame(width: 100, height: 100)
+                    .frame(width: avatarSize, height: avatarSize)
 
-                Circle()
-                    .fill(AppTheme.Palette.brandSoft)
-                    .frame(width: 90, height: 90)
-                    .overlay {
-                        Text(userInitial)
-                            .font(.system(size: 36, weight: .bold, design: .rounded))
-                            .foregroundColor(AppTheme.Palette.brand)
+                if let avatarURL = userManager.currentUser?.profileImageURL,
+                    let url = URL(string: avatarURL)
+                {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let img):
+                            img.resizable().scaledToFill()
+                        default:
+                            avatarPlaceholder(size: avatarSize - 10)
+                        }
                     }
+                    .frame(width: avatarSize - 10, height: avatarSize - 10)
+                    .clipShape(Circle())
+                } else {
+                    avatarPlaceholder(size: avatarSize - 10)
+                }
             }
 
-            Text(userManager.currentUser?.username ?? "User")
-                .font(AppTheme.Typography.title2)
-                .foregroundColor(AppTheme.Palette.textPrimary)
+            // Ism va email (compact holatda gorizontal)
+            VStack(alignment: headerProgress > 0.3 ? .leading : .center, spacing: 2) {
+                Text(userManager.currentUser?.username ?? "User")
+                    .font(.system(size: nameSize, weight: .semibold, design: .rounded))
+                    .foregroundColor(AppTheme.Palette.textPrimary)
 
-            Text(userManager.currentUser?.email ?? "")
-                .font(AppTheme.Typography.caption)
-                .foregroundColor(AppTheme.Palette.textSecondary)
+                if showEmail {
+                    Text(userManager.currentUser?.email ?? "")
+                        .font(AppTheme.Typography.caption)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
+                        .transition(.opacity.combined(with: .scale))
+                }
+            }
+            .frame(
+                maxWidth: headerProgress > 0.3 ? .infinity : nil,
+                alignment: headerProgress > 0.3 ? .leading : .center)
+
+            if headerProgress > 0.3 { Spacer() }
         }
-        .padding(.top, 20)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal)
+        .padding(.top, headerProgress > 0.3 ? 8 : 20)
+        .padding(.bottom, 4)
+        .background(
+            AppTheme.Palette.surface.opacity(headerProgress * 0.9)
+        )
+    }
+
+    private func avatarPlaceholder(size: CGFloat) -> some View {
+        Circle()
+            .fill(AppTheme.Palette.brandSoft)
+            .frame(width: size, height: size)
+            .overlay {
+                Text(userInitial)
+                    .font(.system(size: size * 0.4, weight: .bold, design: .rounded))
+                    .foregroundColor(AppTheme.Palette.brand)
+            }
     }
 
     // MARK: - Section Card Builder
@@ -200,7 +270,9 @@ struct ProfileView: View {
                         AppTheme.Haptic.light()
                         row.action()
                     } label: {
-                        ProfileRow(icon: row.icon, title: row.title, color: row.color)
+                        ProfileRow(
+                            icon: row.icon, title: row.title, color: row.color,
+                            subtitle: row.subtitle)
                     }
                     .buttonStyle(.plain)
 
@@ -225,18 +297,32 @@ struct ProfileView: View {
     }
 }
 
+// MARK: - Scroll Offset Preference Key
+
+private struct ScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
 // MARK: - Profile Row Data
 
 struct ProfileRowData {
     let icon: String
     let title: String
     let color: Color
+    var subtitle: String? = nil
     let action: () -> Void
 
-    init(icon: String, title: String, color: Color, action: @escaping () -> Void = {}) {
+    init(
+        icon: String, title: String, color: Color, subtitle: String? = nil,
+        action: @escaping () -> Void = {}
+    ) {
         self.icon = icon
         self.title = title
         self.color = color
+        self.subtitle = subtitle
         self.action = action
     }
 }
@@ -247,6 +333,7 @@ struct ProfileRow: View {
     let icon: String
     let title: String
     var color: Color = AppTheme.Palette.textPrimary
+    var subtitle: String? = nil
 
     var body: some View {
         HStack(spacing: 14) {
@@ -258,9 +345,17 @@ struct ProfileRow: View {
                 .clipShape(
                     RoundedRectangle(cornerRadius: AppTheme.Radius.xSmall, style: .continuous))
 
-            Text(title)
-                .font(AppTheme.Typography.body)
-                .foregroundColor(AppTheme.Palette.textPrimary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(AppTheme.Typography.body)
+                    .foregroundColor(AppTheme.Palette.textPrimary)
+
+                if let subtitle {
+                    Text(subtitle)
+                        .font(AppTheme.Typography.caption)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
+                }
+            }
 
             Spacer()
 

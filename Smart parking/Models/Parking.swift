@@ -19,5 +19,6 @@ struct Parking: Identifiable, Codable {
     var live_occupancy: Int?
     var description: String?
     let is_popular: Bool?
-    
+    let images: [String]?
+    let features: [String]?
 }

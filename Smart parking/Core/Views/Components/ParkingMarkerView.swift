@@ -4,6 +4,7 @@ import SwiftUI
 struct ParkingMarkerView: View {
     let price: Double
     let spots: Int?
+    var isSelected: Bool = false
 
     @State private var isPulsing = false
 
@@ -17,7 +18,7 @@ struct ParkingMarkerView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Bubble
-            Text("$\(price, specifier: "%.0f")")
+            Text("\(Int(price)) so'm")
                 .font(.system(size: 12, weight: .bold, design: .rounded))
                 .foregroundColor(.white)
                 .padding(.horizontal, 8)
@@ -26,6 +27,10 @@ struct ParkingMarkerView: View {
                     Capsule().fill(markerColor)
                         .shadow(color: markerColor.opacity(0.4), radius: 4, y: 2)
                 )
+                .overlay(
+                    Capsule()
+                        .stroke(Color.white, lineWidth: isSelected ? 2.5 : 0)
+                )
 
             // Pointer triangle
             Triangle()
@@ -33,6 +38,8 @@ struct ParkingMarkerView: View {
                 .frame(width: 10, height: 6)
                 .offset(y: -1)
         }
+        .scaleEffect(isSelected ? 1.3 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
         .background(
             Circle()
                 .fill(markerColor.opacity(0.15))

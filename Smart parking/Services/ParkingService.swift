@@ -29,8 +29,9 @@ final class ParkingService {
                     total_spots,
                     parking_live_stats ( live_occupancy ),
                     description,
-                    is_popular
-                   
+                    is_popular,
+                    images,
+                    features
                 """
             )
             .execute()
@@ -48,7 +49,8 @@ final class ParkingService {
             let parking_live_stats: LiveStats?
             var description: String?
             let is_popular: Bool?
-
+            let images: [String]?
+            let features: [String]?
         }
 
         struct LiveStats: Codable {
@@ -74,8 +76,9 @@ final class ParkingService {
                 total_spots: item.total_spots,
                 live_occupancy: item.parking_live_stats?.live_occupancy,
                 description: item.description,
-                is_popular: item.is_popular ?? false
-
+                is_popular: item.is_popular ?? false,
+                images: item.images,
+                features: item.features
             )
         }
 

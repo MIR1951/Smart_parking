@@ -375,7 +375,7 @@ struct BookingCard: View {
                     }
 
                     HStack(spacing: 4) {
-                        Text("$\(item.parking.price_per_hour, specifier: "%.2f")")
+                        Text("\(Int(item.parking.price_per_hour)) so'm")
                             .font(.headline)
                             .foregroundColor(AppTheme.Palette.brand)
                         Text(LocalizationManager.shared.str(.bookingsPerHour))
@@ -393,18 +393,32 @@ struct BookingCard: View {
                 overtimeWarning
             }
 
-            HStack(spacing: 12) {
-                Button(action: onLeftTap) {
-                    Text(leftButtonTitle)
-                        .fontWeight(.semibold)
-                        .foregroundColor(leftButtonStyle.1)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(leftButtonStyle.0)
-                        .clipShape(Capsule())
-                }
-                .pressStyle()
+            // Ongoing: 2 ta button, Completed/Cancelled: 1 ta button
+            if tab == .ongoing {
+                HStack(spacing: 12) {
+                    Button(action: onLeftTap) {
+                        Text(leftButtonTitle)
+                            .fontWeight(.semibold)
+                            .foregroundColor(leftButtonStyle.1)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(leftButtonStyle.0)
+                            .clipShape(Capsule())
+                    }
+                    .pressStyle()
 
+                    Button(action: onTicketTap) {
+                        Text(rightButtonTitle)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(AppTheme.Gradient.brand)
+                            .clipShape(Capsule())
+                    }
+                    .pressStyle()
+                }
+            } else {
                 Button(action: onTicketTap) {
                     Text(rightButtonTitle)
                         .fontWeight(.semibold)
@@ -682,14 +696,14 @@ struct BookingETicketView: View {
             HStack {
                 Text(LocalizationManager.shared.str(.bookingsPricePerHour))
                 Spacer()
-                Text(String(format: "$%.2f", item.parking.price_per_hour))
+                Text("\(Int(item.parking.price_per_hour)) so'm")
                     .fontWeight(.medium)
             }
 
             HStack {
                 Text(LocalizationManager.shared.str(.bookingsBaseAmount))
                 Spacer()
-                Text(String(format: "$%.2f", item.totalAmount))
+                Text("\(Int(item.totalAmount)) so'm")
                     .fontWeight(.medium)
             }
 
@@ -697,7 +711,7 @@ struct BookingETicketView: View {
                 HStack {
                     Text(LocalizationManager.shared.str(.bookingsOvertimeCharge))
                     Spacer()
-                    Text(String(format: "+$%.2f", item.overtimeAmount))
+                    Text("+\(Int(item.overtimeAmount)) so'm")
                         .fontWeight(.medium)
                         .foregroundColor(.orange)
                 }
@@ -709,7 +723,7 @@ struct BookingETicketView: View {
                 Text(LocalizationManager.shared.str(.reviewTotal))
                     .fontWeight(.semibold)
                 Spacer()
-                Text(String(format: "$%.2f", item.totalAmount + item.overtimeAmount))
+                Text("\(Int(item.totalAmount + item.overtimeAmount)) so'm")
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.Palette.brand)
@@ -859,14 +873,14 @@ struct BookingDetailSheet: View {
             HStack {
                 Text(LocalizationManager.shared.str(.bookingsPricePerHour))
                 Spacer()
-                Text(String(format: "$%.2f", item.parking.price_per_hour))
+                Text("\(Int(item.parking.price_per_hour)) so'm")
                     .fontWeight(.medium)
             }
 
             HStack {
                 Text(LocalizationManager.shared.str(.bookingsBaseAmount))
                 Spacer()
-                Text(String(format: "$%.2f", item.totalAmount))
+                Text("\(Int(item.totalAmount)) so'm")
                     .fontWeight(.medium)
             }
 
@@ -874,7 +888,7 @@ struct BookingDetailSheet: View {
                 HStack {
                     Text(LocalizationManager.shared.str(.bookingsOvertimeCharge))
                     Spacer()
-                    Text(String(format: "+$%.2f", item.overtimeAmount))
+                    Text("+\(Int(item.overtimeAmount)) so'm")
                         .fontWeight(.medium)
                         .foregroundColor(.orange)
                 }
@@ -886,7 +900,7 @@ struct BookingDetailSheet: View {
                 Text(LocalizationManager.shared.str(.reviewTotal))
                     .fontWeight(.semibold)
                 Spacer()
-                Text(String(format: "$%.2f", item.totalAmount + item.overtimeAmount))
+                Text("\(Int(item.totalAmount + item.overtimeAmount)) so'm")
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.Palette.brand)

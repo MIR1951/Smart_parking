@@ -93,7 +93,11 @@ struct BookingFlowView: View {
                     }
                 }
                 .id(currentStep)
-                .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .move(edge: .leading).combined(with: .opacity)))
+                .transition(
+                    .asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .move(edge: .leading).combined(with: .opacity))
+                )
                 .animation(AppTheme.Anim.snappy, value: currentStep)
 
                 // Loading overlay
@@ -126,14 +130,33 @@ struct BookingFlowView: View {
 
     private func processPayment() {
         guard selectedVehicle != nil,
-            selectedPaymentMethod != nil
+            let paymentMethod = selectedPaymentMethod
         else { return }
 
         isProcessing = true
 
         Task {
-            // 1) Simulate payment
-            try? await Task.sleep(nanoseconds: 500_000_000)
+            // 1) Wallet to'lov — mablag' yechish
+            if paymentMethod == .wallet {
+                let totalAmount = parking.price_per_hour * (Double(selectedMinutes) / 60.0)
+                do {
+                    try await WalletManager.shared.deduct(
+                        amount: totalAmount,
+                        description:
+                            "\(parking.name) - \(selectedMinutes) \(loc.str(.bookingMin))"
+                    )
+                } catch {
+                    await MainActor.run {
+                        isProcessing = false
+                        errorMessage = error.localizedDescription
+                        showError = true
+                    }
+                    return
+                }
+            } else {
+                // Boshqa to'lov usullari uchun simulyatsiya
+                try? await Task.sleep(nanoseconds: 500_000_000)
+            }
 
             // 2) Create reservation
             do {
@@ -231,7 +254,7 @@ private struct BookingDurationStepView: View {
                     .foregroundColor(AppTheme.Palette.textSecondary)
 
                 let amount = (Double(selectedMinutes) / 60.0) * parking.price_per_hour
-                Text(String(format: "$%.2f", amount))
+                Text("\(Int(amount)) so'm")
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.Palette.textPrimary)
@@ -243,8 +266,8 @@ private struct BookingDurationStepView: View {
 
             // Continue button
             AppPrimaryButton(title: loc.str(.bookingContinue), action: onContinue)
-            .padding(.horizontal)
-            .padding(.bottom, 24)
+                .padding(.horizontal)
+                .padding(.bottom, 24)
         }
         .background(AppAnimatedBackground())
     }

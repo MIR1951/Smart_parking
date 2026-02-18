@@ -57,7 +57,7 @@ struct FavoriteView: View {
             }
         }
         .navigationTitle(loc.str(.favoriteTitle))
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
 
         // Realtime + initial load (agar root’da start qilingan bo‘lsa ham zarar qilmaydi)
         .task {
@@ -126,7 +126,7 @@ struct RemoveFavoriteSheet: View {
                         .lineLimit(1)
 
                     Text(
-                        "$\(parking.price_per_hour, specifier: "%.2f") \(loc.str(.bookingsPerHour))"
+                        "\(Int(parking.price_per_hour)) so'm \(loc.str(.bookingsPerHour))"
                     )
                     .font(.subheadline)
                     .foregroundColor(AppTheme.Palette.brand)

@@ -12,6 +12,7 @@ enum AppRoute: Hashable {
     case parkingDetail(Parking)
     case notifications
     case settings
+    case wallet
 }
 
 enum AppFullScreenRoute: Hashable, Identifiable {
@@ -80,6 +81,10 @@ final class AppCoordinator {
 
     func showSettings() {
         push(.settings)
+    }
+
+    func showWallet() {
+        push(.wallet)
     }
 
     func startBookingFlow(_ parking: Parking) {

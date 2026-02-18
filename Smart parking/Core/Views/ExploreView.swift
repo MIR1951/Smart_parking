@@ -23,6 +23,9 @@ struct ExploreView: View {
     @State private var didRequestLocation = false
     @State private var showFilterInfo = false
     @State private var isRefreshing = false
+    @State private var selectedCardId: UUID?
+    @State private var scrolledCardId: UUID?
+    @State private var isMarkerTap = false
 
     private var filtered: [Parking] {
         let base = parkings.nearby
@@ -34,6 +37,10 @@ struct ExploreView: View {
         }
     }
 
+    private var visibleParkings: [Parking] {
+        Array(filtered.prefix(10))
+    }
+
     var body: some View {
         ZStack {
             Map(position: $cameraPosition) {
@@ -42,11 +49,13 @@ struct ExploreView: View {
                         "", coordinate: .init(latitude: p.latitude, longitude: p.longitude)
                     ) {
                         Button {
-                            coordinator.showParkingDetail(p)
+                            // Marker bosilganda card'ga scroll qilish
+                            selectParking(p, fromMarker: true)
                         } label: {
                             ParkingMarkerView(
                                 price: p.price_per_hour,
-                                spots: availabilityStore.availability(for: p.id)?.availableSpots
+                                spots: availabilityStore.availability(for: p.id)?.availableSpots,
+                                isSelected: selectedCardId == p.id
                             )
                         }
                         .buttonStyle(.plain)
@@ -174,10 +183,10 @@ struct ExploreView: View {
                         endPoint: .bottom
                     )
                 )
-            } else if !filtered.isEmpty {
+            } else if !visibleParkings.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
-                        ForEach(Array(filtered.prefix(10).enumerated()), id: \.element.id) {
+                        ForEach(Array(visibleParkings.enumerated()), id: \.element.id) {
                             index, parking in
                             Button {
                                 coordinator.showParkingDetail(parking)
@@ -186,11 +195,23 @@ struct ExploreView: View {
                                     .appReveal(Double(index) * 0.03)
                             }
                             .buttonStyle(.plain)
+                            .id(parking.id)
                         }
                     }
                     .padding(.horizontal)
                     .padding(.top, 12)
                     .padding(.bottom, 12)
+                }
+                .scrollPosition(id: $scrolledCardId, anchor: .center)
+                .onChange(of: scrolledCardId) { _, newId in
+                    guard let newId, !isMarkerTap else { return }
+                    selectedCardId = newId
+                }
+                .onAppear {
+                    if scrolledCardId == nil, let first = visibleParkings.first {
+                        scrolledCardId = first.id
+                        selectedCardId = first.id
+                    }
                 }
                 .background(
                     LinearGradient(
@@ -218,7 +239,7 @@ struct ExploreView: View {
             }
         }
         .onChange(of: locationManager.location) { _, loc in
-            if let loc {
+            if let loc, selectedCardId == nil {
                 withAnimation {
                     cameraPosition = .region(
                         MKCoordinateRegion(
@@ -233,6 +254,33 @@ struct ExploreView: View {
             } else {
                 parkings.recomputeNearby(userLocation: loc)
             }
+        }
+        .onChange(of: selectedCardId) { _, newId in
+            guard let newId,
+                let parking = visibleParkings.first(where: { $0.id == newId })
+            else { return }
+            withAnimation(.easeInOut(duration: 0.5)) {
+                cameraPosition = .region(
+                    MKCoordinateRegion(
+                        center: CLLocationCoordinate2D(
+                            latitude: parking.latitude, longitude: parking.longitude),
+                        span: MKCoordinateSpan(latitudeDelta: 0.015, longitudeDelta: 0.015)
+                    )
+                )
+            }
+        }
+    }
+
+    private func selectParking(_ parking: Parking, fromMarker: Bool = false) {
+        AppTheme.Haptic.light()
+        isMarkerTap = true
+        selectedCardId = parking.id
+        withAnimation {
+            scrolledCardId = parking.id
+        }
+        // isMarkerTap bayrog'ini qaytarish
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            isMarkerTap = false
         }
     }
 

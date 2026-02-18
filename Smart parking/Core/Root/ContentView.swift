@@ -34,27 +34,27 @@ struct ContentView: View {
                                 routeDestination(for: route)
                             }
                     }
-                        .environment(appCoordinator)
-                        .environmentObject(parkingsStore)
-                        .environmentObject(favoritesStore)
-                        .environmentObject(availabilityStore)
-                        .onAppear {
-                            guard !didStart else { return }
-                            didStart = true
-                            availabilityStore.initialLoad()
+                    .environment(appCoordinator)
+                    .environmentObject(parkingsStore)
+                    .environmentObject(favoritesStore)
+                    .environmentObject(availabilityStore)
+                    .onAppear {
+                        guard !didStart else { return }
+                        didStart = true
+                        availabilityStore.initialLoad()
+                    }
+                    .fullScreenCover(
+                        item: $appCoordinator.fullScreenRoute,
+                        onDismiss: {
+                            appCoordinator.endBookingFlow()
                         }
-                        .fullScreenCover(
-                            item: $appCoordinator.fullScreenRoute,
-                            onDismiss: {
-                                appCoordinator.endBookingFlow()
-                            }
-                        ) { route in
-                            fullScreenDestination(for: route)
-                                .environment(appCoordinator)
-                                .environmentObject(parkingsStore)
-                                .environmentObject(favoritesStore)
-                                .environmentObject(availabilityStore)
-                        }
+                    ) { route in
+                        fullScreenDestination(for: route)
+                            .environment(appCoordinator)
+                            .environmentObject(parkingsStore)
+                            .environmentObject(favoritesStore)
+                            .environmentObject(availabilityStore)
+                    }
                 } else {
                     LoginView()
                 }
@@ -88,6 +88,7 @@ struct ContentView: View {
     private func synchronizeSessionState(userID: String?) {
         favoritesStore.setCurrentUserID(userID)
         VehiclesStore.shared.setCurrentUserID(userID)
+        WalletManager.shared.setCurrentUserID(userID)
 
         guard let userID else {
             didStart = false
@@ -117,6 +118,9 @@ struct ContentView: View {
                 .toolbar(.hidden, for: .tabBar)
         case .settings:
             SettingsView()
+                .toolbar(.hidden, for: .tabBar)
+        case .wallet:
+            WalletView()
                 .toolbar(.hidden, for: .tabBar)
         }
     }

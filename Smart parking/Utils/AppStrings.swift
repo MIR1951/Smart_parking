@@ -360,6 +360,20 @@ enum StringKey: String {
     case favoriteNoFavorites
     case favoriteNoFavoritesSub
 
+    // Wallet
+    case walletTitle
+    case walletBalance
+    case walletTopUp
+    case walletQuickTopUp
+    case walletTransactions
+    case walletNoTransactions
+    case walletEnterAmount
+    case walletTopUpDone
+    case walletInsufficientBalance
+    case walletInvalidAmount
+    case walletPaymentFor
+    case walletCurrency
+
     // Common
     case ok
     case cancel
@@ -735,6 +749,20 @@ enum StringKey: String {
         case .favoriteNoFavorites: return "Sevimlilar yo'q"
         case .favoriteNoFavoritesSub: return "Yoqtirgan parkinglaringiz shu yerda chiqadi."
 
+        // Wallet
+        case .walletTitle: return "Hamyon"
+        case .walletBalance: return "Joriy balans"
+        case .walletTopUp: return "To'ldirish"
+        case .walletQuickTopUp: return "Tez to'ldirish"
+        case .walletTransactions: return "Tranzaksiyalar"
+        case .walletNoTransactions: return "Tranzaksiyalar yo'q"
+        case .walletEnterAmount: return "Ixtiyoriy summa kiriting"
+        case .walletTopUpDone: return "Hamyon to'ldirildi"
+        case .walletInsufficientBalance: return "Hamyonda mablag' yetarli emas"
+        case .walletInvalidAmount: return "Noto'g'ri summa"
+        case .walletPaymentFor: return "Parking to'lovi"
+        case .walletCurrency: return "so'm"
+
         // Common
         case .ok: return "OK"
         case .cancel: return "Bekor qilish"
@@ -1104,6 +1132,20 @@ enum StringKey: String {
         case .favoriteNoFavorites: return "No Favorites"
         case .favoriteNoFavoritesSub: return "Your favorite parking spots will appear here."
 
+        // Wallet
+        case .walletTitle: return "Wallet"
+        case .walletBalance: return "Current balance"
+        case .walletTopUp: return "Top Up"
+        case .walletQuickTopUp: return "Quick Top Up"
+        case .walletTransactions: return "Transactions"
+        case .walletNoTransactions: return "No transactions"
+        case .walletEnterAmount: return "Enter custom amount"
+        case .walletTopUpDone: return "Wallet topped up"
+        case .walletInsufficientBalance: return "Insufficient balance"
+        case .walletInvalidAmount: return "Invalid amount"
+        case .walletPaymentFor: return "Parking payment"
+        case .walletCurrency: return "so'm"
+
         // Common
         case .ok: return "OK"
         case .cancel: return "Cancel"
@@ -1470,6 +1512,20 @@ enum StringKey: String {
         case .favoriteYesRemove: return "Да, удалить"
         case .favoriteNoFavorites: return "Нет избранных"
         case .favoriteNoFavoritesSub: return "Ваши избранные парковки появятся здесь."
+
+        // Wallet
+        case .walletTitle: return "Кошелёк"
+        case .walletBalance: return "Текущий баланс"
+        case .walletTopUp: return "Пополнить"
+        case .walletQuickTopUp: return "Быстрое пополнение"
+        case .walletTransactions: return "Транзакции"
+        case .walletNoTransactions: return "Нет транзакций"
+        case .walletEnterAmount: return "Введите сумму"
+        case .walletTopUpDone: return "Кошелёк пополнен"
+        case .walletInsufficientBalance: return "Недостаточно средств"
+        case .walletInvalidAmount: return "Неверная сумма"
+        case .walletPaymentFor: return "Оплата парковки"
+        case .walletCurrency: return "сум"
 
         // Common
         case .ok: return "ОК"

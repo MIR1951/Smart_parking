@@ -22,8 +22,7 @@ struct ReviewSummaryView: View {
     private var endTime: Date { startTime.addingTimeInterval(Double(selectedMinutes) * 60) }
     private var hours: Double { Double(selectedMinutes) / 60.0 }
     private var amount: Double { hours * parking.price_per_hour }
-    private var fees: Double { 2.0 }  // Fixed fee
-    private var total: Double { amount + fees }
+    private var total: Double { amount }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -148,10 +147,11 @@ struct ReviewSummaryView: View {
 
     // MARK: - Time & Vehicle Info
     private var timeVehicleInfo: some View {
-            VStack(spacing: 12) {
+        VStack(spacing: 12) {
             infoRow(title: loc.str(.reviewArrivingTime), value: formatDateTime(startTime))
             infoRow(title: loc.str(.reviewExitTime), value: formatDateTime(endTime))
-            infoRow(title: loc.str(.reviewVehicle), value: "\(vehicle.name) (\(vehicle.type.rawValue))")
+            infoRow(
+                title: loc.str(.reviewVehicle), value: "\(vehicle.name) (\(vehicle.type.rawValue))")
             infoRow(title: loc.str(.reviewDuration), value: formatDuration(selectedMinutes))
         }
     }
@@ -162,7 +162,7 @@ struct ReviewSummaryView: View {
             HStack {
                 Text(LocalizationManager.shared.str(.reviewAmount))
                 Spacer()
-                Text(String(format: "$%.2f", parking.price_per_hour))
+                Text("\(Int(parking.price_per_hour)) so'm")
                     .fontWeight(.medium)
                 Text("/hr")
                     .foregroundColor(AppTheme.Palette.textSecondary)
@@ -175,20 +175,13 @@ struct ReviewSummaryView: View {
                     .fontWeight(.medium)
             }
 
-            HStack {
-                Text(LocalizationManager.shared.str(.reviewFees))
-                Spacer()
-                Text(String(format: "$%.2f", fees))
-                    .fontWeight(.medium)
-            }
-
             Divider()
 
             HStack {
                 Text(LocalizationManager.shared.str(.reviewTotal))
                     .fontWeight(.semibold)
                 Spacer()
-                Text(String(format: "$%.2f", total))
+                Text("\(Int(total)) so'm")
                     .font(.title3)
                     .fontWeight(.bold)
             }

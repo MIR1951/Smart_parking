@@ -25,41 +25,36 @@ struct ParkingDetailView: View {
 
     var body: some View {
 
-        VStack {
+        VStack(spacing: 0) {
+            // MARK: — Header Image (fixed)
+            headerImage
+
+            // MARK: — Summary (Name, Rating, Address) (fixed)
+            headerInfo
+
+            // MARK: — Tabs (About, Gallery, Review) (fixed)
+            tabSelector
+
+            // MARK: — Tab Content (scrollable)
             ScrollView(showsIndicators: false) {
-
-                VStack(alignment: .leading, spacing: 0) {
-
-                    // MARK: — Header Image
-                    headerImage
-
-                    // MARK: — Summary (Name, Rating, Address)
-                    headerInfo
-
-                    // MARK: — Tabs (About, Gallery, Review)
-                    tabSelector
-
-                    // MARK: — Tab Content
-                    Group {
-                        switch selectedTab {
-                        case .about:
-                            aboutSection
-                        case .gallery:
-                            gallerySection
-                        case .review:
-                            reviewSection
-                        }
+                Group {
+                    switch selectedTab {
+                    case .about:
+                        aboutSection
+                    case .gallery:
+                        gallerySection
+                    case .review:
+                        reviewSection
                     }
-                    .id(selectedTab)
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
-                    .padding(.horizontal)
-                    .padding(.top, 12)
-                    .animation(AppTheme.Anim.smooth, value: selectedTab)
-
-                    Spacer().frame(height: 24)  // Book button markazga urilishmasligi uchun
                 }
-            }
+                .id(selectedTab)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+                .padding(.horizontal)
+                .padding(.top, 12)
+                .animation(AppTheme.Anim.smooth, value: selectedTab)
 
+                Spacer().frame(height: 24)
+            }
         }
         .safeAreaInset(edge: .bottom) {  // ✅ book bar pastda
             bottomBookingBar
@@ -75,7 +70,7 @@ struct ParkingDetailView: View {
     }
 
     private var shareText: String {
-        "\(parking.name)\n\(parking.address ?? "")\n\(loc.str(.detailPrice)): $\(String(format: "%.2f", parking.price_per_hour))\(loc.str(.bookingsPerHour))"
+        "\(parking.name)\n\(parking.address ?? "")\n\(loc.str(.detailPrice)): \(Int(parking.price_per_hour)) so'm\(loc.str(.bookingsPerHour))"
     }
 }
 
@@ -137,8 +132,8 @@ extension ParkingDetailView {
                     .foregroundColor(AppTheme.Palette.textSecondary)
             }
 
-                HStack(spacing: 6) {
-                    Image(systemName: "mappin.and.ellipse")
+            HStack(spacing: 6) {
+                Image(systemName: "mappin.and.ellipse")
                 Text(parking.address ?? loc.str(.unknown))
             }
             .foregroundColor(AppTheme.Palette.textSecondary)
@@ -197,7 +192,7 @@ extension ParkingDetailView {
                 HStack(spacing: 4) {
                     Image(systemName: "dollarsign.circle")
                     Text(
-                        String(format: "$%.2f", parking.price_per_hour) + loc.str(.bookingsPerHour))
+                        "\(Int(parking.price_per_hour)) so'm" + loc.str(.bookingsPerHour))
                 }
                 .foregroundColor(AppTheme.Palette.brand)
             }
@@ -213,15 +208,16 @@ extension ParkingDetailView {
             }
 
             // Features
-            VStack(alignment: .leading, spacing: 8) {
-                Text(loc.str(.detailFeatures))
-                    .font(.headline)
+            if let features = parking.features, !features.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(loc.str(.detailFeatures))
+                        .font(.headline)
 
-                LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 12) {
-                    featureItem(icon: "shield.checkered", title: loc.str(.detailSecurity))
-                    featureItem(icon: "video.fill", title: loc.str(.detailCCTV))
-                    featureItem(icon: "lightbulb.fill", title: loc.str(.detailLighting))
-                    featureItem(icon: "figure.walk", title: loc.str(.detailCovered))
+                    LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 12) {
+                        ForEach(features, id: \.self) { feature in
+                            featureItem(icon: iconForFeature(feature), title: feature)
+                        }
+                    }
                 }
             }
 
@@ -237,7 +233,7 @@ extension ParkingDetailView {
                     Spacer()
                     infoItem(
                         title: loc.str(.detailPrice),
-                        value: String(format: "$%.2f", parking.price_per_hour)
+                        value: "\(Int(parking.price_per_hour)) so'm"
                             + loc.str(.bookingsPerHour))
                 }
             }
@@ -258,6 +254,23 @@ extension ParkingDetailView {
         .padding(10)
         .background(AppTheme.Palette.brandSoft)
         .cornerRadius(10)
+    }
+
+    private func iconForFeature(_ feature: String) -> String {
+        let lower = feature.lowercased()
+        if lower.contains("security") || lower.contains("xavfsizlik") { return "shield.checkered" }
+        if lower.contains("cctv") || lower.contains("kamera") { return "video.fill" }
+        if lower.contains("light") || lower.contains("yoritish") { return "lightbulb.fill" }
+        if lower.contains("covered") || lower.contains("yopiq") { return "umbrella.fill" }
+        if lower.contains("ev") || lower.contains("charging") || lower.contains("zaryadlash") {
+            return "bolt.car.fill"
+        }
+        if lower.contains("disabled") || lower.contains("nogiron") { return "figure.roll" }
+        if lower.contains("24") || lower.contains("hour") { return "clock.fill" }
+        if lower.contains("wash") || lower.contains("yuvish") { return "drop.fill" }
+        if lower.contains("valet") { return "person.fill" }
+        if lower.contains("elevator") || lower.contains("lift") { return "arrow.up.arrow.down" }
+        return "checkmark.circle.fill"
     }
 
     private func infoItem(title: String, value: String) -> some View {
@@ -410,7 +423,7 @@ extension ParkingDetailView {
                 Text(loc.str(.detailTotalPrice))
                     .foregroundColor(AppTheme.Palette.textSecondary)
                     .font(.caption)
-                Text("$\(parking.price_per_hour, specifier: "%.2f") \(loc.str(.bookingsPerHour))")
+                Text("\(Int(parking.price_per_hour)) so'm \(loc.str(.bookingsPerHour))")
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.Palette.textPrimary)
@@ -472,13 +485,5 @@ enum DetailTab: CaseIterable, Hashable {
         case .review:
             return loc.str(.detailReview)
         }
-    }
-}
-
-// MARK: - Parking Extension for images
-extension Parking {
-    var images: [String]? {
-        // Bu property DB dan kelishi kerak, hozircha nil
-        nil
     }
 }
