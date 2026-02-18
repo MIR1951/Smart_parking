@@ -5,9 +5,8 @@
 //  Created by Kenjaboy Xajiyev on 23/01/26.
 //
 
-
-import Foundation
 internal import Combine
+import Foundation
 
 @MainActor
 final class BookingViewModel: ObservableObject {
@@ -49,7 +48,8 @@ final class BookingViewModel: ObservableObject {
 
                 isProcessing = false
                 didSucceed = true
-                alertMessage = "Reserved ✅\nReservation ID: \(reservationId.uuidString.prefix(8))..."
+                alertMessage =
+                    "Reserved ✅\nReservation ID: \(reservationId.uuidString.prefix(8))..."
                 showAlert = true
 
             } catch {
@@ -57,7 +57,7 @@ final class BookingViewModel: ObservableObject {
                 isProcessing = false
                 alertMessage = "Reservation failed: \(error.localizedDescription)"
                 showAlert = true
-                print(alertMessage)
+
             }
         }
     }

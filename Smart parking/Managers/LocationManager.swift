@@ -1,6 +1,6 @@
+internal import Combine
 import CoreLocation
 import MapKit
-internal import Combine
 
 @MainActor
 final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
@@ -36,7 +36,6 @@ final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelega
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         authorizationStatus = manager.authorizationStatus
-        print("DEBUG: auth ->", authorizationStatus.rawValue)
 
         if authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways {
             startUpdatingIfNeeded()
@@ -47,7 +46,6 @@ final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelega
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let loc = locations.last else { return }
-        print("DEBUG: didUpdateLocations ->", loc.coordinate.latitude, loc.coordinate.longitude)
 
         location = loc
         placeName = String(format: "%.4f, %.4f", loc.coordinate.latitude, loc.coordinate.longitude)
@@ -60,7 +58,7 @@ final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelega
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("Location error:", error)
+
         manager.stopUpdatingLocation()
         didStartUpdating = false
         if placeName == "Unknown" { placeName = "Location Error" }
@@ -86,7 +84,8 @@ final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelega
                 let addressRepresentations = mapItems.first?.addressRepresentations
                 let city = addressRepresentations?.cityWithContext
                 let country = addressRepresentations?.regionName
-                let fullAddress = mapItems.first?.address?.shortAddress
+                let fullAddress =
+                    mapItems.first?.address?.shortAddress
                     ?? mapItems.first?.address?.fullAddress
 
                 let text = [city, country].compactMap { $0 }.joined(separator: ", ")
@@ -99,7 +98,7 @@ final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelega
             } catch is CancellationError {
                 // ignore cancellation
             } catch {
-                print("Reverse geocode error:", error)
+
             }
         }
     }

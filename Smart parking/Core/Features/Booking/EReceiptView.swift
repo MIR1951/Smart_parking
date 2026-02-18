@@ -36,24 +36,29 @@ struct EReceiptView: View {
                     VStack(spacing: 20) {
                         // Barcode
                         barcodeSection
+                            .appReveal(0.03)
 
                         // Vehicle Info
                         vehicleInfoSection
+                            .appReveal(0.06)
 
                         Divider()
 
                         // Time Info
                         timeInfoSection
+                            .appReveal(0.09)
 
                         Divider()
 
                         // Price Info
                         priceInfoSection
+                            .appReveal(0.12)
 
                         Divider()
 
                         // Payment Info
                         paymentInfoSection
+                            .appReveal(0.15)
                     }
                     .padding(.horizontal)
                     .padding(.top, 16)
@@ -64,7 +69,7 @@ struct EReceiptView: View {
                 // Download Button
                 downloadButton
             }
-            .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
+            .background(AppAnimatedBackground())
             .navigationTitle(loc.str(.receiptTitle))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -205,10 +210,11 @@ struct EReceiptView: View {
             .fontWeight(.semibold)
             .foregroundColor(.white)
             .frame(maxWidth: .infinity, minHeight: 52)
-            .background(AppTheme.Palette.brand)
+            .background(AppTheme.Gradient.brand)
             .cornerRadius(26)
         }
         .disabled(isGeneratingPDF)
+        .pressStyle()
         .padding(.horizontal)
         .padding(.bottom, 24)
     }

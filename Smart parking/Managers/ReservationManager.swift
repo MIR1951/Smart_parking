@@ -23,7 +23,7 @@ nonisolated extension CancelReservationParams: Encodable {}
 
 final class ReservationManager {
     static let shared = ReservationManager()
-    init() {}
+    private init() {}
 
     func createReservation(parkingId: UUID, durationMinutes: Int) async throws -> UUID {
         let params = CreateReservationParams(

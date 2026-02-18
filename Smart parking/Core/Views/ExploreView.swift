@@ -55,6 +55,10 @@ struct ExploreView: View {
             }
             .ignoresSafeArea()
 
+            AppAnimatedBackground()
+                .opacity(0.22)
+                .allowsHitTesting(false)
+
             if !parkings.isLoading && !search.isEmpty && filtered.isEmpty {
                 VStack {
                     AppStateView(
@@ -64,6 +68,7 @@ struct ExploreView: View {
                             subtitle: loc.str(.exploreChangeSearch)
                         )
                     )
+                    .appReveal(0.04)
                     .padding(.top, 120)
                     Spacer()
                 }
@@ -95,7 +100,7 @@ struct ExploreView: View {
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
-                .background(AppTheme.Palette.surface)
+                .background(AppTheme.Palette.surface.opacity(0.88))
                 .clipShape(
                     RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous)
                 )
@@ -110,9 +115,10 @@ struct ExploreView: View {
                     Image(systemName: "slider.horizontal.3")
                         .foregroundColor(.white)
                         .frame(width: 44, height: 44)
-                        .background(AppTheme.Palette.brand)
+                        .background(AppTheme.Gradient.brand)
                         .cornerRadius(12)
                 }
+                .pressStyle()
 
                 // Refresh button
                 Button {
@@ -124,7 +130,7 @@ struct ExploreView: View {
                     )
                     .foregroundColor(.white)
                     .frame(width: 44, height: 44)
-                    .background(AppTheme.Palette.brand)
+                    .background(AppTheme.Gradient.brand)
                     .cornerRadius(12)
                     .rotationEffect(.degrees(isRefreshing ? 360 : 0))
                     .animation(
@@ -134,11 +140,12 @@ struct ExploreView: View {
                         value: isRefreshing
                     )
                 }
+                .pressStyle()
             }
             .padding(.horizontal)
             .padding(.top, 8)
             .padding(.bottom, 8)
-            .background(AppTheme.Palette.pageBackground.opacity(0.9))
+            .background(.ultraThinMaterial)
             .alert(loc.str(.info), isPresented: $showFilterInfo) {
                 Button(loc.str(.ok)) {}
             } message: {
@@ -170,11 +177,13 @@ struct ExploreView: View {
             } else if !filtered.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
-                        ForEach(filtered.prefix(10)) { parking in
+                        ForEach(Array(filtered.prefix(10).enumerated()), id: \.element.id) {
+                            index, parking in
                             Button {
                                 coordinator.showParkingDetail(parking)
                             } label: {
                                 PopularParkingCard(parking: parking)
+                                    .appReveal(Double(index) * 0.03)
                             }
                             .buttonStyle(.plain)
                         }

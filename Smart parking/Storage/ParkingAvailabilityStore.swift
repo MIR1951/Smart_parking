@@ -5,48 +5,21 @@
 //  Created by Kenjaboy Xajiyev on 24/01/26.
 //
 
-
+internal import Combine
 import Foundation
 import Supabase
-internal import Combine
 
 @MainActor
-final class ParkingAvailabilityStore: ObservableObject,Sendable {
+final class ParkingAvailabilityStore: ObservableObject, Sendable {
 
     @Published private(set) var byParkingId: [UUID: ParkingAvailability] = [:]
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published private(set) var available: [UUID: Int] = [:]
 
-
     private let client: SupabaseClient
     private var channel: RealtimeChannelV2?
     private var hasLoadedOnce = false
-    private static let realtimeDecoder: JSONDecoder = {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .custom { decoder in
-            let container = try decoder.singleValueContainer()
-            let raw = try container.decode(String.self)
-
-            let formatterWithFractional = ISO8601DateFormatter()
-            formatterWithFractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if let parsed = formatterWithFractional.date(from: raw) {
-                return parsed
-            }
-
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime]
-            if let parsed = formatter.date(from: raw) {
-                return parsed
-            }
-
-            throw DecodingError.dataCorruptedError(
-                in: container,
-                debugDescription: "Unsupported date format: \(raw)"
-            )
-        }
-        return decoder
-    }()
 
     init(client: SupabaseClient) {
         self.client = client
@@ -68,7 +41,8 @@ final class ParkingAvailabilityStore: ObservableObject,Sendable {
                 self.errorMessage = nil
                 defer { self.isLoading = false }
 
-                let rows: [ParkingAvailability] = try await client
+                let rows: [ParkingAvailability] =
+                    try await client
                     .from("parking_availability")
                     .select()
                     .execute()
@@ -76,14 +50,16 @@ final class ParkingAvailabilityStore: ObservableObject,Sendable {
 
                 var map: [UUID: ParkingAvailability] = [:]
                 var avail: [UUID: Int] = [:]
-                rows.forEach { map[$0.parkingId] = $0
-                    avail[$0.parkingId] = $0.availableSpots}
+                rows.forEach {
+                    map[$0.parkingId] = $0
+                    avail[$0.parkingId] = $0.availableSpots
+                }
                 self.byParkingId = map
                 self.available = avail
                 self.hasLoadedOnce = true
             } catch {
                 self.errorMessage = "Availability yuklanmadi"
-                print("availability initialLoad error:", error)
+
             }
         }
     }
@@ -122,7 +98,7 @@ final class ParkingAvailabilityStore: ObservableObject,Sendable {
 
             } catch {
                 self.errorMessage = "Realtime ishlamadi"
-                print("availability realtime error:", error)
+
             }
         }
     }
@@ -138,12 +114,12 @@ final class ParkingAvailabilityStore: ObservableObject,Sendable {
     // MARK: - Decode
     private func decodeAvailability(from record: JSONObject) -> ParkingAvailability? {
         do {
-            return try record.decode(as: ParkingAvailability.self, decoder: Self.realtimeDecoder)
+            return try record.decode(
+                as: ParkingAvailability.self, decoder: JSONDecoder.supabaseDecoder)
         } catch {
-            print("availability decode error:", error)
+
             return nil
         }
     }
-
 
 }

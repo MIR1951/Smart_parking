@@ -5,10 +5,9 @@
 //  Created by Kenjaboy Xajiyev on 24/01/26.
 //
 
-
-import Foundation
-import CoreLocation
 internal import Combine
+import CoreLocation
+import Foundation
 
 @MainActor
 final class ParkingsStore: ObservableObject {
@@ -44,29 +43,29 @@ final class ParkingsStore: ObservableObject {
 
         isLoading = true
         errorMessage = nil
-        
+
         // 1) Avval cache dan yuklaymiz (tezkor UI)
         if !force, let cached = ParkingCache.shared.load() {
             updateParkings(cached, userLocation: userLocation)
             hasLoadedOnce = true
             isLoading = false
-            
+
             // Agar cache fresh bo'lsa, network ga bormaymiz
             if ParkingCache.shared.isFresh() {
                 return
             }
             // Cache stale - background da yangilaymiz
         }
-        
+
         defer { isLoading = false }
 
         // 2) Network dan yuklaymiz
         do {
             let items = try await service.fetchParkings()
-            
+
             // Cache ga saqlaymiz
             ParkingCache.shared.save(items)
-            
+
             updateParkings(items, userLocation: userLocation)
             self.hasLoadedOnce = true
             self.reloadToken = UUID()
@@ -77,10 +76,10 @@ final class ParkingsStore: ObservableObject {
             if all.isEmpty {
                 errorMessage = "Ma'lumotlar yuklanmadi"
             }
-            print("ERROR fetching parkings:", error)
+
         }
     }
-    
+
     private func updateParkings(_ items: [Parking], userLocation: CLLocation?) {
         self.all = items
         self.popular = Array(items.filter { ($0.is_popular ?? false) }.prefix(10))
@@ -102,8 +101,8 @@ final class ParkingsStore: ObservableObject {
 
         let sorted = all.sorted { a, b in
             CLLocation(latitude: a.latitude, longitude: a.longitude).distance(from: userLocation)
-            <
-            CLLocation(latitude: b.latitude, longitude: b.longitude).distance(from: userLocation)
+                < CLLocation(latitude: b.latitude, longitude: b.longitude).distance(
+                    from: userLocation)
         }
         nearby = Array(sorted.prefix(20))
     }

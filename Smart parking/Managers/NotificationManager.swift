@@ -79,6 +79,7 @@ final class NotificationManager: ObservableObject {
 
     // MARK: - Load Notifications
     func load() async {
+        let previousNotifications = notifications
         isLoading = true
         defer { isLoading = false }
 
@@ -97,9 +98,15 @@ final class NotificationManager: ObservableObject {
             self.notifications = rows
             self.unreadCount = rows.filter { !$0.is_read }.count
         } catch {
-            self.notifications = []
-            self.unreadCount = 0
-            print("❌ Notifications load error: \(error)")
+            // Refresh xatoligida mavjud listani saqlab qolamiz, UI "empty" ga tushib qolmasin.
+            if previousNotifications.isEmpty {
+                self.notifications = []
+                self.unreadCount = 0
+            } else {
+                self.notifications = previousNotifications
+                self.unreadCount = previousNotifications.filter { !$0.is_read }.count
+            }
+
         }
     }
 
@@ -138,7 +145,7 @@ final class NotificationManager: ObservableObject {
                     }
                 }
             } catch {
-                print("❌ Notification realtime start error: \(error)")
+
             }
         }
     }
@@ -178,7 +185,7 @@ final class NotificationManager: ObservableObject {
             showLocalNotification(notification)
 
         } catch {
-            print("❌ Decode notification error: \(error)")
+
         }
     }
 
@@ -204,7 +211,7 @@ final class NotificationManager: ObservableObject {
                 unreadCount = max(0, unreadCount - 1)
             }
         } catch {
-            print("❌ Mark as read error: \(error)")
+
         }
     }
 
@@ -228,7 +235,7 @@ final class NotificationManager: ObservableObject {
             }
             unreadCount = 0
         } catch {
-            print("❌ Mark all as read error: \(error)")
+
         }
     }
 
@@ -252,9 +259,7 @@ final class NotificationManager: ObservableObject {
     private func requestPushPermission() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) {
             granted, error in
-            if granted {
-                print("✅ Push notifications allowed")
-            }
+
         }
     }
 

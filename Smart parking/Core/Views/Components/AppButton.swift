@@ -25,12 +25,24 @@ struct AppPrimaryButton: View {
             }
             .foregroundColor(.white)
             .frame(maxWidth: .infinity, minHeight: 52)
-            .background(isEnabled ? AppTheme.Palette.brand : AppTheme.Palette.brand.opacity(0.45))
-            .clipShape(
-                RoundedRectangle(cornerRadius: AppTheme.Radius.pill, style: .continuous)
+            .background(
+                Group {
+                    if isEnabled {
+                        AppTheme.Gradient.brand
+                    } else {
+                        AppTheme.Palette.brand.opacity(0.45)
+                    }
+                }
             )
+            .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.pill, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: AppTheme.Radius.pill, style: .continuous)
+                    .stroke(Color.white.opacity(0.16), lineWidth: 1)
+            )
+            .shadow(color: AppTheme.Palette.brand.opacity(0.28), radius: 12, x: 0, y: 8)
         }
         .disabled(!isEnabled || isLoading)
+        .pressStyle()
     }
 }
 
@@ -45,10 +57,13 @@ struct AppGhostButton: View {
                 .fontWeight(.semibold)
                 .foregroundColor(tint)
                 .frame(maxWidth: .infinity, minHeight: 52)
-                .background(tint.opacity(0.12))
-                .clipShape(
+                .background(tint.opacity(0.11))
+                .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.pill, style: .continuous))
+                .overlay(
                     RoundedRectangle(cornerRadius: AppTheme.Radius.pill, style: .continuous)
+                        .stroke(tint.opacity(0.22), lineWidth: 1)
                 )
         }
+        .pressStyle()
     }
 }

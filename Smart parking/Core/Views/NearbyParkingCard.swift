@@ -6,6 +6,7 @@ struct NearbyParkingCard: View {
     let parking: Parking
     var isFavorite: Bool = false
     let onHeartTap: (() -> Void)?
+    @State private var didAppear = false
 
     private var availableSpots: Int {
         availabilityStore.availability(for: parking.id)?.availableSpots
@@ -120,5 +121,11 @@ struct NearbyParkingCard: View {
         }
         .padding(14)
         .appCard()
+        .scaleEffect(didAppear ? 1 : 0.97)
+        .opacity(didAppear ? 1 : 0)
+        .animation(.spring(response: 0.55, dampingFraction: 0.86), value: didAppear)
+        .onAppear {
+            didAppear = true
+        }
     }
 }

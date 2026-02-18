@@ -19,97 +19,106 @@ struct ProfileView: View {
     @State private var infoMessage = ""
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: AppTheme.Spacing.xLarge) {
+        ZStack {
+            AppAnimatedBackground()
 
-                // MARK: - Avatar Header
-                profileHeader
+            ScrollView {
+                VStack(spacing: AppTheme.Spacing.xLarge) {
 
-                // MARK: - Account Section
-                sectionCard(
-                    title: loc.str(.profileAccount),
-                    rows: [
-                        ProfileRowData(
-                            icon: "person", title: loc.str(.profileYourProfile),
-                            color: AppTheme.Palette.brand
-                        ) {
-                            showEditProfile = true
-                        },
-                        ProfileRowData(
-                            icon: "creditcard", title: loc.str(.profilePaymentMethods),
-                            color: AppTheme.Palette.brand
-                        ) {
-                            showPaymentMethods = true
-                        },
-                        ProfileRowData(
-                            icon: "wallet.pass", title: loc.str(.profileMyWallet),
-                            color: AppTheme.Palette.warning
-                        ) {
-                            showComingSoon(loc.str(.profileComingSoon))
-                        },
-                    ])
+                    // MARK: - Avatar Header
+                    profileHeader
+                        .appReveal(0.02)
 
-                // MARK: - Preferences Section
-                sectionCard(
-                    title: loc.str(.profilePreferences),
-                    rows: [
-                        ProfileRowData(
-                            icon: "gearshape", title: loc.str(.profileSettings),
-                            color: AppTheme.Palette.textSecondary
-                        ) {
-                            coordinator.showSettings()
+                    // MARK: - Account Section
+                    sectionCard(
+                        title: loc.str(.profileAccount),
+                        rows: [
+                            ProfileRowData(
+                                icon: "person", title: loc.str(.profileYourProfile),
+                                color: AppTheme.Palette.brand
+                            ) {
+                                showEditProfile = true
+                            },
+                            ProfileRowData(
+                                icon: "creditcard", title: loc.str(.profilePaymentMethods),
+                                color: AppTheme.Palette.brand
+                            ) {
+                                showPaymentMethods = true
+                            },
+                            ProfileRowData(
+                                icon: "wallet.pass", title: loc.str(.profileMyWallet),
+                                color: AppTheme.Palette.warning
+                            ) {
+                                showComingSoon(loc.str(.profileComingSoon))
+                            },
+                        ])
+                        .appReveal(0.06)
+
+                    // MARK: - Preferences Section
+                    sectionCard(
+                        title: loc.str(.profilePreferences),
+                        rows: [
+                            ProfileRowData(
+                                icon: "gearshape", title: loc.str(.profileSettings),
+                                color: AppTheme.Palette.textSecondary
+                            ) {
+                                coordinator.showSettings()
+                            }
+                        ])
+                        .appReveal(0.10)
+
+                    // MARK: - Support Section
+                    sectionCard(
+                        title: loc.str(.profileSupport),
+                        rows: [
+                            ProfileRowData(
+                                icon: "questionmark.circle", title: loc.str(.profileHelpCenter),
+                                color: AppTheme.Palette.success
+                            ) {
+                                showComingSoon(loc.str(.profileComingSoon))
+                            },
+                            ProfileRowData(
+                                icon: "lock.shield", title: loc.str(.profilePrivacyPolicy),
+                                color: AppTheme.Palette.textSecondary
+                            ) {
+                                showComingSoon(loc.str(.profileComingSoon))
+                            },
+                            ProfileRowData(
+                                icon: "person.2", title: loc.str(.profileInviteFriends),
+                                color: AppTheme.Palette.brand
+                            ) {
+                                showComingSoon(loc.str(.profileComingSoon))
+                            },
+                        ])
+                        .appReveal(0.14)
+
+                    // MARK: - Log Out
+                    Button {
+                        AppTheme.Haptic.medium()
+                        showLogoutAlert = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "arrow.right.square")
+                                .font(.body)
+                            Text(loc.str(.profileLogout))
+                                .font(AppTheme.Typography.headline)
                         }
-                    ])
-
-                // MARK: - Support Section
-                sectionCard(
-                    title: loc.str(.profileSupport),
-                    rows: [
-                        ProfileRowData(
-                            icon: "questionmark.circle", title: loc.str(.profileHelpCenter),
-                            color: AppTheme.Palette.success
-                        ) {
-                            showComingSoon(loc.str(.profileComingSoon))
-                        },
-                        ProfileRowData(
-                            icon: "lock.shield", title: loc.str(.profilePrivacyPolicy),
-                            color: AppTheme.Palette.textSecondary
-                        ) {
-                            showComingSoon(loc.str(.profileComingSoon))
-                        },
-                        ProfileRowData(
-                            icon: "person.2", title: loc.str(.profileInviteFriends),
-                            color: AppTheme.Palette.brand
-                        ) {
-                            showComingSoon(loc.str(.profileComingSoon))
-                        },
-                    ])
-
-                // MARK: - Log Out
-                Button {
-                    AppTheme.Haptic.medium()
-                    showLogoutAlert = true
-                } label: {
-                    HStack {
-                        Image(systemName: "arrow.right.square")
-                            .font(.body)
-                        Text(loc.str(.profileLogout))
-                            .font(AppTheme.Typography.headline)
+                        .foregroundColor(AppTheme.Palette.danger)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(AppTheme.Palette.dangerSoft)
+                        .clipShape(
+                            RoundedRectangle(
+                                cornerRadius: AppTheme.Radius.medium, style: .continuous))
                     }
-                    .foregroundColor(AppTheme.Palette.danger)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(AppTheme.Palette.dangerSoft)
-                    .clipShape(
-                        RoundedRectangle(
-                            cornerRadius: AppTheme.Radius.medium, style: .continuous))
+                    .buttonStyle(.plain)
+                    .pressStyle()
+                    .appReveal(0.18)
+                    .padding(.horizontal)
+                    .padding(.bottom, AppTheme.Spacing.large)
                 }
-                .buttonStyle(.plain)
-                .padding(.horizontal)
-                .padding(.bottom, AppTheme.Spacing.large)
             }
         }
-        .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
         .navigationTitle(loc.str(.profileTitle))
         .task {
             await userManager.fetchCurrentUser()

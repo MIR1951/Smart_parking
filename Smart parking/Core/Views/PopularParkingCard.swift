@@ -10,6 +10,7 @@ import SwiftUI
 struct PopularParkingCard: View {
     @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
     let parking: Parking
+    @State private var didAppear = false
 
     private var availableSpots: Int {
         availabilityStore.availability(for: parking.id)?.availableSpots
@@ -106,5 +107,11 @@ struct PopularParkingCard: View {
         .frame(width: 220)
         .padding(12)
         .appCard()
+        .scaleEffect(didAppear ? 1 : 0.96)
+        .opacity(didAppear ? 1 : 0)
+        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: didAppear)
+        .onAppear {
+            didAppear = true
+        }
     }
 }

@@ -31,7 +31,7 @@ class AuthManager {
                 email: email, password: password, username: username)
         } catch {
             authError = error.localizedDescription
-            print("DEBUG: signUp error: \(error.localizedDescription)")
+
         }
     }
 
@@ -44,7 +44,7 @@ class AuthManager {
             self.currentUserID = try await authService.signIn(email: email, password: password)
         } catch {
             authError = error.localizedDescription
-            print("DEBUG: signIn error: \(error.localizedDescription)")
+
         }
     }
     func signOut() async {
@@ -57,7 +57,7 @@ class AuthManager {
             currentUserID = nil
         } catch {
             authError = error.localizedDescription
-            print("DEBUG: signOut error: \(error.localizedDescription)")
+
         }
     }
 
@@ -65,7 +65,7 @@ class AuthManager {
         do {
             self.currentUserID = try await authService.getCurrentUserSession()
         } catch {
-            print("Refresh user failed: \(error.localizedDescription)")
+
             currentUserID = nil
         }
     }

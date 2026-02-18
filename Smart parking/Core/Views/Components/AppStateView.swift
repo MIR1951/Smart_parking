@@ -76,7 +76,14 @@ struct AppStateView: View {
             }
         }
         .padding(.horizontal, AppTheme.Spacing.xLarge)
+        .padding(.vertical, AppTheme.Spacing.xLarge)
         .frame(maxWidth: .infinity)
+        .background(AppTheme.Palette.surface.opacity(0.86))
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.xLarge, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppTheme.Radius.xLarge, style: .continuous)
+                .stroke(AppTheme.Palette.border, lineWidth: 1)
+        )
         .offset(y: isVisible ? 0 : 12)
         .opacity(isVisible ? 1.0 : 0)
         .onAppear {

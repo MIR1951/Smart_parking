@@ -10,7 +10,7 @@ internal import Combine
 struct NotificationsView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var manager = NotificationManager.shared
-    private var loc = LocalizationManager.shared
+    private let loc = LocalizationManager.shared
 
     private var todayNotifications: [UserNotification] {
         manager.notifications.filter { Calendar.current.isDateInToday($0.created_at) }
@@ -28,47 +28,53 @@ struct NotificationsView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
+        ZStack {
+            backgroundDecoration
 
-            if manager.isLoading && manager.notifications.isEmpty {
-                Spacer(minLength: 24)
-                AppStateView(kind: .loading(title: loc.str(.notifLoading)))
-                Spacer()
-            } else if manager.notifications.isEmpty {
-                emptyState
-            } else {
-                content
+            VStack(spacing: 0) {
+                header
+                scrollContent
             }
         }
-        .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .toolbar(.hidden, for: .navigationBar)
         .task {
-            await manager.load()
-        }
-        .refreshable {
-            await manager.load()
+            if manager.notifications.isEmpty {
+                await manager.load()
+            }
         }
     }
 
-    // MARK: - Header
+    private var backgroundDecoration: some View {
+        AppAnimatedBackground()
+    }
+
     private var header: some View {
         HStack {
             Button {
                 dismiss()
             } label: {
                 Image(systemName: "chevron.left")
+                    .font(.headline)
                     .foregroundColor(AppTheme.Palette.textPrimary)
-                    .padding(12)
-                    .background(AppTheme.Palette.surface)
+                    .frame(width: 44, height: 44)
+                    .background(AppTheme.Palette.surface.opacity(0.9))
                     .clipShape(Circle())
-                    .shadow(color: .black.opacity(0.1), radius: 4)
             }
+            .pressStyle()
 
             Spacer()
 
-            Text(loc.str(.notifTitle))
-                .font(.headline)
+            VStack(spacing: 2) {
+                Text(loc.str(.notifTitle))
+                    .font(.headline)
+
+                if manager.isLoading && !manager.notifications.isEmpty {
+                    Text(loc.str(.notifLoading))
+                        .font(.caption2)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
+                }
+            }
 
             if manager.unreadCount > 0 {
                 Text("\(manager.unreadCount) \(loc.str(.notifNew))")
@@ -77,7 +83,7 @@ struct NotificationsView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
-                    .background(AppTheme.Palette.brand)
+                    .background(AppTheme.Gradient.brand)
                     .cornerRadius(12)
             }
 
@@ -86,37 +92,48 @@ struct NotificationsView: View {
             Color.clear.frame(width: 44, height: 44)
         }
         .padding(.horizontal)
-        .padding(.top, 8)
+        .padding(.top, 10)
+        .padding(.bottom, 8)
     }
 
-    // MARK: - Content
-    private var content: some View {
+    private var scrollContent: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 16) {
-
-                if !todayNotifications.isEmpty {
-                    sectionHeader(loc.str(.notifToday))
-                    ForEach(todayNotifications) { notification in
-                        NotificationRow(notification: notification) {
-                            Task { await manager.markAsRead(notification.id) }
+                if manager.isLoading && manager.notifications.isEmpty {
+                    loadingState
+                } else if manager.notifications.isEmpty {
+                    emptyState
+                } else {
+                    if !todayNotifications.isEmpty {
+                        sectionHeader(loc.str(.notifToday))
+                        ForEach(Array(todayNotifications.enumerated()), id: \.element.id) {
+                            index, notification in
+                            NotificationRow(notification: notification) {
+                                Task { await manager.markAsRead(notification.id) }
+                            }
+                            .appReveal(Double(index) * 0.03)
                         }
                     }
-                }
 
-                if !yesterdayNotifications.isEmpty {
-                    sectionHeader(loc.str(.notifYesterday))
-                    ForEach(yesterdayNotifications) { notification in
-                        NotificationRow(notification: notification) {
-                            Task { await manager.markAsRead(notification.id) }
+                    if !yesterdayNotifications.isEmpty {
+                        sectionHeader(loc.str(.notifYesterday))
+                        ForEach(Array(yesterdayNotifications.enumerated()), id: \.element.id) {
+                            index, notification in
+                            NotificationRow(notification: notification) {
+                                Task { await manager.markAsRead(notification.id) }
+                            }
+                            .appReveal(Double(index) * 0.03 + 0.08)
                         }
                     }
-                }
 
-                if !olderNotifications.isEmpty {
-                    sectionHeader(loc.str(.notifOlder))
-                    ForEach(olderNotifications) { notification in
-                        NotificationRow(notification: notification) {
-                            Task { await manager.markAsRead(notification.id) }
+                    if !olderNotifications.isEmpty {
+                        sectionHeader(loc.str(.notifOlder))
+                        ForEach(Array(olderNotifications.enumerated()), id: \.element.id) {
+                            index, notification in
+                            NotificationRow(notification: notification) {
+                                Task { await manager.markAsRead(notification.id) }
+                            }
+                            .appReveal(Double(index) * 0.03 + 0.14)
                         }
                     }
                 }
@@ -124,10 +141,21 @@ struct NotificationsView: View {
             .padding(.horizontal)
             .padding(.top, 16)
             .padding(.bottom, 24)
+            .frame(maxWidth: .infinity, minHeight: 420, alignment: .top)
+        }
+        .refreshable {
+            await manager.load()
         }
     }
 
-    // MARK: - Empty State
+    private var loadingState: some View {
+        VStack(spacing: AppTheme.Spacing.large) {
+            AppStateView(kind: .loading(title: loc.str(.notifLoading)))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 72)
+    }
+
     private var emptyState: some View {
         AppStateView(
             kind: .empty(
@@ -136,15 +164,16 @@ struct NotificationsView: View {
                 subtitle: loc.str(.notifAllCaughtUp)
             )
         )
+        .frame(maxWidth: .infinity)
+        .padding(.top, 72)
     }
 
-    // MARK: - Section Header
     private func sectionHeader(_ title: String) -> some View {
         HStack {
             Text(title)
                 .font(.subheadline)
                 .fontWeight(.semibold)
-                .foregroundColor(.gray)
+                .foregroundColor(AppTheme.Palette.textSecondary)
 
             Spacer()
 
@@ -156,60 +185,64 @@ struct NotificationsView: View {
                 .foregroundColor(AppTheme.Palette.brand)
             }
         }
-        .padding(.top, 8)
+        .padding(.top, 10)
     }
 }
 
-// MARK: - Notification Row
 private struct NotificationRow: View {
     let notification: UserNotification
     let onTap: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            // Icon
-            ZStack {
-                Circle()
-                    .fill(notification.iconColor.opacity(0.15))
-                    .frame(width: 44, height: 44)
+        Button(action: onTap) {
+            HStack(alignment: .top, spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(notification.iconColor.opacity(0.15))
+                        .frame(width: 44, height: 44)
 
-                Image(systemName: notification.icon)
-                    .font(.body)
-                    .foregroundColor(notification.iconColor)
-            }
-
-            // Content
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(notification.title)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-
-                    Spacer()
-
-                    Text(notification.timeAgo)
-                        .font(.caption)
-                        .foregroundColor(.gray)
+                    Image(systemName: notification.icon)
+                        .font(.body)
+                        .foregroundColor(notification.iconColor)
                 }
 
-                Text(notification.message)
-                    .font(.caption)
-                    .foregroundColor(.gray)
-                    .lineLimit(3)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(notification.title)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(AppTheme.Palette.textPrimary)
+
+                        Spacer()
+
+                        Text(notification.timeAgo)
+                            .font(.caption)
+                            .foregroundColor(AppTheme.Palette.textSecondary)
+                    }
+
+                    Text(notification.message)
+                        .font(.caption)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
+                        .lineLimit(3)
+                }
+            }
+            .padding()
+            .background(AppTheme.Palette.surface.opacity(0.92))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(AppTheme.Palette.border, lineWidth: 1)
+            )
+            .overlay(alignment: .topTrailing) {
+                if !notification.is_read {
+                    Circle()
+                        .fill(AppTheme.Palette.brand)
+                        .frame(width: 8, height: 8)
+                        .offset(x: -10, y: 10)
+                }
             }
         }
-        .padding()
-        .background(AppTheme.Palette.surface)
-        .cornerRadius(16)
-        .overlay(
-            !notification.is_read
-                ? Circle()
-                    .fill(AppTheme.Palette.brand)
-                    .frame(width: 8, height: 8)
-                    .offset(x: 8, y: -8)
-                : nil,
-            alignment: .topTrailing
-        )
-        .onTapGesture(perform: onTap)
+        .buttonStyle(.plain)
+        .pressStyle()
     }
 }

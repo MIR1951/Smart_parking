@@ -43,7 +43,7 @@ struct HomeView: View {
 
     var body: some View {
         ZStack {
-            AppTheme.Palette.pageBackground.ignoresSafeArea()
+            backgroundDecoration
 
             VStack(spacing: 0) {
                 // MARK: - Sticky Header
@@ -53,7 +53,7 @@ struct HomeView: View {
                 // MARK: - Sticky Search Bar
                 searchSection
                     .padding(.bottom, 4)
-                    .background(AppTheme.Palette.pageBackground)
+                    .background(AppTheme.Palette.pageBackground.opacity(0.72))
                     .shadow(
                         color: isScrolled ? Color.black.opacity(0.06) : Color.clear,
                         radius: isScrolled ? 6 : 0,
@@ -66,6 +66,7 @@ struct HomeView: View {
                     VStack(alignment: .leading, spacing: 20) {
                         if isRefreshing || isInitialLoading {
                             HomeShimmerView()
+                                .appReveal()
                         } else if let error = parkings.errorMessage, parkings.all.isEmpty {
                             AppStateView(
                                 kind: .error(
@@ -78,6 +79,7 @@ struct HomeView: View {
                                     }
                                 )
                             )
+                            .appReveal(0.05)
                             .padding(.top, 30)
                         } else if !parkings.isLoading && parkings.all.isEmpty {
                             AppStateView(
@@ -87,10 +89,13 @@ struct HomeView: View {
                                     subtitle: loc.str(.homeCheckInternet)
                                 )
                             )
+                            .appReveal(0.05)
                             .padding(.top, 30)
                         } else {
                             popularSection
+                                .appReveal(0.03)
                             nearbySection
+                                .appReveal(0.08)
                         }
                     }
                     .padding(.vertical, 12)
@@ -141,13 +146,19 @@ struct HomeView: View {
 
     // MARK: - UI sections (sizning oldingi dizayn)
 
+    private var backgroundDecoration: some View {
+        AppAnimatedBackground()
+    }
+
     private var headerSection: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text(loc.str(.homeLocation)).foregroundColor(AppTheme.Palette.textSecondary).font(
-                    .caption)
+                Text(loc.str(.homeLocation))
+                    .foregroundColor(AppTheme.Palette.textSecondary)
+                    .font(.caption)
                 HStack {
-                    Image(systemName: "location.fill").foregroundColor(AppTheme.Palette.brand)
+                    Image(systemName: "location.fill")
+                        .foregroundColor(AppTheme.Palette.brand)
                     Text(locationManager.placeName)
                         .font(.headline)
                         .foregroundColor(AppTheme.Palette.textPrimary)
@@ -156,15 +167,20 @@ struct HomeView: View {
                         .foregroundColor(AppTheme.Palette.textSecondary)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
             Spacer()
             Button {
                 coordinator.showNotifications()
             } label: {
                 ZStack(alignment: .topTrailing) {
                     Circle()
-                        .fill(AppTheme.Palette.brandSoft)
+                        .fill(AppTheme.Palette.surface)
                         .frame(width: 40, height: 40)
-                        .overlay(Image(systemName: "bell").foregroundColor(AppTheme.Palette.brand))
+                        .overlay(
+                            Image(systemName: "bell.badge")
+                                .foregroundColor(AppTheme.Palette.brand)
+                        )
 
                     // Notification Badge
                     if notifManager.unreadCount > 0 {
@@ -180,6 +196,14 @@ struct HomeView: View {
             }
             .buttonStyle(.plain)
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(AppTheme.Palette.surface.opacity(0.90))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(AppTheme.Palette.border, lineWidth: 1)
+        )
         .padding(.horizontal)
     }
 
@@ -204,12 +228,13 @@ struct HomeView: View {
         }
         .padding(.horizontal, AppTheme.Spacing.medium)
         .padding(.vertical, 12)
-        .background(AppTheme.Palette.surface)
+        .background(AppTheme.Palette.surface.opacity(0.92))
         .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous)
                 .stroke(AppTheme.Palette.border, lineWidth: 1)
         )
+        .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 4)
         .padding(.horizontal)
     }
 

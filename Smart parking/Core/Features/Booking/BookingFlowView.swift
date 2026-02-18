@@ -35,61 +35,66 @@ struct BookingFlowView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                switch currentStep {
-                case .duration:
-                    BookingDurationStepView(
-                        parking: parking,
-                        selectedMinutes: $selectedMinutes,
-                        onBack: { dismiss() },
-                        onContinue: { currentStep = .vehicle }
-                    )
+                Group {
+                    switch currentStep {
+                    case .duration:
+                        BookingDurationStepView(
+                            parking: parking,
+                            selectedMinutes: $selectedMinutes,
+                            onBack: { dismiss() },
+                            onContinue: { currentStep = .vehicle }
+                        )
 
-                case .vehicle:
-                    SelectVehicleView(
-                        parking: parking,
-                        selectedMinutes: selectedMinutes,
-                        selectedVehicle: $selectedVehicle,
-                        onBack: { currentStep = .duration },
-                        onContinue: { currentStep = .payment }
-                    )
-
-                case .payment:
-                    PaymentMethodsView(
-                        selectedMethod: $selectedPaymentMethod,
-                        onBack: { currentStep = .vehicle },
-                        onConfirm: { currentStep = .review }
-                    )
-
-                case .review:
-                    if let vehicle = selectedVehicle {
-                        ReviewSummaryView(
+                    case .vehicle:
+                        SelectVehicleView(
                             parking: parking,
                             selectedMinutes: selectedMinutes,
-                            vehicle: vehicle,
-                            paymentMethod: $selectedPaymentMethod,
-                            onBack: { currentStep = .payment },
-                            onContinue: { processPayment() },
-                            onChangePayment: { currentStep = .payment }
+                            selectedVehicle: $selectedVehicle,
+                            onBack: { currentStep = .duration },
+                            onContinue: { currentStep = .payment }
                         )
-                    }
 
-                case .success:
-                    if let vehicle = selectedVehicle,
-                        let payment = selectedPaymentMethod,
-                        let resId = reservationId
-                    {
-                        PaymentSuccessView(
-                            parking: parking,
-                            vehicle: vehicle,
-                            selectedMinutes: selectedMinutes,
-                            paymentMethod: payment,
-                            reservationId: resId,
-                            onBackToHome: {
-                                coordinator.goToHome()
-                            }
+                    case .payment:
+                        PaymentMethodsView(
+                            selectedMethod: $selectedPaymentMethod,
+                            onBack: { currentStep = .vehicle },
+                            onConfirm: { currentStep = .review }
                         )
+
+                    case .review:
+                        if let vehicle = selectedVehicle {
+                            ReviewSummaryView(
+                                parking: parking,
+                                selectedMinutes: selectedMinutes,
+                                vehicle: vehicle,
+                                paymentMethod: $selectedPaymentMethod,
+                                onBack: { currentStep = .payment },
+                                onContinue: { processPayment() },
+                                onChangePayment: { currentStep = .payment }
+                            )
+                        }
+
+                    case .success:
+                        if let vehicle = selectedVehicle,
+                            let payment = selectedPaymentMethod,
+                            let resId = reservationId
+                        {
+                            PaymentSuccessView(
+                                parking: parking,
+                                vehicle: vehicle,
+                                selectedMinutes: selectedMinutes,
+                                paymentMethod: payment,
+                                reservationId: resId,
+                                onBackToHome: {
+                                    coordinator.goToHome()
+                                }
+                            )
+                        }
                     }
                 }
+                .id(currentStep)
+                .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .move(edge: .leading).combined(with: .opacity)))
+                .animation(AppTheme.Anim.snappy, value: currentStep)
 
                 // Loading overlay
                 if isProcessing {
@@ -241,7 +246,7 @@ private struct BookingDurationStepView: View {
             .padding(.horizontal)
             .padding(.bottom, 24)
         }
-        .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
+        .background(AppAnimatedBackground())
     }
 
     private func labelFor(minutes: Int) -> String {

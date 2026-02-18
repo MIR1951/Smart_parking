@@ -34,19 +34,23 @@ struct ReviewSummaryView: View {
                 VStack(spacing: 20) {
                     // Parking Info Card
                     parkingInfoCard
+                        .appReveal(0.03)
 
                     // Time & Vehicle Info
                     timeVehicleInfo
+                        .appReveal(0.06)
 
                     Divider()
 
                     // Price Info
                     priceInfo
+                        .appReveal(0.09)
 
                     Divider()
 
                     // Payment Method
                     paymentMethodRow
+                        .appReveal(0.12)
                 }
                 .padding(.horizontal)
                 .padding(.top, 16)
@@ -57,7 +61,7 @@ struct ReviewSummaryView: View {
             // Continue Button
             continueButton
         }
-        .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
+        .background(AppAnimatedBackground())
         .navigationBarHidden(true)
     }
 
@@ -74,6 +78,7 @@ struct ReviewSummaryView: View {
                     .clipShape(Circle())
                     .shadow(color: .black.opacity(0.1), radius: 4)
             }
+            .pressStyle()
 
             Spacer()
 
@@ -208,6 +213,7 @@ struct ReviewSummaryView: View {
                 onChangePayment()
             }
             .foregroundColor(AppTheme.Palette.brand)
+            .pressStyle()
         }
         .padding()
         .background(AppTheme.Palette.surface)

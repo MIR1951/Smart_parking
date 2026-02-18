@@ -49,14 +49,15 @@ enum AppTheme {
     // MARK: - Colors (Adaptive)
     enum Palette {
         // Brand
-        static let brand = Color(hex: "#2F6BFF")
-        static let brandDark = Color(hex: "#1A4FE0")
-        static let brandSoft = Color(lightHex: "#EAF0FF", darkHex: "#1A2744")
+        static let brand = Color(hex: "#0E9F8A")
+        static let brandDark = Color(hex: "#0A6E5E")
+        static let brandSoft = Color(lightHex: "#DAF7F1", darkHex: "#0D2E29")
+        static let accent = Color(hex: "#FF7A59")
 
         // Surfaces
-        static let surface = Color(lightHex: "#FFFFFF", darkHex: "#1C1C1E")
-        static let surfaceSecondary = Color(lightHex: "#F9FAFB", darkHex: "#2C2C2E")
-        static let pageBackground = Color(lightHex: "#F5F7FB", darkHex: "#000000")
+        static let surface = Color(lightHex: "#FFFFFF", darkHex: "#151A1E")
+        static let surfaceSecondary = Color(lightHex: "#F6FAF9", darkHex: "#1D2328")
+        static let pageBackground = Color(lightHex: "#EFF7F5", darkHex: "#070B0F")
 
         // Border
         static let border = Color(
@@ -166,6 +167,18 @@ enum AppTheme {
                 endPoint: .bottom
             )
         }
+
+        static var aurora: LinearGradient {
+            LinearGradient(
+                colors: [
+                    Palette.brand.opacity(0.22),
+                    Color(hex: "#4EB6FF").opacity(0.16),
+                    Palette.pageBackground,
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
     }
 
     // MARK: - Haptics
@@ -245,6 +258,60 @@ struct ImageGradientOverlay: ViewModifier {
     }
 }
 
+struct RevealOnAppearModifier: ViewModifier {
+    let delay: Double
+    @State private var didAppear = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(didAppear ? 1 : 0)
+            .offset(y: didAppear ? 0 : 18)
+            .scaleEffect(didAppear ? 1 : 0.98)
+            .animation(
+                .spring(response: 0.55, dampingFraction: 0.84).delay(delay),
+                value: didAppear
+            )
+            .onAppear {
+                guard !didAppear else { return }
+                didAppear = true
+            }
+    }
+}
+
+struct AppAnimatedBackground: View {
+    @State private var animate = false
+
+    var body: some View {
+        AppTheme.Gradient.aurora
+            .overlay(alignment: .topLeading) {
+                Circle()
+                    .fill(AppTheme.Palette.brand.opacity(0.18))
+                    .frame(width: 260, height: 260)
+                    .blur(radius: 34)
+                    .offset(x: animate ? -92 : -126, y: animate ? -72 : -96)
+                    .animation(
+                        .easeInOut(duration: 7.5).repeatForever(autoreverses: true),
+                        value: animate
+                    )
+            }
+            .overlay(alignment: .bottomTrailing) {
+                Circle()
+                    .fill(AppTheme.Palette.accent.opacity(0.14))
+                    .frame(width: 240, height: 240)
+                    .blur(radius: 40)
+                    .offset(x: animate ? 98 : 72, y: animate ? 112 : 84)
+                    .animation(
+                        .easeInOut(duration: 9.0).repeatForever(autoreverses: true),
+                        value: animate
+                    )
+            }
+            .ignoresSafeArea()
+            .onAppear {
+                animate = true
+            }
+    }
+}
+
 // MARK: - View Extensions
 
 extension View {
@@ -262,5 +329,9 @@ extension View {
 
     func imageGradient() -> some View {
         modifier(ImageGradientOverlay())
+    }
+
+    func appReveal(_ delay: Double = 0) -> some View {
+        modifier(RevealOnAppearModifier(delay: delay))
     }
 }

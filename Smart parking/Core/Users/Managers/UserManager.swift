@@ -21,7 +21,7 @@ class UserManager {
         do {
             self.currentUser = try await self.service.fetchCurrentUser()
         } catch {
-            print("DEBUG: Error fetching current user \(error)")
+
         }
     }
     func updateProfileImageURL(_ imageURL: String) async {
@@ -29,7 +29,7 @@ class UserManager {
             try await service.updateProfileImageURL(imageURL)
             self.currentUser?.profileImageURL = imageURL
         } catch {
-            print("DEBUG: failed to update profile image url \(error)")
+
         }
     }
 

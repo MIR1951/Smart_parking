@@ -50,8 +50,11 @@ struct ParkingDetailView: View {
                             reviewSection
                         }
                     }
+                    .id(selectedTab)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
                     .padding(.horizontal)
                     .padding(.top, 12)
+                    .animation(AppTheme.Anim.smooth, value: selectedTab)
 
                     Spacer().frame(height: 24)  // Book button markazga urilishmasligi uchun
                 }
@@ -62,7 +65,7 @@ struct ParkingDetailView: View {
             bottomBookingBar
                 .background(AppTheme.Palette.surface)
         }
-        .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
+        .background(AppAnimatedBackground())
         .ignoresSafeArea(edges: .top)
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .tabBar)
@@ -419,10 +422,17 @@ extension ParkingDetailView {
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
                     .frame(width: 160, height: 48)
-                    .background(isAvailable ? AppTheme.Palette.brand : Color.gray)
+                    .background {
+                        if isAvailable {
+                            AppTheme.Gradient.brand
+                        } else {
+                            Color.gray
+                        }
+                    }
                     .cornerRadius(14)
             }
             .disabled(!isAvailable)
+            .pressStyle()
         }
         .padding(.horizontal)
         .padding(.top, 12)
@@ -441,12 +451,13 @@ extension ParkingDetailView {
                 .clipShape(Circle())
                 .shadow(radius: 3)
         }
+        .pressStyle()
     }
 }
 
 // MARK: — TABS ENUM
 
-enum DetailTab: CaseIterable {
+enum DetailTab: CaseIterable, Hashable {
     case about
     case gallery
     case review

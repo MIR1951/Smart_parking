@@ -45,8 +45,7 @@ struct LoginView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                AppTheme.Palette.pageBackground
-                    .ignoresSafeArea()
+                AppAnimatedBackground()
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: AppTheme.Spacing.xLarge) {
@@ -141,6 +140,7 @@ struct LoginView: View {
                     }
                     .padding(.horizontal, 18)
                     .padding(.bottom, 28)
+                    .appReveal(0.03)
                 }
             }
             .onChange(of: authManager.authError) { _, newValue in

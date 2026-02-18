@@ -19,6 +19,7 @@ struct PaymentSuccessView: View {
 
     @Environment(AppCoordinator.self) private var coordinator
     @State private var showEReceipt = false
+    @State private var animateSuccess = false
     private let loc = LocalizationManager.shared
 
     var body: some View {
@@ -40,6 +41,12 @@ struct PaymentSuccessView: View {
                 Circle()
                     .fill(AppTheme.Palette.brandSoft)
                     .frame(width: 140, height: 140)
+                    .scaleEffect(animateSuccess ? 1.06 : 0.94)
+                    .opacity(animateSuccess ? 1 : 0.72)
+                    .animation(
+                        .easeInOut(duration: 1.2).repeatForever(autoreverses: true),
+                        value: animateSuccess
+                    )
 
                 Circle()
                     .fill(AppTheme.Palette.brand)
@@ -49,11 +56,13 @@ struct PaymentSuccessView: View {
                     .font(.system(size: 50, weight: .bold))
                     .foregroundColor(.white)
             }
+            .appReveal(0.06)
 
             Text(loc.str(.successTitle))
                 .font(.title2)
                 .fontWeight(.bold)
                 .padding(.top, 24)
+                .appReveal(0.10)
 
             Text(loc.str(.successMessage))
                 .font(.subheadline)
@@ -61,6 +70,7 @@ struct PaymentSuccessView: View {
                 .multilineTextAlignment(.center)
                 .padding(.top, 8)
                 .padding(.horizontal, 32)
+                .appReveal(0.12)
 
             // Reservation ID
             HStack {
@@ -71,6 +81,7 @@ struct PaymentSuccessView: View {
             }
             .font(.caption)
             .padding(.top, 16)
+            .appReveal(0.15)
 
             Spacer()
 
@@ -93,8 +104,9 @@ struct PaymentSuccessView: View {
             }
             .padding(.horizontal)
             .padding(.bottom, 24)
+            .appReveal(0.18)
         }
-        .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
+        .background(AppAnimatedBackground())
         .navigationBarHidden(true)
         .sheet(isPresented: $showEReceipt) {
             EReceiptView(
@@ -104,6 +116,9 @@ struct PaymentSuccessView: View {
                 paymentMethod: paymentMethod,
                 reservationId: reservationId
             )
+        }
+        .onAppear {
+            animateSuccess = true
         }
     }
 }

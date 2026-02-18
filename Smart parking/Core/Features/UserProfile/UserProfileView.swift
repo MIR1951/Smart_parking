@@ -106,7 +106,7 @@ struct UserProfileView: View {
                 }
                 .padding(.horizontal)
             }
-            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .background(AppAnimatedBackground())
             .navigationTitle(LocalizationManager.shared.str(.profileTitle))
             .navigationBarTitleDisplayMode(.inline)
             .photosPicker(isPresented: $showPhotoPicker, selection: $selectedItem)
@@ -206,7 +206,7 @@ struct UserProfileView: View {
             VStack(spacing: 0) {
                 content()
             }
-            .background(Color.white)
+            .background(AppTheme.Palette.surface)
             .cornerRadius(16)
         }
     }

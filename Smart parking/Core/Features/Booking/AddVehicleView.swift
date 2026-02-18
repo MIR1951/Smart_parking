@@ -145,13 +145,14 @@ struct AddVehicleView: View {
             }
             .padding(.horizontal)
             .padding(.top, 24)
+            .appReveal(0.04)
 
             Spacer()
 
             // Add Vehicle Button
             addButton
         }
-        .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
+        .background(AppAnimatedBackground())
         .navigationBarHidden(true)
         .sheet(isPresented: $showBrandPicker) {
             BrandPickerSheet(selectedBrand: $selectedBrand, selectedModel: $selectedModel)
@@ -178,6 +179,7 @@ struct AddVehicleView: View {
                     .clipShape(Circle())
                     .shadow(color: .black.opacity(0.1), radius: 4)
             }
+            .pressStyle()
 
             Spacer()
 
@@ -207,10 +209,17 @@ struct AddVehicleView: View {
                 .fontWeight(.semibold)
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity, minHeight: 52)
-                .background(isValid ? AppTheme.Palette.brand : Color.gray)
+                .background {
+                    if isValid {
+                        AppTheme.Gradient.brand
+                    } else {
+                        Color.gray
+                    }
+                }
                 .cornerRadius(26)
         }
         .disabled(!isValid)
+        .pressStyle()
         .padding(.horizontal)
         .padding(.bottom, 24)
     }

@@ -83,7 +83,7 @@ struct ForgotPasswordView: View {
     // MARK: - Body
     var body: some View {
         ZStack {
-            AppTheme.Palette.pageBackground.ignoresSafeArea()
+            AppAnimatedBackground()
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: AppTheme.Spacing.xLarge) {
@@ -112,6 +112,7 @@ struct ForgotPasswordView: View {
                 }
                 .padding(.horizontal, 18)
                 .padding(.vertical)
+                .appReveal(0.03)
             }
         }
         .navigationBarBackButtonHidden(true)

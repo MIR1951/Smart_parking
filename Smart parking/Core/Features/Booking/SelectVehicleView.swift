@@ -34,14 +34,17 @@ struct SelectVehicleView: View {
                                 subtitle: loc.str(.vehicleAddFirst)
                             )
                         )
+                        .appReveal(0.04)
                         .padding(.top, 40)
                     } else {
                         LazyVStack(spacing: 12) {
-                            ForEach(store.vehicles) { vehicle in
+                            ForEach(Array(store.vehicles.enumerated()), id: \.element.id) {
+                                index, vehicle in
                                 VehicleRow(
                                     vehicle: vehicle,
                                     isSelected: selectedVehicle?.id == vehicle.id
                                 )
+                                .appReveal(Double(index) * 0.03)
                                 .onTapGesture {
                                     selectedVehicle = vehicle
                                 }
@@ -58,7 +61,7 @@ struct SelectVehicleView: View {
             // Continue Button
             continueButton
         }
-        .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
+        .background(AppAnimatedBackground())
         .navigationBarHidden(true)
         .sheet(isPresented: $showAddVehicle) {
             AddVehicleView(store: store)
@@ -78,6 +81,7 @@ struct SelectVehicleView: View {
                     .clipShape(Circle())
                     .shadow(color: .black.opacity(0.1), radius: 4)
             }
+            .pressStyle()
 
             Spacer()
 
@@ -96,6 +100,7 @@ struct SelectVehicleView: View {
                     .clipShape(Circle())
                     .shadow(color: .black.opacity(0.1), radius: 4)
             }
+            .pressStyle()
         }
         .padding(.horizontal)
         .padding(.top, 8)

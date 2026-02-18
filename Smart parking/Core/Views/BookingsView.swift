@@ -110,47 +110,54 @@ struct BookingsView: View {
     @State private var bookingToCancel: BookingItem?
 
     var body: some View {
-        VStack(spacing: 0) {
+        ZStack {
+            AppAnimatedBackground()
 
-            // Top segmented (Ongoing/Completed/Cancelled)
-            bookingTabs
+            VStack(spacing: 0) {
 
-            // Content
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 16) {
-                    if vm.isLoading && vm.items.isEmpty {
-                        BookingsShimmerView()
-                            .padding(.top, 8)
-                    } else if let error = vm.error {
-                        AppStateView(
-                            kind: .error(
-                                title: LocalizationManager.shared.str(.bookingsLoadFailed),
-                                subtitle: error,
-                                actionTitle: LocalizationManager.shared.str(.bookingsRetry),
-                                action: { Task { await vm.load() } }
+                // Top segmented (Ongoing/Completed/Cancelled)
+                bookingTabs
+
+                // Content
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 16) {
+                        if vm.isLoading && vm.items.isEmpty {
+                            BookingsShimmerView()
+                                .appReveal()
+                                .padding(.top, 8)
+                        } else if let error = vm.error {
+                            AppStateView(
+                                kind: .error(
+                                    title: LocalizationManager.shared.str(.bookingsLoadFailed),
+                                    subtitle: error,
+                                    actionTitle: LocalizationManager.shared.str(.bookingsRetry),
+                                    action: { Task { await vm.load() } }
+                                )
                             )
-                        )
-                        .padding(.top, 40)
-                    } else if vm.filtered(tab).isEmpty {
-                        emptyState
-                    } else {
-                        ForEach(vm.filtered(tab)) { item in
-                            BookingCard(
-                                item: item,
-                                tab: tab,
-                                onLeftTap: { handleLeftButton(item) },
-                                onTicketTap: { openTicket(item) }
-                            )
+                            .appReveal(0.05)
+                            .padding(.top, 40)
+                        } else if vm.filtered(tab).isEmpty {
+                            emptyState
+                                .appReveal(0.05)
+                        } else {
+                            ForEach(Array(vm.filtered(tab).enumerated()), id: \.element.id) {
+                                index, item in
+                                BookingCard(
+                                    item: item,
+                                    tab: tab,
+                                    onLeftTap: { handleLeftButton(item) },
+                                    onTicketTap: { openTicket(item) }
+                                )
+                                .appReveal(Double(index) * 0.03)
+                            }
                         }
                     }
+                    .padding(.horizontal)
+                    .padding(.top, 16)
+                    .padding(.bottom, 24)
                 }
-                .padding(.horizontal)
-                .padding(.top, 16)
-                .padding(.bottom, 24)
             }
-
         }
-        .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
         .navigationTitle(LocalizationManager.shared.str(.bookingsTitle))
         .navigationBarTitleDisplayMode(.inline)
         .task { await vm.load() }
@@ -180,6 +187,8 @@ struct BookingsView: View {
                 BookingDetailSheet(item: item.booking)
             }
         }
+        .animation(AppTheme.Anim.snappy, value: tab)
+        .animation(AppTheme.Anim.smooth, value: vm.items.count)
     }
 
     // MARK: - Empty State
@@ -224,7 +233,7 @@ struct BookingsView: View {
         .padding(.horizontal)
         .padding(.top, 8)
         .padding(.bottom, 10)
-        .background(AppTheme.Palette.surface)
+        .background(AppTheme.Palette.surface.opacity(0.90))
     }
 
     // MARK: - Actions
@@ -394,6 +403,7 @@ struct BookingCard: View {
                         .background(leftButtonStyle.0)
                         .clipShape(Capsule())
                 }
+                .pressStyle()
 
                 Button(action: onTicketTap) {
                     Text(rightButtonTitle)
@@ -401,9 +411,10 @@ struct BookingCard: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .background(AppTheme.Palette.brand)
+                        .background(AppTheme.Gradient.brand)
                         .clipShape(Capsule())
                 }
+                .pressStyle()
             }
         }
         .padding(14)
@@ -522,7 +533,7 @@ struct BookingETicketView: View {
                 }
                 .padding()
             }
-            .background(AppTheme.Palette.pageBackground)
+            .background(AppAnimatedBackground())
             .navigationTitle(LocalizationManager.shared.str(.bookingsETicket))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -761,7 +772,7 @@ struct BookingDetailSheet: View {
                 }
                 .padding()
             }
-            .background(AppTheme.Palette.pageBackground)
+            .background(AppAnimatedBackground())
             .navigationTitle(LocalizationManager.shared.str(.bookingsDetails))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

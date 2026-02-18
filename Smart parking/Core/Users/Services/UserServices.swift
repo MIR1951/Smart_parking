@@ -18,7 +18,8 @@ struct UserService {
     func fetchCurrentUser() async throws -> User {
         let user = try await client.auth.session.user
 
-        return try await client
+        return
+            try await client
             .from("users")
             .select()
             .eq("id", value: user.id.uuidString)
@@ -29,7 +30,7 @@ struct UserService {
 
     func updateProfileImageURL(_ imageURL: String) async throws {
         guard let uid = client.auth.currentUser?.id.uuidString else {
-            print("DEBUG: No valid session found. User is not authenticated.")
+
             throw URLError(.userAuthenticationRequired)
         }
 
@@ -39,7 +40,6 @@ struct UserService {
             .eq("id", value: uid)
             .execute()
 
-        print("DEBUG: Profile image URL updated successfully!")
     }
 
     func updateUsername(_ username: String) async throws {

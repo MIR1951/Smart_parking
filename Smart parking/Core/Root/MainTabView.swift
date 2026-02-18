@@ -6,6 +6,9 @@
 //
 
 import SwiftUI
+#if canImport(UIKit)
+    import UIKit
+#endif
 
 struct MainTabView: View {
     @Environment(LocalizationManager.self) private var loc
@@ -36,5 +39,32 @@ struct MainTabView: View {
                 .tabItem { Label(loc.str(.tabProfile), systemImage: "person") }
         }
         .tint(AppTheme.Palette.brand)
+        .toolbarBackground(AppTheme.Palette.surface.opacity(0.96), for: .tabBar)
+        .toolbarBackground(.visible, for: .tabBar)
+        .animation(AppTheme.Anim.snappy, value: coordinator.selectedTab)
+        .onAppear {
+            configureTabBarAppearance()
+        }
+    }
+
+    private func configureTabBarAppearance() {
+        #if canImport(UIKit)
+            let appearance = UITabBarAppearance()
+            appearance.configureWithDefaultBackground()
+            appearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterial)
+            appearance.backgroundColor = UIColor(AppTheme.Palette.surface).withAlphaComponent(0.82)
+            appearance.stackedLayoutAppearance.normal.iconColor = UIColor(
+                AppTheme.Palette.textSecondary)
+            appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
+                .foregroundColor: UIColor(AppTheme.Palette.textSecondary)
+            ]
+            appearance.stackedLayoutAppearance.selected.iconColor = UIColor(AppTheme.Palette.brand)
+            appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
+                .foregroundColor: UIColor(AppTheme.Palette.brand)
+            ]
+
+            UITabBar.appearance().standardAppearance = appearance
+            UITabBar.appearance().scrollEdgeAppearance = appearance
+        #endif
     }
 }

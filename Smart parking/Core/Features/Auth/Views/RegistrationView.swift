@@ -58,8 +58,7 @@ struct RegistrationView: View {
 
     var body: some View {
         ZStack {
-            AppTheme.Palette.pageBackground
-                .ignoresSafeArea()
+            AppAnimatedBackground()
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: AppTheme.Spacing.xLarge) {
@@ -173,6 +172,7 @@ struct RegistrationView: View {
                 }
                 .padding(.horizontal, 18)
                 .padding(.bottom, 28)
+                .appReveal(0.03)
             }
         }
         .onChange(of: authManager.authError) { _, newValue in

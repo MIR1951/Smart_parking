@@ -5,32 +5,34 @@
 //  Created by Kenjaboy Xajiyev on 12/12/25.
 //
 
-
-import Supabase
 import Foundation
+import Supabase
 
 final class ParkingService {
     private let client = SB.shared.client
 
     func fetchParkings() async throws -> [Parking] {
 
-        let response = try await client
+        let response =
+            try await client
             .from("parkings")
-            .select("""
-                id,
-                name,
-                address,
-                latitude,
-                longitude,
-                price_per_hour,
-                rating,
-                thumbnail_url,
-                total_spots,
-                parking_live_stats ( live_occupancy ),
-                description,
-                is_popular
-               
-            """)
+            .select(
+                """
+                    id,
+                    name,
+                    address,
+                    latitude,
+                    longitude,
+                    price_per_hour,
+                    rating,
+                    thumbnail_url,
+                    total_spots,
+                    parking_live_stats ( live_occupancy ),
+                    description,
+                    is_popular
+                   
+                """
+            )
             .execute()
 
         struct RawParking: Codable {
@@ -40,13 +42,13 @@ final class ParkingService {
             let latitude: Double
             let longitude: Double
             let price_per_hour: Double
-            let rating:Double?
+            let rating: Double?
             let thumbnail_url: String?
             let total_spots: Int
             let parking_live_stats: LiveStats?
             var description: String?
             let is_popular: Bool?
-           
+
         }
 
         struct LiveStats: Codable {
@@ -57,7 +59,6 @@ final class ParkingService {
 
         return decoded.compactMap { item in
             guard let uuid = UUID(uuidString: item.id) else {
-                print("Invalid UUID: \(item.id)")
                 return nil
             }
 
@@ -74,10 +75,9 @@ final class ParkingService {
                 live_occupancy: item.parking_live_stats?.live_occupancy,
                 description: item.description,
                 is_popular: item.is_popular ?? false
-                
+
             )
         }
 
     }
 }
-

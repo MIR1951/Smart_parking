@@ -18,8 +18,7 @@ struct FavoriteView: View {
 
     var body: some View {
         ZStack {
-            AppTheme.Palette.pageBackground
-                .ignoresSafeArea()
+            AppAnimatedBackground()
 
             if favoriteParkings.isEmpty {
                 AppStateView(
@@ -29,10 +28,12 @@ struct FavoriteView: View {
                         subtitle: loc.str(.favoriteNoFavoritesSub)
                     )
                 )
+                .appReveal(0.05)
             } else {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 16) {
-                        ForEach(favoriteParkings) { parking in
+                        ForEach(Array(favoriteParkings.enumerated()), id: \.element.id) {
+                            index, parking in
                             Button {
                                 coordinator.showParkingDetail(parking)
                             } label: {
@@ -44,6 +45,7 @@ struct FavoriteView: View {
                                         selectedToRemove = parking
                                     }
                                 )
+                                .appReveal(Double(index) * 0.03)
                             }
                             .buttonStyle(.plain)
                         }
@@ -144,6 +146,7 @@ struct RemoveFavoriteSheet: View {
                         .background(AppTheme.Palette.brandSoft)
                         .clipShape(Capsule())
                 }
+                .pressStyle()
 
                 Button(action: onRemove) {
                     Text(loc.str(.favoriteYesRemove))
@@ -154,6 +157,7 @@ struct RemoveFavoriteSheet: View {
                         .background(AppTheme.Palette.brand)
                         .clipShape(Capsule())
                 }
+                .pressStyle()
             }
             .padding(.top, 4)
 

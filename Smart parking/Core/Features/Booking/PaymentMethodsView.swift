@@ -24,6 +24,7 @@ struct PaymentMethodsView: View {
                     // Wallet Section
                     Section {
                         paymentRow(method: .wallet)
+                            .appReveal(0.03)
                     } header: {
                         Text(loc.str(.paymentWallet))
                             .font(.subheadline)
@@ -34,6 +35,7 @@ struct PaymentMethodsView: View {
                     // Credit & Debit Card
                     Section {
                         addCardRow
+                            .appReveal(0.06)
                     } header: {
                         Text(loc.str(.paymentCreditDebit))
                             .font(.subheadline)
@@ -64,7 +66,7 @@ struct PaymentMethodsView: View {
             // Confirm Button
             confirmButton
         }
-        .background(AppTheme.Palette.pageBackground.ignoresSafeArea())
+        .background(AppAnimatedBackground())
         .navigationBarHidden(true)
     }
 
@@ -81,6 +83,7 @@ struct PaymentMethodsView: View {
                     .clipShape(Circle())
                     .shadow(color: .black.opacity(0.1), radius: 4)
             }
+            .pressStyle()
 
             Spacer()
 
