@@ -20,6 +20,7 @@ final class ParkingService {
                 """
                     id,
                     name,
+                    city,
                     address,
                     latitude,
                     longitude,
@@ -39,6 +40,7 @@ final class ParkingService {
         struct RawParking: Codable {
             let id: String
             let name: String
+            let city: String?
             let address: String?
             let latitude: Double
             let longitude: Double
@@ -67,11 +69,12 @@ final class ParkingService {
             return Parking(
                 id: uuid,
                 name: item.name,
+                city: item.city ?? "Tashkent",
                 address: item.address,
                 latitude: item.latitude,
                 longitude: item.longitude,
                 price_per_hour: item.price_per_hour,
-                rating: item.rating ?? 0,
+                rating: item.rating ?? 5,
                 thumbnail_url: item.thumbnail_url,
                 total_spots: item.total_spots,
                 live_occupancy: item.parking_live_stats?.live_occupancy,

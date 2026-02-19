@@ -37,14 +37,17 @@ final class ParkingAvailabilityStore: ObservableObject, Sendable {
     }
 
     // MARK: - Initial load / Refresh
-    func initialLoad(force: Bool = false) {
-        Task { [weak self] in
-            await self?.refreshNow(force: force)
-        }
+    func initialLoad(force: Bool = false) async throws {
+        _ = try await refreshNowOrThrow(force: force)
     }
 
     func refreshNow(force: Bool = false) async {
-        if hasLoadedOnce && !force { return }
+        _ = try? await refreshNowOrThrow(force: force)
+    }
+
+    @discardableResult
+    private func refreshNowOrThrow(force: Bool = false) async throws -> [ParkingAvailability] {
+        if hasLoadedOnce && !force { return Array(byParkingId.values) }
 
         do {
             isLoading = true
@@ -67,8 +70,10 @@ final class ParkingAvailabilityStore: ObservableObject, Sendable {
             byParkingId = map
             available = avail
             hasLoadedOnce = true
+            return rows
         } catch {
             errorMessage = "Availability yuklanmadi"
+            throw error
         }
     }
 

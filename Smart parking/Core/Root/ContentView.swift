@@ -12,18 +12,30 @@ import SwiftUI
 struct ContentView: View {
 
     @Environment(AuthManager.self) private var authManager
+    @Environment(LocalizationManager.self) private var loc
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var availabilityStore = ParkingAvailabilityStore(client: SB.shared.client)
     @StateObject private var parkingsStore = ParkingsStore()
+    @StateObject private var reviewStore = ParkingReviewStore()
     @StateObject private var favoritesStore = FavoritesStore()
     @StateObject private var locationManager = LocationManager()
     @StateObject private var notificationManager = NotificationManager.shared
     @State private var appCoordinator = AppCoordinator.shared
 
     @State private var didStart = false
+    @State private var didRunLaunchGate = false
+    @State private var isRunningLaunchGate = false
     @State private var activeNotificationUserID: String?
     @State private var showSplash = true
     @State private var splashOpacity: Double = 1.0
+    @State private var launchGateState: LaunchGateState = .idle
+
+    enum LaunchGateState: Equatable {
+        case idle
+        case loading
+        case ready
+        case failed(message: String)
+    }
 
     var body: some View {
         @Bindable var appCoordinator = appCoordinator
@@ -39,16 +51,11 @@ struct ContentView: View {
                     }
                     .environment(appCoordinator)
                     .environmentObject(parkingsStore)
+                    .environmentObject(reviewStore)
                     .environmentObject(favoritesStore)
                     .environmentObject(availabilityStore)
                     .environmentObject(locationManager)
                     .environmentObject(notificationManager)
-                    .onAppear {
-                        guard !didStart else { return }
-                        didStart = true
-                        availabilityStore.initialLoad()
-                        availabilityStore.startRealtime()
-                    }
                     .fullScreenCover(
                         item: $appCoordinator.fullScreenRoute,
                         onDismiss: {
@@ -58,6 +65,7 @@ struct ContentView: View {
                         fullScreenDestination(for: route)
                             .environment(appCoordinator)
                             .environmentObject(parkingsStore)
+                            .environmentObject(reviewStore)
                             .environmentObject(favoritesStore)
                             .environmentObject(availabilityStore)
                             .environmentObject(locationManager)
@@ -70,7 +78,7 @@ struct ContentView: View {
 
             // Splash screen overlay
             if showSplash {
-                SplashScreenView()
+                splashOverlay
                     .opacity(splashOpacity)
                     .transition(.opacity)
                     .zIndex(100)
@@ -79,28 +87,139 @@ struct ContentView: View {
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
             guard authManager.currentUserID != nil else { return }
+            guard launchGateState == .ready else { return }
             Task {
                 await availabilityStore.refreshNow(force: true)
+                parkingsStore.applyFilters(userLocation: locationManager.location)
                 if !availabilityStore.isRealtimeConnected {
                     availabilityStore.startRealtime()
                 }
             }
         }
+        .onChange(of: locationManager.placeName) { _, newPlace in
+            parkingsStore.bootstrapCity(using: newPlace, fallback: "Tashkent")
+        }
+        .onChange(of: locationManager.location) { _, newLocation in
+            parkingsStore.applyFilters(userLocation: newLocation)
+        }
         .onChange(of: authManager.currentUserID) { _, newValue in
             synchronizeSessionState(userID: newValue)
+
+            guard newValue != nil else { return }
+            guard didRunLaunchGate else { return }
+            guard !isRunningLaunchGate else { return }
+            Task {
+                try? await bootstrapAuthenticatedSessionIfNeeded(forceNetwork: false)
+            }
         }
         .task {
-            await authManager.refreshUser()
-            synchronizeSessionState(userID: authManager.currentUserID)
-            // Auth refresh bo'lgandan keyin splash ni yashirish
-            try? await Task.sleep(nanoseconds: 1_800_000_000)  // 1.8 soniya minimum
-            withAnimation(.easeOut(duration: 0.6)) {
-                splashOpacity = 0
-            }
-            // Animatsiya tugagandan keyin view ni olib tashlash
-            try? await Task.sleep(nanoseconds: 700_000_000)
-            showSplash = false
+            guard !didRunLaunchGate else { return }
+            didRunLaunchGate = true
+            await runLaunchGate()
         }
+    }
+
+    @ViewBuilder
+    private var splashOverlay: some View {
+        ZStack {
+            SplashScreenView()
+
+            VStack {
+                Spacer()
+
+                switch launchGateState {
+                case .idle, .loading:
+                    HStack(spacing: 10) {
+                        ProgressView()
+                            .tint(.white)
+                        Text(loc.str(.launchLoading))
+                            .font(AppTheme.Typography.subheadline)
+                            .foregroundColor(.white.opacity(0.92))
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color.black.opacity(0.28))
+                    .clipShape(Capsule())
+                    .padding(.bottom, 52)
+
+                case .failed(let message):
+                    AppStateView(
+                        kind: .error(
+                            title: loc.str(.launchFailed),
+                            subtitle: message,
+                            actionTitle: loc.str(.retry),
+                            action: {
+                                Task { await runLaunchGate() }
+                            }
+                        )
+                    )
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 32)
+
+                case .ready:
+                    EmptyView()
+                }
+            }
+        }
+    }
+
+    private func runLaunchGate() async {
+        isRunningLaunchGate = true
+        launchGateState = .loading
+        showSplash = true
+        splashOpacity = 1
+
+        defer { isRunningLaunchGate = false }
+
+        await authManager.refreshUser()
+
+        guard authManager.currentUserID != nil else {
+            launchGateState = .ready
+            await hideSplash()
+            return
+        }
+
+        do {
+            try await bootstrapAuthenticatedSessionIfNeeded(forceNetwork: true)
+            launchGateState = .ready
+            await hideSplash()
+        } catch {
+            launchGateState = .failed(message: launchFailureMessage(from: error))
+        }
+    }
+
+    private func hideSplash() async {
+        withAnimation(.easeOut(duration: 0.45)) {
+            splashOpacity = 0
+        }
+        try? await Task.sleep(nanoseconds: 520_000_000)
+        showSplash = false
+    }
+
+    private func bootstrapAuthenticatedSessionIfNeeded(forceNetwork: Bool) async throws {
+        guard !didStart || forceNetwork else { return }
+
+        locationManager.requestPermission()
+        try await parkingsStore.loadAndWait(
+            userLocation: locationManager.location,
+            force: forceNetwork
+        )
+        parkingsStore.bootstrapCity(
+            using: locationManager.placeName,
+            fallback: "Tashkent"
+        )
+        parkingsStore.applyFilters(userLocation: locationManager.location)
+        try await availabilityStore.initialLoad(force: forceNetwork)
+        availabilityStore.startRealtime()
+        didStart = true
+    }
+
+    private func launchFailureMessage(from error: Error) -> String {
+        let lowered = error.localizedDescription.lowercased()
+        if lowered.contains("parkings.city") || (lowered.contains("column") && lowered.contains("city")) {
+            return "Backend migration topilmadi: parkings.city ustuni mavjud emas. Avval city migrationni qo'llang."
+        }
+        return error.localizedDescription
     }
 
     private func synchronizeSessionState(userID: String?) {

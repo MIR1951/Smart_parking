@@ -59,7 +59,7 @@ struct BookingFlowView: View {
                         PaymentMethodsView(
                             selectedMethod: $selectedPaymentMethod,
                             onBack: { currentStep = .vehicle },
-                            onConfirm: { currentStep = .review }
+                            onConfirm: { handlePaymentConfirm() }
                         )
 
                     case .review:
@@ -134,6 +134,12 @@ struct BookingFlowView: View {
             let paymentMethod = selectedPaymentMethod
         else { return }
 
+        guard paymentMethod == .wallet else {
+            errorMessage = loc.str(.paymentWalletOnly)
+            showError = true
+            return
+        }
+
         isProcessing = true
 
         Task {
@@ -154,9 +160,6 @@ struct BookingFlowView: View {
                     }
                     return
                 }
-            } else {
-                // Boshqa to'lov usullari uchun simulyatsiya
-                try? await Task.sleep(nanoseconds: 500_000_000)
             }
 
             // 2) Create reservation
@@ -181,6 +184,15 @@ struct BookingFlowView: View {
                 }
             }
         }
+    }
+
+    private func handlePaymentConfirm() {
+        guard selectedPaymentMethod == .wallet else {
+            errorMessage = loc.str(.paymentWalletOnly)
+            showError = true
+            return
+        }
+        currentStep = .review
     }
 }
 

@@ -28,6 +28,9 @@ enum StringKey: String {
     case homeCheckInternet
     case homeLoadFailed
     case homeRetry
+    case launchLoading
+    case launchFailed
+    case retry
 
     // Explore
     case exploreTitle
@@ -195,6 +198,16 @@ enum StringKey: String {
     case detailAddReview
     case detailBasedOnReviews
     case detailCarParking
+    case detailNavigate
+    case detailNavigateWith
+    case detailReviewEligibility
+    case detailReviewRating
+    case detailReviewComment
+    case detailReviewCommentRequired
+    case detailSubmitReview
+    case detailNoReviewsYet
+    case reviewNeedBookingWarning
+    case reviewAlreadySubmittedWarning
 
     // Booking Flow
     case bookingBookSlot
@@ -228,6 +241,8 @@ enum StringKey: String {
     case paymentConfirm
     case paymentSelectPayment
     case paymentChange
+    case paymentComingSoon
+    case paymentWalletOnly
 
     // Review Summary
     case reviewTitle
@@ -352,6 +367,7 @@ enum StringKey: String {
     case homeSearchParking
     case homePopularParking
     case homeNearbyParking
+    case homeCityLabel
     case homeSearchNoResults
     case homeSearchNoResultsSub
 
@@ -414,6 +430,9 @@ enum StringKey: String {
         case .homeCheckInternet: return "Internet yoki joylashuvni tekshirib ko'ring."
         case .homeLoadFailed: return "Parkinglar yuklanmadi"
         case .homeRetry: return "Qayta urinish"
+        case .launchLoading: return "Ma'lumotlar yuklanmoqda..."
+        case .launchFailed: return "Ilovani ishga tushirib bo'lmadi"
+        case .retry: return "Qayta urinish"
 
         // Explore
         case .exploreTitle: return "Xarita"
@@ -583,6 +602,17 @@ enum StringKey: String {
         case .detailAddReview: return "Sharh qo'shish"
         case .detailBasedOnReviews: return "Sharhlar asosida"
         case .detailCarParking: return "Avtoturargoh"
+        case .detailNavigate: return "Yo'nalish olish"
+        case .detailNavigateWith: return "Qaysi ilova orqali ochilsin?"
+        case .detailReviewEligibility: return "Faqat yakunlangan buyurtma asosida sharh qoldira olasiz."
+        case .detailReviewRating: return "Baholash"
+        case .detailReviewComment: return "Fikr"
+        case .detailReviewCommentRequired: return "Iltimos, sharh matnini kiriting."
+        case .detailSubmitReview: return "Sharhni yuborish"
+        case .detailNoReviewsYet: return "Hozircha sharhlar yo'q"
+        case .reviewNeedBookingWarning: return "Avval shu parkingdan joy band qiling."
+        case .reviewAlreadySubmittedWarning:
+            return "Mavjud yakunlangan buyurtmalar bo'yicha sharh allaqachon qoldirilgan."
 
         // Booking Flow
         case .bookingBookSlot: return "Band qilish"
@@ -617,6 +647,8 @@ enum StringKey: String {
         case .paymentConfirm: return "To'lovni tasdiqlash"
         case .paymentSelectPayment: return "To'lov usulini tanlang"
         case .paymentChange: return "O'zgartirish"
+        case .paymentComingSoon: return "Bu to'lov usuli keyingi versiyalarda qo'shiladi."
+        case .paymentWalletOnly: return "Hozircha faqat hamyon orqali to'lov qo'llab-quvvatlanadi."
 
         // Review Summary
         case .reviewTitle: return "Xulosa"
@@ -743,6 +775,7 @@ enum StringKey: String {
         case .homeSearchParking: return "Parking qidirish"
         case .homePopularParking: return "Ommabop parkinglar"
         case .homeNearbyParking: return "Yaqin atrofdagi parkinglar"
+        case .homeCityLabel: return "Shahar"
         case .homeSearchNoResults: return "Natija topilmadi"
         case .homeSearchNoResultsSub: return "Boshqa nom yoki manzil bilan qidirib ko'ring."
 
@@ -799,6 +832,9 @@ enum StringKey: String {
         case .homeCheckInternet: return "Check your internet or location settings."
         case .homeLoadFailed: return "Failed to load parking"
         case .homeRetry: return "Retry"
+        case .launchLoading: return "Loading data..."
+        case .launchFailed: return "Unable to launch app"
+        case .retry: return "Retry"
 
         // Explore
         case .exploreTitle: return "Explore"
@@ -968,6 +1004,17 @@ enum StringKey: String {
         case .detailAddReview: return "Add Review"
         case .detailBasedOnReviews: return "Based on reviews"
         case .detailCarParking: return "Car Parking"
+        case .detailNavigate: return "Get Directions"
+        case .detailNavigateWith: return "Open with"
+        case .detailReviewEligibility: return "Only users with completed bookings can submit a review."
+        case .detailReviewRating: return "Rating"
+        case .detailReviewComment: return "Comment"
+        case .detailReviewCommentRequired: return "Please enter your review comment."
+        case .detailSubmitReview: return "Submit Review"
+        case .detailNoReviewsYet: return "No reviews yet"
+        case .reviewNeedBookingWarning: return "Book a slot at this parking first to leave a review."
+        case .reviewAlreadySubmittedWarning:
+            return "You already submitted reviews for your eligible bookings."
 
         // Booking Flow
         case .bookingBookSlot: return "Book Slot"
@@ -1002,6 +1049,8 @@ enum StringKey: String {
         case .paymentConfirm: return "Confirm Payment"
         case .paymentSelectPayment: return "Select Payment"
         case .paymentChange: return "Change"
+        case .paymentComingSoon: return "This payment method will be available in the next version."
+        case .paymentWalletOnly: return "Only wallet payment is supported for now."
 
         // Review Summary
         case .reviewTitle: return "Review Summary"
@@ -1128,6 +1177,7 @@ enum StringKey: String {
         case .homeSearchParking: return "Search parking"
         case .homePopularParking: return "Popular parking"
         case .homeNearbyParking: return "Nearby parking"
+        case .homeCityLabel: return "City"
         case .homeSearchNoResults: return "No results found"
         case .homeSearchNoResultsSub: return "Try searching with a different name or address."
 
@@ -1184,6 +1234,9 @@ enum StringKey: String {
         case .homeCheckInternet: return "Проверьте интернет или настройки геолокации."
         case .homeLoadFailed: return "Не удалось загрузить парковки"
         case .homeRetry: return "Повторить"
+        case .launchLoading: return "Загрузка данных..."
+        case .launchFailed: return "Не удалось запустить приложение"
+        case .retry: return "Повторить"
 
         // Explore
         case .exploreTitle: return "Карта"
@@ -1352,6 +1405,18 @@ enum StringKey: String {
         case .detailAddReview: return "Добавить отзыв"
         case .detailBasedOnReviews: return "На основе отзывов"
         case .detailCarParking: return "Автопарковка"
+        case .detailNavigate: return "Построить маршрут"
+        case .detailNavigateWith: return "Открыть через"
+        case .detailReviewEligibility: return "Оставить отзыв можно только по завершенному бронированию."
+        case .detailReviewRating: return "Оценка"
+        case .detailReviewComment: return "Комментарий"
+        case .detailReviewCommentRequired: return "Пожалуйста, введите текст отзыва."
+        case .detailSubmitReview: return "Отправить отзыв"
+        case .detailNoReviewsYet: return "Пока нет отзывов"
+        case .reviewNeedBookingWarning:
+            return "Сначала забронируйте место на этой парковке, чтобы оставить отзыв."
+        case .reviewAlreadySubmittedWarning:
+            return "По вашим завершённым бронированиям отзывы уже отправлены."
 
         // Booking Flow
         case .bookingBookSlot: return "Забронировать"
@@ -1386,6 +1451,8 @@ enum StringKey: String {
         case .paymentConfirm: return "Подтвердить оплату"
         case .paymentSelectPayment: return "Выберите оплату"
         case .paymentChange: return "Изменить"
+        case .paymentComingSoon: return "Этот способ оплаты появится в следующей версии."
+        case .paymentWalletOnly: return "Сейчас поддерживается только оплата через кошелёк."
 
         // Review Summary
         case .reviewTitle: return "Итог бронирования"
@@ -1511,6 +1578,7 @@ enum StringKey: String {
         case .homeSearchParking: return "Поиск парковки"
         case .homePopularParking: return "Популярные парковки"
         case .homeNearbyParking: return "Парковки рядом"
+        case .homeCityLabel: return "Город"
         case .homeSearchNoResults: return "Ничего не найдено"
         case .homeSearchNoResultsSub: return "Попробуйте другое название или адрес."
 

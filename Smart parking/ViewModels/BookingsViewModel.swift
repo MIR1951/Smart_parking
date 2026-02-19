@@ -32,10 +32,18 @@ final class BookingsVM: ObservableObject {
                         parking:parkings(
                             id,
                             name,
+                            city,
                             address,
+                            latitude,
+                            longitude,
                             thumbnail_url,
                             price_per_hour,
-                            rating
+                            rating,
+                            total_spots,
+                            description,
+                            is_popular,
+                            images,
+                            features
                         )
                     """
                 )

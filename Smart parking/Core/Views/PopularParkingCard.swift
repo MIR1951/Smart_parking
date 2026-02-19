@@ -11,6 +11,8 @@ struct PopularParkingCard: View {
     @Environment(LocalizationManager.self) private var loc
     let parking: Parking
     let availability: ParkingAvailability?
+    var isFavorite: Bool = false
+    var onToggleFavorite: (() -> Void)? = nil
 
     private var spotsText: String {
         if let avail = availability {
@@ -68,6 +70,37 @@ struct PopularParkingCard: View {
                     )
                     .clipShape(Capsule())
                     .padding(10)
+                }
+
+                if let onToggleFavorite {
+                    HStack {
+                        Spacer()
+                        Button {
+                            AppTheme.Haptic.light()
+                            onToggleFavorite()
+                        } label: {
+                            Image(systemName: isFavorite ? "heart.fill" : "heart")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(
+                                    isFavorite
+                                        ? LinearGradient(
+                                            colors: [AppTheme.Palette.danger, Color(hex: "#FF7675")],
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                        : LinearGradient(
+                                            colors: [.white, .white.opacity(0.92)],
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                )
+                                .frame(width: 32, height: 32)
+                                .background(.ultraThinMaterial)
+                                .clipShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .padding(10)
+                    }
                 }
             }
 

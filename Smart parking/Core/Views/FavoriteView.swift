@@ -106,12 +106,6 @@ struct FavoriteView: View {
                 parkingToRemove = nil
             }
         }
-        .task {
-            if parkingsStore.all.isEmpty {
-                parkingsStore.load(userLocation: nil)
-            }
-            availabilityStore.initialLoad()
-        }
         .toolbar(.hidden, for: .navigationBar)
     }
 

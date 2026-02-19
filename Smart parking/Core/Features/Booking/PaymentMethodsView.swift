@@ -12,6 +12,7 @@ struct PaymentMethodsView: View {
     let onBack: () -> Void
     let onConfirm: () -> Void
     private let loc = LocalizationManager.shared
+    @State private var showComingSoonWarning = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -68,6 +69,16 @@ struct PaymentMethodsView: View {
         }
         .background(AppAnimatedBackground())
         .navigationBarHidden(true)
+        .onAppear {
+            if selectedMethod != .wallet {
+                selectedMethod = .wallet
+            }
+        }
+        .alert(loc.str(.info), isPresented: $showComingSoonWarning) {
+            Button(loc.str(.ok)) {}
+        } message: {
+            Text(loc.str(.paymentComingSoon))
+        }
     }
 
     // MARK: - Header
@@ -100,22 +111,33 @@ struct PaymentMethodsView: View {
 
     // MARK: - Payment Row
     private func paymentRow(method: PaymentMethod) -> some View {
-        HStack(spacing: 16) {
+        let isEnabled = method == .wallet
+
+        return HStack(spacing: 16) {
             Image(systemName: method.icon)
                 .font(.title3)
-                .foregroundColor(AppTheme.Palette.brand)
+                .foregroundColor(isEnabled ? AppTheme.Palette.brand : AppTheme.Palette.textTertiary)
                 .frame(width: 40, height: 40)
-                .background(AppTheme.Palette.brandSoft)
+                .background(
+                    isEnabled ? AppTheme.Palette.brandSoft : AppTheme.Palette.surfaceSecondary
+                )
                 .cornerRadius(10)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(method.displayName)
                     .font(.body)
+                    .foregroundColor(
+                        isEnabled ? AppTheme.Palette.textPrimary : AppTheme.Palette.textSecondary
+                    )
 
                 if method == .wallet {
                     Text("\(loc.str(.walletBalance)): \(WalletManager.shared.formattedBalance)")
                         .font(.caption)
                         .foregroundColor(AppTheme.Palette.textSecondary)
+                } else {
+                    Text(loc.str(.paymentComingSoon))
+                        .font(.caption)
+                        .foregroundColor(AppTheme.Palette.textTertiary)
                 }
             }
 
@@ -123,7 +145,9 @@ struct PaymentMethodsView: View {
 
             Circle()
                 .stroke(
-                    selectedMethod == method ? AppTheme.Palette.brand : Color.gray.opacity(0.3),
+                    selectedMethod == method
+                        ? AppTheme.Palette.brand
+                        : (isEnabled ? Color.gray.opacity(0.3) : Color.gray.opacity(0.2)),
                     lineWidth: 2
                 )
                 .frame(width: 24, height: 24)
@@ -138,8 +162,13 @@ struct PaymentMethodsView: View {
         .padding()
         .background(AppTheme.Palette.surface)
         .cornerRadius(16)
+        .opacity(isEnabled ? 1 : 0.65)
         .onTapGesture {
-            selectedMethod = method
+            if isEnabled {
+                selectedMethod = method
+            } else {
+                showComingSoonWarning = true
+            }
         }
     }
 
@@ -148,24 +177,32 @@ struct PaymentMethodsView: View {
         HStack(spacing: 16) {
             Image(systemName: "creditcard")
                 .font(.title3)
-                .foregroundColor(AppTheme.Palette.brand)
+                .foregroundColor(AppTheme.Palette.textTertiary)
                 .frame(width: 40, height: 40)
-                .background(AppTheme.Palette.brandSoft)
+                .background(AppTheme.Palette.surfaceSecondary)
                 .cornerRadius(10)
 
-            Text(loc.str(.paymentAddCard))
-                .font(.body)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(loc.str(.paymentAddCard))
+                    .font(.body)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
+                Text(loc.str(.paymentComingSoon))
+                    .font(.caption)
+                    .foregroundColor(AppTheme.Palette.textTertiary)
+            }
 
             Spacer()
 
-            Image(systemName: "chevron.right")
-                .foregroundColor(AppTheme.Palette.brand)
+            Image(systemName: "lock.fill")
+                .font(.caption)
+                .foregroundColor(AppTheme.Palette.textTertiary)
         }
         .padding()
         .background(AppTheme.Palette.surface)
         .cornerRadius(16)
+        .opacity(0.7)
         .onTapGesture {
-            selectedMethod = .card
+            showComingSoonWarning = true
         }
     }
 
@@ -173,7 +210,7 @@ struct PaymentMethodsView: View {
     private var confirmButton: some View {
         AppPrimaryButton(
             title: loc.str(.paymentConfirm),
-            isEnabled: selectedMethod != nil
+            isEnabled: selectedMethod == .wallet
         ) {
             onConfirm()
         }

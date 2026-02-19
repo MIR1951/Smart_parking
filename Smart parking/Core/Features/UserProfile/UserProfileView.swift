@@ -393,31 +393,50 @@ struct MyVehiclesView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var store = VehiclesStore.shared
     @State private var showAddVehicle = false
+    @State private var editingVehicle: Vehicle?
 
     var body: some View {
         NavigationStack {
             List {
                 ForEach(store.vehicles) { vehicle in
-                    HStack(spacing: 14) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color(.systemGray6))
-                                .frame(width: 50, height: 50)
-                            Image(systemName: "car.fill")
-                                .foregroundColor(.purple)
-                        }
+                    Button {
+                        editingVehicle = vehicle
+                    } label: {
+                        HStack(spacing: 14) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color(.systemGray6))
+                                    .frame(width: 50, height: 50)
+                                Image(systemName: "car.fill")
+                                    .foregroundColor(.purple)
+                            }
 
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(vehicle.name)
-                                .font(.headline)
-                            Text("\(vehicle.type.rawValue) • \(vehicle.plateNumber)")
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(vehicle.name)
+                                    .font(.headline)
+                                Text("\(vehicle.type.rawValue) • \(vehicle.plateNumber)")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
+
+                            Spacer()
+
+                            Image(systemName: "pencil")
                                 .font(.caption)
                                 .foregroundColor(.gray)
                         }
                     }
+                    .buttonStyle(.plain)
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) {
+                            store.delete(vehicle)
+                        } label: {
+                            Label(LocalizationManager.shared.str(.bookingsCancel), systemImage: "trash")
+                        }
+                    }
                 }
                 .onDelete { indexSet in
-                    indexSet.forEach { store.delete(store.vehicles[$0]) }
+                    store.deleteAt(offsets: indexSet)
                 }
             }
             .overlay {
@@ -448,6 +467,11 @@ struct MyVehiclesView: View {
             .sheet(isPresented: $showAddVehicle) {
                 AddVehicleView(store: store)
             }
+            .sheet(item: $editingVehicle) { vehicle in
+                VehicleEditorView(vehicle: vehicle) { updated in
+                    store.update(updated)
+                }
+            }
         }
     }
 }
@@ -455,29 +479,29 @@ struct MyVehiclesView: View {
 // MARK: - Payment Methods Settings View
 struct PaymentMethodsSettingsView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var showInfo = false
 
     var body: some View {
         NavigationStack {
-            List {
-                Section {
-                    PaymentMethodRow(icon: "creditcard", name: "Visa •••• 4242", isDefault: true)
-                    PaymentMethodRow(icon: "applelogo", name: "Apple Pay", isDefault: false)
-                }
+            VStack(spacing: 16) {
+                Spacer()
 
-                Section {
-                    Button {
-                        showInfo = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "plus.circle.fill")
-                                .foregroundColor(.purple)
-                            Text(LocalizationManager.shared.str(.profileAddPayment))
-                                .foregroundColor(.purple)
-                        }
-                    }
-                }
+                Image(systemName: "creditcard.trianglebadge.exclamationmark")
+                    .font(.system(size: 42))
+                    .foregroundColor(.purple.opacity(0.8))
+
+                Text(LocalizationManager.shared.str(.profileComingSoon))
+                    .font(.headline)
+
+                Text(LocalizationManager.shared.str(.profilePaymentNotReady))
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+
+                Spacer()
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(AppAnimatedBackground())
             .navigationTitle(LocalizationManager.shared.str(.profilePaymentMethods))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -485,10 +509,85 @@ struct PaymentMethodsSettingsView: View {
                     Button(LocalizationManager.shared.str(.profileDone)) { dismiss() }
                 }
             }
-            .alert(LocalizationManager.shared.str(.info), isPresented: $showInfo) {
-                Button(LocalizationManager.shared.str(.ok)) {}
-            } message: {
-                Text(LocalizationManager.shared.str(.profilePaymentNotReady))
+        }
+    }
+}
+
+private struct VehicleEditorView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let vehicle: Vehicle
+    let onSave: (Vehicle) -> Void
+
+    @State private var name: String
+    @State private var plateNumber: String
+    @State private var type: VehicleType
+    @State private var color: VehicleColor
+
+    init(vehicle: Vehicle, onSave: @escaping (Vehicle) -> Void) {
+        self.vehicle = vehicle
+        self.onSave = onSave
+        _name = State(initialValue: vehicle.name)
+        _plateNumber = State(initialValue: vehicle.plateNumber)
+        _type = State(initialValue: vehicle.type)
+        _color = State(initialValue: vehicle.color)
+    }
+
+    private var isValid: Bool {
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && !plateNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Vehicle") {
+                    TextField("Name", text: $name)
+                    TextField(LocalizationManager.shared.str(.vehiclePlateNumber), text: $plateNumber)
+                        .textInputAutocapitalization(.characters)
+                }
+
+                Section("Type") {
+                    Picker("Type", selection: $type) {
+                        ForEach(VehicleType.allCases, id: \.self) { item in
+                            Text(item.rawValue).tag(item)
+                        }
+                    }
+                }
+
+                Section("Color") {
+                    Picker("Color", selection: $color) {
+                        ForEach(VehicleColor.allCases, id: \.self) { item in
+                            Text(item.rawValue.capitalized).tag(item)
+                        }
+                    }
+                }
+            }
+            .navigationTitle(LocalizationManager.shared.str(.profileMyVehicles))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(LocalizationManager.shared.str(.cancel)) {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(LocalizationManager.shared.str(.profileSave)) {
+                        onSave(
+                            Vehicle(
+                                id: vehicle.id,
+                                name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+                                type: type,
+                                plateNumber: plateNumber.trimmingCharacters(
+                                    in: .whitespacesAndNewlines
+                                ),
+                                color: color
+                            )
+                        )
+                        dismiss()
+                    }
+                    .disabled(!isValid)
+                }
             }
         }
     }

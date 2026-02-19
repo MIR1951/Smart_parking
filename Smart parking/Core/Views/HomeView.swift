@@ -10,6 +10,7 @@ import SwiftUI
 struct HomeView: View {
     @Environment(LocalizationManager.self) private var loc
     @Environment(UserManager.self) private var userManager
+    @EnvironmentObject private var locationManager: LocationManager
     @EnvironmentObject var notificationManager: NotificationManager
     @Environment(AppCoordinator.self) private var coordinator
 
@@ -18,69 +19,35 @@ struct HomeView: View {
     @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
 
     @State private var searchText = ""
-    @State private var scrollOffset: CGFloat = 0
-
-    private var filteredParkings: [Parking] {
-        if searchText.isEmpty {
-            return parkingsStore.all
-        }
-        let query = searchText.lowercased()
-        return parkingsStore.all.filter {
-            $0.name.lowercased().contains(query)
-                || ($0.address ?? "").lowercased().contains(query)
-        }
-    }
 
     private var popularParkings: [Parking] {
-        Array(
-            filteredParkings.sorted { ($0.rating ?? 0) > ($1.rating ?? 0) }
-                .prefix(5)
-        )
+        filterBySearch(parkingsStore.popular)
     }
 
     private var nearbyParkings: [Parking] {
-        Array(filteredParkings.prefix(10))
+        filterBySearch(parkingsStore.nearby)
     }
 
     var body: some View {
-        ZStack(alignment: .top) {
+        ZStack {
             AppAnimatedBackground()
 
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    // Invisible offset tracker
-                    GeometryReader { geo in
-                        Color.clear
-                            .preference(
-                                key: ScrollOffsetKey.self,
-                                value: geo.frame(in: .named("homeScroll")).minY
-                            )
-                    }
-                    .frame(height: 0)
+            VStack(spacing: 0) {
+                topSection
 
+                ScrollView(showsIndicators: false) {
                     VStack(spacing: 24) {
-                        // Hero header
-                        heroHeader
-                            .appReveal(0.0)
-
-                        // Search bar
-                        searchBar
-                            .appReveal(0.05)
-
-                        // Popular section
                         if !popularParkings.isEmpty {
                             popularSection
-                                .appReveal(0.1)
+                                .appReveal(0.04)
                         }
 
-                        // Nearby section
                         if !nearbyParkings.isEmpty {
                             nearbySection
-                                .appReveal(0.15)
+                                .appReveal(0.08)
                         }
 
-                        // Empty state
-                        if filteredParkings.isEmpty && !parkingsStore.isLoading {
+                        if popularParkings.isEmpty && nearbyParkings.isEmpty && !parkingsStore.isLoading {
                             emptyState
                                 .appReveal(0.1)
                         }
@@ -88,31 +55,57 @@ struct HomeView: View {
                         Spacer(minLength: 100)
                     }
                     .padding(.top, 16)
+                    .padding(.bottom, 24)
                 }
-            }
-            .coordinateSpace(name: "homeScroll")
-            .onPreferenceChange(ScrollOffsetKey.self) { value in
-                scrollOffset = value
-            }
-
-            // Sticky compact header
-            if scrollOffset < -60 {
-                stickyHeader
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                .refreshable {
+                    await refreshAllHomeData()
+                }
             }
         }
         .task {
-            if parkingsStore.all.isEmpty {
-                parkingsStore.load(userLocation: nil)
-            }
-            availabilityStore.initialLoad()
+            locationManager.requestPermission()
+
+            parkingsStore.bootstrapCity(using: locationManager.placeName, fallback: "Tashkent")
+            parkingsStore.applyFilters(userLocation: locationManager.location)
+        }
+        .onChange(of: locationManager.location) { _, newLocation in
+            parkingsStore.applyFilters(userLocation: newLocation)
+        }
+        .onChange(of: locationManager.placeName) { _, newPlace in
+            parkingsStore.bootstrapCity(using: newPlace, fallback: "Tashkent")
+        }
+        .onChange(of: parkingsStore.availableCities) { _, _ in
+            parkingsStore.bootstrapCity(using: locationManager.placeName, fallback: "Tashkent")
         }
         .toolbar(.hidden, for: .navigationBar)
     }
 
-    // MARK: - Hero Header
+    private func filterBySearch(_ items: [Parking]) -> [Parking] {
+        if searchText.isEmpty {
+            return items
+        }
+        let query = searchText.lowercased()
+        return items.filter {
+            $0.name.lowercased().contains(query)
+                || ($0.address ?? "").lowercased().contains(query)
+        }
+    }
+
+    // MARK: - Fixed Top Section
+    private var topSection: some View {
+        VStack(spacing: 14) {
+            heroHeader
+                .appReveal(0.0)
+
+            cityAndSearch
+                .appReveal(0.02)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
+    }
+
     private var heroHeader: some View {
-        HStack {
+        HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(greeting)
                     .font(AppTheme.Typography.subheadline)
@@ -121,11 +114,29 @@ struct HomeView: View {
                 Text(userManager.currentUser?.username ?? loc.str(.homeGreeting))
                     .font(AppTheme.Typography.title)
                     .foregroundColor(AppTheme.Palette.textPrimary)
+
+                HStack(spacing: 6) {
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(AppTheme.Palette.brand)
+
+                    Text("\(loc.str(.homeCityLabel)): \(parkingsStore.selectedCity)")
+                        .font(AppTheme.Typography.captionBold)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
+                        .lineLimit(1)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(AppTheme.Palette.surfaceGlass)
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(AppTheme.Palette.borderGlass, lineWidth: 1)
+                )
             }
 
             Spacer()
 
-            // Notification bell
             Button {
                 coordinator.showNotifications()
             } label: {
@@ -135,7 +146,8 @@ struct HomeView: View {
                         .foregroundStyle(
                             LinearGradient(
                                 colors: [AppTheme.Palette.brand, AppTheme.Palette.brandLight],
-                                startPoint: .top, endPoint: .bottom
+                                startPoint: .top,
+                                endPoint: .bottom
                             )
                         )
                         .frame(width: 46, height: 46)
@@ -156,10 +168,9 @@ struct HomeView: View {
                                 Capsule()
                                     .fill(
                                         LinearGradient(
-                                            colors: [
-                                                AppTheme.Palette.danger, Color(hex: "#FF7675"),
-                                            ],
-                                            startPoint: .top, endPoint: .bottom
+                                            colors: [AppTheme.Palette.danger, Color(hex: "#FF7675")],
+                                            startPoint: .top,
+                                            endPoint: .bottom
                                         )
                                     )
                             )
@@ -169,37 +180,76 @@ struct HomeView: View {
             }
             .pressStyle()
         }
-        .padding(.horizontal, 20)
+    }
+
+    private var cityAndSearch: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                cityMenu
+
+                HStack(spacing: 10) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(AppTheme.Palette.brandLight)
+                        .font(.system(size: 16, weight: .medium))
+
+                    TextField(loc.str(.homeSearch), text: $searchText)
+                        .font(AppTheme.Typography.body)
+                        .foregroundColor(AppTheme.Palette.textPrimary)
+                        .tint(AppTheme.Palette.brand)
+
+                    if !searchText.isEmpty {
+                        Button {
+                            searchText = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(AppTheme.Palette.textTertiary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(12)
+                .glassCard(cornerRadius: AppTheme.Radius.medium)
+            }
+        }
+    }
+
+    private var cityMenu: some View {
+        Menu {
+            ForEach(parkingsStore.availableCities, id: \.self) { city in
+                Button {
+                    parkingsStore.setSelectedCity(city)
+                } label: {
+                    if parkingsStore.selectedCity.caseInsensitiveCompare(city) == .orderedSame {
+                        Label(city, systemImage: "checkmark")
+                    } else {
+                        Text(city)
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "mappin.and.ellipse")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(AppTheme.Palette.brand)
+
+                Text(parkingsStore.selectedCity)
+                    .font(AppTheme.Typography.captionBold)
+                    .foregroundColor(AppTheme.Palette.textPrimary)
+                    .lineLimit(1)
+
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(AppTheme.Palette.textSecondary)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 12)
+            .glassCard(cornerRadius: AppTheme.Radius.medium)
+            .frame(minWidth: 110, alignment: .leading)
+        }
     }
 
     private var greeting: String {
         loc.str(.homeGreeting)
-    }
-
-    // MARK: - Search Bar
-    private var searchBar: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "magnifyingglass")
-                .foregroundColor(AppTheme.Palette.brandLight)
-                .font(.system(size: 16, weight: .medium))
-
-            TextField(loc.str(.homeSearch), text: $searchText)
-                .font(AppTheme.Typography.body)
-                .foregroundColor(AppTheme.Palette.textPrimary)
-                .tint(AppTheme.Palette.brand)
-
-            if !searchText.isEmpty {
-                Button {
-                    searchText = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(AppTheme.Palette.textTertiary)
-                }
-            }
-        }
-        .padding(14)
-        .glassCard(cornerRadius: AppTheme.Radius.medium)
-        .padding(.horizontal, 20)
     }
 
     // MARK: - Popular Section
@@ -231,7 +281,13 @@ struct HomeView: View {
                         NavigationLink(value: AppRoute.parkingDetail(parking)) {
                             PopularParkingCard(
                                 parking: parking,
-                                availability: availabilityStore.availability(for: parking.id)
+                                availability: availabilityStore.availability(for: parking.id),
+                                isFavorite: favoritesStore.isFavorite(parking.id),
+                                onToggleFavorite: {
+                                    Task { @MainActor in
+                                        favoritesStore.toggle(parking.id)
+                                    }
+                                }
                             )
                         }
                         .buttonStyle(.plain)
@@ -274,7 +330,7 @@ struct HomeView: View {
                             availability: availabilityStore.availability(for: parking.id),
                             isFavorite: favoritesStore.isFavorite(parking.id),
                             onToggleFavorite: {
-                                Task {
+                                Task { @MainActor in
                                     favoritesStore.toggle(parking.id)
                                 }
                             }
@@ -288,43 +344,6 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Sticky Header
-    private var stickyHeader: some View {
-        HStack {
-            Text(userManager.currentUser?.username ?? loc.str(.homeGreeting))
-                .font(AppTheme.Typography.headline)
-                .foregroundColor(AppTheme.Palette.textPrimary)
-
-            Spacer()
-
-            Button {
-                coordinator.showNotifications()
-            } label: {
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: "bell.fill")
-                        .font(.system(size: 16))
-                        .foregroundColor(AppTheme.Palette.brand)
-
-                    if notificationManager.unreadCount > 0 {
-                        Circle()
-                            .fill(AppTheme.Palette.danger)
-                            .frame(width: 8, height: 8)
-                            .offset(x: 4, y: -2)
-                    }
-                }
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        .background(.ultraThinMaterial)
-        .overlay(
-            Rectangle()
-                .fill(AppTheme.Palette.border)
-                .frame(height: 0.5),
-            alignment: .bottom
-        )
-    }
-
     // MARK: - Empty State
     private var emptyState: some View {
         VStack(spacing: 16) {
@@ -333,7 +352,8 @@ struct HomeView: View {
                 .foregroundStyle(
                     LinearGradient(
                         colors: [AppTheme.Palette.brand, AppTheme.Palette.brandLight],
-                        startPoint: .top, endPoint: .bottom
+                        startPoint: .top,
+                        endPoint: .bottom
                     )
                 )
 
@@ -351,13 +371,15 @@ struct HomeView: View {
         .glassCard()
         .padding(.horizontal, 20)
     }
-}
 
-// MARK: - Scroll Offset
-
-private struct ScrollOffsetKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
+    @MainActor
+    private func refreshAllHomeData() async {
+        await parkingsStore.refresh(userLocation: locationManager.location)
+        await availabilityStore.refreshNow(force: true)
+        await notificationManager.load()
+        await WalletManager.shared.syncFromSupabase()
+        await VehiclesStore.shared.syncFromSupabase()
+        parkingsStore.bootstrapCity(using: locationManager.placeName, fallback: "Tashkent")
+        parkingsStore.applyFilters(userLocation: locationManager.location)
     }
 }

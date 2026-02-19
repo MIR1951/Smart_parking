@@ -86,10 +86,6 @@ struct ExploreView: View {
         }
         .task {
             locationManager.requestPermission()
-            if parkingsStore.all.isEmpty {
-                parkingsStore.load(userLocation: locationManager.location)
-            }
-            availabilityStore.initialLoad()
 
             if let location = locationManager.location {
                 moveCamera(to: location.coordinate, distance: 5000)
@@ -287,6 +283,8 @@ struct ExploreView: View {
     // MARK: - Explore Card
     @ViewBuilder
     private func exploreCard(_ parking: Parking) -> some View {
+        let availability = availabilityStore.availability(for: parking.id)
+
         HStack(spacing: 12) {
             CachedAsyncImage(url: parking.imageUrl) { image in
                 image.resizable().aspectRatio(contentMode: .fill)
@@ -318,18 +316,31 @@ struct ExploreView: View {
                 }
 
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text(parking.formattedPrice)
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [AppTheme.Palette.brand, AppTheme.Palette.brandLight],
-                                startPoint: .leading,
-                                endPoint: .trailing
+                    HStack(alignment: .firstTextBaseline, spacing: 2) {
+                        Text(parking.formattedPrice)
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [AppTheme.Palette.brand, AppTheme.Palette.brandLight],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
                             )
-                        )
-                    Text(loc.str(.bookingsPerHour))
-                        .font(.system(size: 10, weight: .medium, design: .rounded))
-                        .foregroundColor(AppTheme.Palette.textSecondary)
+                        Text(loc.str(.bookingsPerHour))
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .foregroundColor(AppTheme.Palette.textSecondary)
+                    }
+
+                    Spacer(minLength: 8)
+
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(availabilityColor(for: availability))
+                            .frame(width: 6, height: 6)
+                        Text(availabilityText(for: availability))
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundColor(AppTheme.Palette.textSecondary)
+                    }
                 }
             }
         }
@@ -347,5 +358,18 @@ struct ExploreView: View {
                 )
         )
         .shadow(color: Color.black.opacity(0.12), radius: 10, y: 4)
+    }
+
+    private func availabilityText(for availability: ParkingAvailability?) -> String {
+        guard let availability else { return "--/--" }
+        return "\(availability.available)/\(availability.total)"
+    }
+
+    private func availabilityColor(for availability: ParkingAvailability?) -> Color {
+        guard let availability else { return AppTheme.Palette.textTertiary }
+        let ratio = Double(availability.available) / Double(max(availability.total, 1))
+        if ratio > 0.3 { return AppTheme.Palette.success }
+        if ratio > 0 { return AppTheme.Palette.warning }
+        return AppTheme.Palette.danger
     }
 }

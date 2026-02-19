@@ -41,9 +41,11 @@ final class VehiclesStore: ObservableObject {
     // MARK: - CRUD Operations (Supabase + local fallback)
 
     func add(_ vehicle: Vehicle) {
-        guard let userID = currentUserID, let userId = UUID(uuidString: userID) else { return }
+        guard let userID = currentUserID else { return }
         vehicles.append(vehicle)
         saveLocal()
+
+        guard let userId = UUID(uuidString: userID) else { return }
 
         Task {
             do {

@@ -34,4 +34,44 @@ struct SupabaseStorageManager {
         let cacheBustedURL = "\(publicURL.absoluteString)?v=\(Int(Date().timeIntervalSince1970))"
         return cacheBustedURL
     }
+
+    func publicURL(for bucket: String, path: String) throws -> String {
+        try client.storage.from(bucket).getPublicURL(path: path).absoluteString
+    }
+
+    func uploadParkingImage(
+        imageData: Data,
+        city: String,
+        parkingSlug: String,
+        fileName: String = UUID().uuidString + ".jpg"
+    ) async throws -> String {
+        let normalizedCity = sanitizePathComponent(city.lowercased())
+        let normalizedSlug = sanitizePathComponent(parkingSlug.lowercased())
+        let path = "\(normalizedCity)/\(normalizedSlug)/\(fileName)"
+
+        try await client.storage
+            .from("parking-images")
+            .upload(
+                path,
+                data: imageData,
+                options: FileOptions(
+                    cacheControl: "3600",
+                    contentType: "image/jpeg",
+                    upsert: true
+                )
+            )
+
+        return try publicURL(for: "parking-images", path: path)
+    }
+
+    private func sanitizePathComponent(_ raw: String) -> String {
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_"))
+        let joined = raw
+            .replacingOccurrences(of: " ", with: "-")
+            .unicodeScalars
+            .map { allowed.contains($0) ? String($0) : "-" }
+            .joined()
+
+        return joined.replacingOccurrences(of: "--", with: "-")
+    }
 }

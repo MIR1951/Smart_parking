@@ -1,18 +1,29 @@
+import CoreLocation
 import SwiftUI
 
 struct ParkingDetailView: View {
     private let loc = LocalizationManager.shared
+
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
     @EnvironmentObject var favorites: FavoritesStore
+    @EnvironmentObject var reviewStore: ParkingReviewStore
     @Environment(AppCoordinator.self) private var coordinator
 
     let parking: Parking
+
     @State private var showShareSheet = false
     @State private var selectedTab: DetailTab = .about
+    @State private var showNavigationApps = false
+    @State private var showGalleryViewer = false
+    @State private var selectedGalleryIndex = 0
+    @State private var showAddReviewSheet = false
+    @State private var reviewErrorMessage = ""
+    @State private var showReviewError = false
+    @State private var reviewWarningMessage = ""
+    @State private var showReviewWarning = false
     @Namespace private var tabNamespace
 
-    // Computed: real available spots
     private var availableSpots: Int {
         if let avail = availabilityStore.availability(for: parking.id) {
             return max(avail.availableSpots, 0)
@@ -24,19 +35,30 @@ struct ParkingDetailView: View {
         availableSpots > 0
     }
 
+    private var galleryImages: [String] {
+        if let images = parking.images, !images.isEmpty {
+            return images
+        }
+        if let thumbnail = parking.thumbnail_url, !thumbnail.isEmpty {
+            return [thumbnail]
+        }
+        return []
+    }
+
+    private var reviewSummary: (average: Double, count: Int) {
+        reviewStore.summary(for: parking.id, fallbackRating: parking.rating)
+    }
+
+    private var mapApps: [ExternalMapNavigator.App] {
+        ExternalMapNavigator.availableApps()
+    }
+
     var body: some View {
-
         VStack(spacing: 0) {
-            // MARK: — Header Image (fixed)
             headerImage
-
-            // MARK: — Summary (Name, Rating, Address) (fixed)
             headerInfo
-
-            // MARK: — Tabs (About, Gallery, Review) (fixed)
             tabSelector
 
-            // MARK: — Tab Content (scrollable)
             ScrollView(showsIndicators: false) {
                 Group {
                     switch selectedTab {
@@ -57,7 +79,7 @@ struct ParkingDetailView: View {
                 Spacer().frame(height: 24)
             }
         }
-        .safeAreaInset(edge: .bottom) {  // ✅ book bar pastda
+        .safeAreaInset(edge: .bottom) {
             bottomBookingBar
                 .background(AppTheme.Palette.surface)
         }
@@ -68,18 +90,106 @@ struct ParkingDetailView: View {
         .sheet(isPresented: $showShareSheet) {
             ShareSheet(activityItems: [shareText])
         }
+        .sheet(isPresented: $showAddReviewSheet) {
+            AddParkingReviewSheet(
+                parkingName: parking.name,
+                isSubmitting: reviewStore.isSubmitting(parkingId: parking.id),
+                onSubmit: { rating, comment in
+                    await submitReview(rating: rating, comment: comment)
+                }
+            )
+            .presentationDetents([.medium, .large])
+        }
+        .fullScreenCover(isPresented: $showGalleryViewer) {
+            ParkingGalleryViewer(
+                imageURLs: galleryImages,
+                startIndex: selectedGalleryIndex
+            )
+        }
+        .confirmationDialog(
+            loc.str(.detailNavigateWith),
+            isPresented: $showNavigationApps,
+            titleVisibility: .visible
+        ) {
+            ForEach(mapApps, id: \.self) { app in
+                Button(app.title) {
+                    ExternalMapNavigator.open(
+                        app,
+                        coordinate: CLLocationCoordinate2D(
+                            latitude: parking.latitude,
+                            longitude: parking.longitude
+                        ),
+                        name: parking.name
+                    )
+                }
+            }
+            Button(loc.str(.cancel), role: .cancel) {}
+        }
+        .alert(loc.str(.error), isPresented: $showReviewError) {
+            Button(loc.str(.ok)) {}
+        } message: {
+            Text(reviewErrorMessage)
+        }
+        .alert(loc.str(.info), isPresented: $showReviewWarning) {
+            Button(loc.str(.ok)) {}
+        } message: {
+            Text(reviewWarningMessage)
+        }
+        .task {
+            await reviewStore.load(parkingId: parking.id)
+        }
+        .onChange(of: selectedTab) { _, newValue in
+            guard newValue == .review else { return }
+            Task {
+                await reviewStore.load(parkingId: parking.id)
+            }
+        }
     }
 
     private var shareText: String {
         "\(parking.name)\n\(parking.address ?? "")\n\(loc.str(.detailPrice)): \(Int(parking.price_per_hour)) so'm\(loc.str(.bookingsPerHour))"
     }
+
+    private func submitReview(rating: Int, comment: String) async {
+        do {
+            try await reviewStore.submit(parkingId: parking.id, rating: rating, comment: comment)
+            showAddReviewSheet = false
+        } catch {
+            reviewErrorMessage = error.localizedDescription
+            showReviewError = true
+        }
+    }
+
+    private func handleAddReviewTap() {
+        if !reviewStore.hasEligibility(parkingId: parking.id) {
+            Task {
+                await reviewStore.load(parkingId: parking.id)
+                await MainActor.run {
+                    presentReviewComposerOrWarning()
+                }
+            }
+            return
+        }
+        presentReviewComposerOrWarning()
+    }
+
+    private func presentReviewComposerOrWarning() {
+        switch reviewStore.eligibility(for: parking.id) {
+        case .eligible:
+            showAddReviewSheet = true
+        case .needsBooking:
+            reviewWarningMessage = loc.str(.reviewNeedBookingWarning)
+            showReviewWarning = true
+        case .alreadyReviewed:
+            reviewWarningMessage = loc.str(.reviewAlreadySubmittedWarning)
+            showReviewWarning = true
+        }
+    }
 }
 
-// MARK: — UI COMPONENTS
+// MARK: - UI
 
 extension ParkingDetailView {
-
-    // MARK: Header Image
     private var headerImage: some View {
         ZStack(alignment: .topLeading) {
             CachedAsyncImage(url: URL(string: parking.thumbnail_url ?? "")) { img in
@@ -87,7 +197,6 @@ extension ParkingDetailView {
             } placeholder: {
                 Rectangle().fill(Color.gray.opacity(0.2))
             }
-
             .frame(height: 260)
             .clipShape(
                 UnevenRoundedRectangle(
@@ -104,22 +213,17 @@ extension ParkingDetailView {
                 circularButton(system: "square.and.arrow.up") {
                     showShareSheet = true
                 }
-                circularButton(
-                    system: favorites.isFavorite(parking.id) ? "heart.fill" : "heart"
-                ) {
+                circularButton(system: favorites.isFavorite(parking.id) ? "heart.fill" : "heart") {
                     favorites.toggle(parking.id)
                 }
             }
             .padding(.horizontal)
             .padding(.top, 50)
         }
-
     }
 
-    // MARK: Header Info
     private var headerInfo: some View {
         VStack(alignment: .leading, spacing: 6) {
-
             Text(parking.name)
                 .font(.title2)
                 .fontWeight(.semibold)
@@ -128,7 +232,7 @@ extension ParkingDetailView {
                 Image(systemName: "star.fill")
                     .foregroundColor(.yellow)
                     .font(.caption)
-                Text(String(format: "%.1f", parking.rating ?? 4.5))
+                Text(String(format: "%.1f", reviewSummary.average > 0 ? reviewSummary.average : (parking.rating ?? 4.5)))
                     .font(.subheadline)
                     .foregroundColor(AppTheme.Palette.textSecondary)
                 Text("•")
@@ -136,6 +240,13 @@ extension ParkingDetailView {
                 Text("\(parking.total_spots) \(loc.str(.detailTotalSpots))")
                     .font(.subheadline)
                     .foregroundColor(AppTheme.Palette.textSecondary)
+                if !parking.city.isEmpty {
+                    Text("•")
+                        .foregroundColor(AppTheme.Palette.textSecondary)
+                    Text(parking.city)
+                        .font(.subheadline)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
+                }
             }
 
             HStack(spacing: 6) {
@@ -144,13 +255,11 @@ extension ParkingDetailView {
             }
             .foregroundColor(AppTheme.Palette.textSecondary)
             .font(.subheadline)
-
         }
         .padding(.horizontal)
         .padding(.top, 12)
     }
 
-    // MARK: Tabs
     private var tabSelector: some View {
         HStack {
             ForEach(DetailTab.allCases, id: \.self) { tab in
@@ -159,7 +268,8 @@ extension ParkingDetailView {
                         .font(AppTheme.Typography.headline)
                         .foregroundColor(
                             selectedTab == tab
-                                ? AppTheme.Palette.brand : AppTheme.Palette.textTertiary)
+                                ? AppTheme.Palette.brand : AppTheme.Palette.textTertiary
+                        )
 
                     if selectedTab == tab {
                         Capsule()
@@ -182,34 +292,50 @@ extension ParkingDetailView {
         .padding(.top, 16)
     }
 
-    // MARK: ABOUT TAB
     private var aboutSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-
-            // Real-time availability
             HStack {
                 HStack(spacing: 4) {
                     Image(systemName: "car.fill")
                         .foregroundColor(
-                            isAvailable ? AppTheme.Palette.success : AppTheme.Palette.danger)
+                            isAvailable ? AppTheme.Palette.success : AppTheme.Palette.danger
+                        )
                     Text("\(availableSpots) \(loc.str(.detailSpotsAvailable))")
                         .foregroundColor(
-                            isAvailable ? AppTheme.Palette.success : AppTheme.Palette.danger)
+                            isAvailable ? AppTheme.Palette.success : AppTheme.Palette.danger
+                        )
                 }
 
                 Spacer()
 
                 HStack(spacing: 4) {
                     Image(systemName: "dollarsign.circle")
-                    Text(
-                        "\(Int(parking.price_per_hour)) so'm" + loc.str(.bookingsPerHour))
+                    Text("\(Int(parking.price_per_hour)) so'm" + loc.str(.bookingsPerHour))
                 }
                 .foregroundColor(AppTheme.Palette.brand)
             }
             .font(.subheadline)
             .fontWeight(.medium)
 
-            // Description from DB
+            Button {
+                showNavigationApps = true
+            } label: {
+                HStack {
+                    Image(systemName: "arrow.triangle.turn.up.right.diamond")
+                    Text(loc.str(.detailNavigate))
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                }
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(AppTheme.Palette.brand)
+                .padding(12)
+                .background(AppTheme.Palette.brand.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
+            }
+            .buttonStyle(.plain)
+
             VStack(alignment: .leading, spacing: 6) {
                 Text(loc.str(.detailDescription))
                     .font(.headline)
@@ -217,7 +343,6 @@ extension ParkingDetailView {
                     .foregroundColor(AppTheme.Palette.textSecondary)
             }
 
-            // Features
             if let features = parking.features, !features.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(loc.str(.detailFeatures))
@@ -231,7 +356,6 @@ extension ParkingDetailView {
                 }
             }
 
-            // Parking Info
             VStack(alignment: .leading, spacing: 8) {
                 Text(loc.str(.detailParkingInfo))
                     .font(.headline)
@@ -243,11 +367,10 @@ extension ParkingDetailView {
                     Spacer()
                     infoItem(
                         title: loc.str(.detailPrice),
-                        value: "\(Int(parking.price_per_hour)) so'm"
-                            + loc.str(.bookingsPerHour))
+                        value: "\(Int(parking.price_per_hour)) so'm" + loc.str(.bookingsPerHour)
+                    )
                 }
             }
-
         }
     }
 
@@ -294,7 +417,6 @@ extension ParkingDetailView {
         }
     }
 
-    // MARK: GALLERY TAB
     private var gallerySection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
@@ -303,20 +425,7 @@ extension ParkingDetailView {
                 Spacer()
             }
 
-            if let images = parking.images, !images.isEmpty {
-                LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 12) {
-                    ForEach(images, id: \.self) { imageUrl in
-                        CachedAsyncImage(url: URL(string: imageUrl)) { image in
-                            image.resizable().scaledToFill()
-                        } placeholder: {
-                            Rectangle().fill(Color.gray.opacity(0.2))
-                        }
-                        .frame(height: 120)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                }
-            } else {
-                // Placeholder if no images
+            if galleryImages.isEmpty {
                 VStack(spacing: 12) {
                     Image(systemName: "photo.on.rectangle.angled")
                         .font(.largeTitle)
@@ -326,83 +435,103 @@ extension ParkingDetailView {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 40)
+            } else {
+                LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 12) {
+                    ForEach(Array(galleryImages.enumerated()), id: \.offset) { index, imageURL in
+                        Button {
+                            selectedGalleryIndex = index
+                            showGalleryViewer = true
+                        } label: {
+                            CachedAsyncImage(url: URL(string: imageURL)) { image in
+                                image.resizable().scaledToFill()
+                            } placeholder: {
+                                Rectangle().fill(Color.gray.opacity(0.2))
+                            }
+                            .frame(height: 120)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
         }
     }
 
-    // MARK: REVIEW TAB
     private var reviewSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let reviews = reviewStore.reviews(for: parking.id)
 
+        return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(loc.str(.detailReviews))
                     .font(.headline)
                 Spacer()
-                Button(loc.str(.detailAddReview)) {}
-                    .foregroundColor(AppTheme.Palette.brand)
-                    .font(.subheadline)
+                Button(loc.str(.detailAddReview)) {
+                    handleAddReviewTap()
+                }
+                .foregroundColor(AppTheme.Palette.brand)
+                .font(.subheadline)
             }
 
-            // Rating Summary
             HStack(spacing: 16) {
-                VStack {
-                    Text(String(format: "%.1f", parking.rating ?? 4.5))
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(String(format: "%.1f", reviewSummary.average))
                         .font(.largeTitle)
                         .fontWeight(.bold)
+
                     HStack(spacing: 2) {
-                        ForEach(0..<5) { i in
-                            Image(systemName: i < Int(parking.rating ?? 4.5) ? "star.fill" : "star")
+                        ForEach(0..<5) { index in
+                            Image(systemName: index < Int(reviewSummary.average.rounded(.down)) ? "star.fill" : "star")
                                 .foregroundColor(.yellow)
                                 .font(.caption)
                         }
                     }
-                    Text(loc.str(.detailBasedOnReviews))
+
+                    Text(reviewSummary.count > 0 ? "\(reviewSummary.count) \(loc.str(.detailBasedOnReviews))" : loc.str(.detailNoReviewsYet))
                         .font(.caption)
                         .foregroundColor(AppTheme.Palette.textSecondary)
                 }
                 .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .background(AppTheme.Palette.brandSoft)
-                .clipShape(
-                    RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
-
-                Spacer()
+                .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
             }
 
-            // Example reviews (placeholder)
-            VStack(spacing: 16) {
-                reviewItem(
-                    name: "John Doe",
-                    date: "2 days ago",
-                    rating: 5,
-                    comment: "Great parking space! Very clean and safe. Will definitely use again."
-                )
-
-                reviewItem(
-                    name: "Jane Smith",
-                    date: "1 week ago",
-                    rating: 4,
-                    comment: "Good location, easy to find. A bit crowded on weekends."
-                )
+            if reviewStore.isLoading(parkingId: parking.id) {
+                ProgressView()
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 20)
+            } else if reviews.isEmpty {
+                Text(loc.str(.detailNoReviewsYet))
+                    .font(.subheadline)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 8)
+            } else {
+                VStack(spacing: 14) {
+                    ForEach(reviews) { review in
+                        reviewItem(review)
+                    }
+                }
             }
         }
     }
 
-    private func reviewItem(name: String, date: String, rating: Int, comment: String) -> some View {
+    private func reviewItem(_ review: ParkingReview) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Circle()
                     .fill(AppTheme.Palette.brandSoft)
                     .frame(width: 40, height: 40)
                     .overlay(
-                        Text(String(name.prefix(1)))
+                        Text(String((review.author?.displayName ?? "U").prefix(1)))
                             .fontWeight(.semibold)
                             .foregroundColor(AppTheme.Palette.brand)
                     )
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(name)
+                    Text(review.author?.displayName ?? "User")
                         .fontWeight(.medium)
-                    Text(date)
+                    Text(review.createdAt.formatted(date: .abbreviated, time: .omitted))
                         .font(.caption)
                         .foregroundColor(AppTheme.Palette.textSecondary)
                 }
@@ -410,15 +539,15 @@ extension ParkingDetailView {
                 Spacer()
 
                 HStack(spacing: 2) {
-                    ForEach(0..<rating, id: \.self) { _ in
-                        Image(systemName: "star.fill")
+                    ForEach(0..<5, id: \.self) { index in
+                        Image(systemName: index < review.rating ? "star.fill" : "star")
                             .foregroundColor(.yellow)
                             .font(.caption)
                     }
                 }
             }
 
-            Text(comment)
+            Text(review.comment)
                 .font(.subheadline)
                 .foregroundColor(AppTheme.Palette.textSecondary)
         }
@@ -427,7 +556,6 @@ extension ParkingDetailView {
         .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
     }
 
-    // MARK: Bottom Booking Bar
     private var bottomBookingBar: some View {
         HStack {
             VStack(alignment: .leading) {
@@ -454,7 +582,8 @@ extension ParkingDetailView {
                         }
                     }
                     .clipShape(
-                        RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
+                        RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous)
+                    )
             }
             .disabled(!isAvailable)
             .pressStyle()
@@ -472,7 +601,6 @@ extension ParkingDetailView {
         )
     }
 
-    // MARK: Button UI
     private func circularButton(system: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: system)
@@ -487,7 +615,7 @@ extension ParkingDetailView {
     }
 }
 
-// MARK: — TABS ENUM
+// MARK: - Tabs
 
 enum DetailTab: CaseIterable, Hashable {
     case about
@@ -504,5 +632,182 @@ enum DetailTab: CaseIterable, Hashable {
         case .review:
             return loc.str(.detailReview)
         }
+    }
+}
+
+// MARK: - Add Review Sheet
+
+private struct AddParkingReviewSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let parkingName: String
+    let isSubmitting: Bool
+    let onSubmit: (Int, String) async -> Void
+
+    @State private var rating = 5
+    @State private var comment = ""
+
+    private let loc = LocalizationManager.shared
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                Text(parkingName)
+                    .font(.headline)
+                    .foregroundColor(AppTheme.Palette.textPrimary)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(loc.str(.detailReviewRating))
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+
+                    HStack(spacing: 8) {
+                        ForEach(1...5, id: \.self) { value in
+                            Button {
+                                rating = value
+                            } label: {
+                                Image(systemName: value <= rating ? "star.fill" : "star")
+                                    .font(.title3)
+                                    .foregroundColor(.yellow)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(loc.str(.detailReviewComment))
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+
+                    TextEditor(text: $comment)
+                        .frame(minHeight: 120)
+                        .padding(8)
+                        .background(AppTheme.Palette.surface)
+                        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous)
+                                .stroke(AppTheme.Palette.border, lineWidth: 1)
+                        )
+                }
+
+                Spacer()
+
+                Button {
+                    Task {
+                        await onSubmit(rating, comment)
+                    }
+                } label: {
+                    HStack {
+                        Spacer()
+                        if isSubmitting {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Text(loc.str(.detailSubmitReview))
+                                .fontWeight(.semibold)
+                        }
+                        Spacer()
+                    }
+                    .frame(height: 48)
+                    .foregroundColor(.white)
+                    .background(AppTheme.Gradient.brand)
+                    .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .disabled(isSubmitting || comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .opacity(isSubmitting || comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.6 : 1)
+            }
+            .padding()
+            .navigationTitle(loc.str(.detailAddReview))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(loc.str(.cancel)) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Gallery Viewer
+
+private struct ParkingGalleryViewer: View {
+    @Environment(\.dismiss) private var dismiss
+    let imageURLs: [String]
+    let startIndex: Int
+
+    @State private var selectedIndex = 0
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Color.black.ignoresSafeArea()
+
+            if imageURLs.isEmpty {
+                ContentUnavailableView("No Images", systemImage: "photo")
+                    .foregroundStyle(.white)
+            } else {
+                TabView(selection: $selectedIndex) {
+                    ForEach(Array(imageURLs.enumerated()), id: \.offset) { index, url in
+                        ZoomableParkingImage(urlString: url)
+                            .tag(index)
+                    }
+                }
+                .tabViewStyle(.page(indexDisplayMode: .always))
+                .onAppear {
+                    selectedIndex = min(max(startIndex, 0), max(imageURLs.count - 1, 0))
+                }
+            }
+
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(width: 36, height: 36)
+                    .background(Color.black.opacity(0.45))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 14)
+            .padding(.trailing, 16)
+        }
+    }
+}
+
+private struct ZoomableParkingImage: View {
+    let urlString: String
+
+    @State private var scale: CGFloat = 1
+
+    var body: some View {
+        CachedAsyncImage(url: URL(string: urlString)) { image in
+            image
+                .resizable()
+                .scaledToFit()
+                .scaleEffect(scale)
+                .gesture(
+                    MagnificationGesture()
+                        .onChanged { value in
+                            scale = min(max(value, 1), 4)
+                        }
+                        .onEnded { _ in
+                            if scale < 1.05 {
+                                withAnimation(.spring) {
+                                    scale = 1
+                                }
+                            }
+                        }
+                )
+                .animation(.easeInOut(duration: 0.15), value: scale)
+        } placeholder: {
+            ProgressView()
+                .tint(.white)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black)
     }
 }

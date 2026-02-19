@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 struct ProfileView: View {
     @Environment(AuthManager.self) private var authManager
@@ -15,9 +16,14 @@ struct ProfileView: View {
     @State private var showLogoutAlert = false
     @State private var showEditProfile = false
     @State private var showPaymentMethods = false
+    @State private var showMyVehicles = false
     @State private var showInfoAlert = false
     @State private var infoMessage = ""
     @State private var scrollOffset: CGFloat = 0
+    @State private var showPhotoPicker = false
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var selectedAvatarImage: Image?
+    @State private var isUploadingAvatar = false
 
     // Scroll offset asosida header qisqaradi
     private var headerProgress: CGFloat {
@@ -62,6 +68,13 @@ struct ProfileView: View {
                                     color: AppTheme.Palette.brand
                                 ) {
                                     showPaymentMethods = true
+                                },
+                                ProfileRowData(
+                                    icon: "car.fill",
+                                    title: loc.str(.profileMyVehicles),
+                                    color: AppTheme.Palette.accent
+                                ) {
+                                    showMyVehicles = true
                                 },
                                 ProfileRowData(
                                     icon: "wallet.pass", title: loc.str(.profileMyWallet),
@@ -158,6 +171,13 @@ struct ProfileView: View {
         .sheet(isPresented: $showPaymentMethods) {
             PaymentMethodsSettingsView()
         }
+        .sheet(isPresented: $showMyVehicles) {
+            MyVehiclesView()
+        }
+        .photosPicker(isPresented: $showPhotoPicker, selection: $selectedPhotoItem)
+        .task(id: selectedPhotoItem) {
+            await onProfilePhotoSelected()
+        }
         .alert(loc.str(.info), isPresented: $showInfoAlert) {
             Button(loc.str(.ok)) {}
         } message: {
@@ -196,22 +216,56 @@ struct ProfileView: View {
                     )
                     .frame(width: avatarSize, height: avatarSize)
 
-                if let avatarURL = userManager.currentUser?.profileImageURL,
-                    let url = URL(string: avatarURL)
-                {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let img):
-                            img.resizable().scaledToFill()
-                        default:
+                Group {
+                    if let selectedAvatarImage {
+                        selectedAvatarImage
+                            .resizable()
+                            .scaledToFill()
+                    } else if let avatarURL = userManager.currentUser?.profileImageURL,
+                        let url = URL(string: avatarURL)
+                    {
+                        CachedAsyncImage(url: url) { image in
+                            image.resizable().scaledToFill()
+                        } placeholder: {
                             avatarPlaceholder(size: avatarSize - 10)
                         }
+                    } else {
+                        avatarPlaceholder(size: avatarSize - 10)
                     }
-                    .frame(width: avatarSize - 10, height: avatarSize - 10)
-                    .clipShape(Circle())
-                } else {
-                    avatarPlaceholder(size: avatarSize - 10)
                 }
+                .frame(width: avatarSize - 10, height: avatarSize - 10)
+                .clipShape(Circle())
+
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Button {
+                            showPhotoPicker = true
+                        } label: {
+                            ZStack {
+                                Circle()
+                                    .fill(AppTheme.Palette.brand)
+                                if isUploadingAvatar {
+                                    ProgressView()
+                                        .tint(.white)
+                                        .scaleEffect(0.65)
+                                } else {
+                                    Image(systemName: "camera.fill")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundColor(.white)
+                                }
+                            }
+                            .frame(width: max(24, avatarSize * 0.25), height: max(24, avatarSize * 0.25))
+                            .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .frame(width: avatarSize, height: avatarSize)
+            }
+            .onTapGesture {
+                showPhotoPicker = true
             }
 
             // Ism va email (compact holatda gorizontal)
@@ -305,6 +359,34 @@ struct ProfileView: View {
     private func showComingSoon(_ message: String) {
         infoMessage = message
         showInfoAlert = true
+    }
+
+    private func onProfilePhotoSelected() async {
+        guard let selectedPhotoItem else { return }
+        guard let user = userManager.currentUser else { return }
+
+        do {
+            guard let data = try await selectedPhotoItem.loadTransferable(type: Data.self) else {
+                return
+            }
+            guard let uiImage = UIImage(data: data) else { return }
+
+            await MainActor.run {
+                selectedAvatarImage = Image(uiImage: uiImage)
+                isUploadingAvatar = true
+            }
+
+            let uploadedURL = try await SupabaseStorageManager().uploadProfilePhoto(
+                for: user,
+                imageData: data
+            )
+            await userManager.updateProfileImageURL(uploadedURL)
+        } catch {
+            infoMessage = "\(loc.str(.profileSaveFailed)): \(error.localizedDescription)"
+            showInfoAlert = true
+        }
+
+        isUploadingAvatar = false
     }
 }
 

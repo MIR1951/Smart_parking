@@ -14,10 +14,70 @@ import SwiftUI
 struct BookingParking: Codable, Identifiable {
     let id: UUID
     let name: String
+    let city: String?
     let address: String?
+    let latitude: Double?
+    let longitude: Double?
     let thumbnail_url: String?
     let price_per_hour: Double
     let rating: Double?
+    let total_spots: Int?
+    let description: String?
+    let is_popular: Bool?
+    let images: [String]?
+    let features: [String]?
+
+    init(
+        id: UUID,
+        name: String,
+        city: String? = nil,
+        address: String?,
+        latitude: Double? = nil,
+        longitude: Double? = nil,
+        thumbnail_url: String?,
+        price_per_hour: Double,
+        rating: Double?,
+        total_spots: Int? = nil,
+        description: String? = nil,
+        is_popular: Bool? = nil,
+        images: [String]? = nil,
+        features: [String]? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.city = city
+        self.address = address
+        self.latitude = latitude
+        self.longitude = longitude
+        self.thumbnail_url = thumbnail_url
+        self.price_per_hour = price_per_hour
+        self.rating = rating
+        self.total_spots = total_spots
+        self.description = description
+        self.is_popular = is_popular
+        self.images = images
+        self.features = features
+    }
+
+    var asParking: Parking {
+        Parking(
+            id: id,
+            name: name,
+            city: city ?? "Tashkent",
+            address: address,
+            latitude: latitude ?? 41.3111,
+            longitude: longitude ?? 69.2797,
+            price_per_hour: price_per_hour,
+            rating: rating,
+            thumbnail_url: thumbnail_url,
+            total_spots: total_spots ?? 0,
+            live_occupancy: nil,
+            description: description,
+            is_popular: is_popular,
+            images: images,
+            features: features
+        )
+    }
 }
 
 struct BookingItem: Codable, Identifiable {
@@ -93,6 +153,7 @@ enum BookingTab: String, CaseIterable {
 // MARK: - Main View
 struct BookingsView: View {
     @EnvironmentObject private var availabilityStore: ParkingAvailabilityStore
+    @Environment(AppCoordinator.self) private var coordinator
 
     // Sheet types
     enum SheetType { case detail, ticket }
@@ -146,6 +207,7 @@ struct BookingsView: View {
                                 BookingCard(
                                     item: item,
                                     tab: tab,
+                                    onCardTap: { coordinator.showParkingDetail(item.parking.asParking) },
                                     onLeftTap: { handleLeftButton(item) },
                                     onTicketTap: { openTicket(item) }
                                 )
@@ -304,6 +366,7 @@ struct BookingsView: View {
 struct BookingCard: View {
     let item: BookingItem
     let tab: BookingTab
+    let onCardTap: () -> Void
     let onLeftTap: () -> Void
     let onTicketTap: () -> Void
 
@@ -352,75 +415,78 @@ struct BookingCard: View {
 
     var body: some View {
         VStack(spacing: 12) {
+            VStack(spacing: 12) {
+                HStack(alignment: .top, spacing: 12) {
 
-            HStack(alignment: .top, spacing: 12) {
+                    CachedAsyncImage(url: URL(string: item.parking.thumbnail_url ?? "")) { image in
+                        image.resizable().scaledToFill()
+                    } placeholder: {
+                        Rectangle().fill(Color.gray.opacity(0.2))
+                    }
+                    .frame(width: 110, height: 90)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
 
-                CachedAsyncImage(url: URL(string: item.parking.thumbnail_url ?? "")) { image in
-                    image.resizable().scaledToFill()
-                } placeholder: {
-                    Rectangle().fill(Color.gray.opacity(0.2))
-                }
-                .frame(width: 110, height: 90)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+                    VStack(alignment: .leading, spacing: 6) {
 
-                VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text(LocalizationManager.shared.str(.detailCarParking))
+                                .font(.caption)
+                                .foregroundColor(AppTheme.Palette.brand)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(AppTheme.Palette.brand.opacity(0.10))
+                                .clipShape(Capsule())
 
-                    HStack {
-                        Text(LocalizationManager.shared.str(.detailCarParking))
+                            Spacer()
+
+                            HStack(spacing: 4) {
+                                Image(systemName: "star.fill")
+                                    .font(.caption)
+                                    .foregroundColor(.yellow)
+                                Text(String(format: "%.1f", item.parking.rating ?? 4.5))
+                                    .font(.caption)
+                                    .foregroundColor(AppTheme.Palette.textSecondary)
+                            }
+                        }
+
+                        Text(item.parking.name)
+                            .font(.headline)
+                            .foregroundColor(AppTheme.Palette.textPrimary)
+                            .lineLimit(1)
+
+                        HStack(spacing: 6) {
+                            Image(systemName: "mappin.and.ellipse")
+                                .font(.caption)
+                                .foregroundColor(AppTheme.Palette.textSecondary)
+                            Text(
+                                item.parking.address ?? LocalizationManager.shared.str(.bookingsUnknown)
+                            )
                             .font(.caption)
-                            .foregroundColor(AppTheme.Palette.brand)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(AppTheme.Palette.brand.opacity(0.10))
-                            .clipShape(Capsule())
-
-                        Spacer()
+                            .foregroundColor(AppTheme.Palette.textSecondary)
+                            .lineLimit(1)
+                        }
 
                         HStack(spacing: 4) {
-                            Image(systemName: "star.fill")
-                                .font(.caption)
-                                .foregroundColor(.yellow)
-                            Text(String(format: "%.1f", item.parking.rating ?? 4.5))
+                            Text("\(Int(item.parking.price_per_hour)) so'm")
+                                .font(.headline)
+                                .foregroundColor(AppTheme.Palette.brand)
+                            Text(LocalizationManager.shared.str(.bookingsPerHour))
                                 .font(.caption)
                                 .foregroundColor(AppTheme.Palette.textSecondary)
                         }
                     }
+                }
 
-                    Text(item.parking.name)
-                        .font(.headline)
-                        .foregroundColor(AppTheme.Palette.textPrimary)
-                        .lineLimit(1)
+                // Time Info
+                timeInfoSection
 
-                    HStack(spacing: 6) {
-                        Image(systemName: "mappin.and.ellipse")
-                            .font(.caption)
-                            .foregroundColor(AppTheme.Palette.textSecondary)
-                        Text(
-                            item.parking.address ?? LocalizationManager.shared.str(.bookingsUnknown)
-                        )
-                        .font(.caption)
-                        .foregroundColor(AppTheme.Palette.textSecondary)
-                        .lineLimit(1)
-                    }
-
-                    HStack(spacing: 4) {
-                        Text("\(Int(item.parking.price_per_hour)) so'm")
-                            .font(.headline)
-                            .foregroundColor(AppTheme.Palette.brand)
-                        Text(LocalizationManager.shared.str(.bookingsPerHour))
-                            .font(.caption)
-                            .foregroundColor(AppTheme.Palette.textSecondary)
-                    }
+                // Overtime warning (agar vaqt o'tib ketgan bo'lsa)
+                if item.isOvertime {
+                    overtimeWarning
                 }
             }
-
-            // Time Info
-            timeInfoSection
-
-            // Overtime warning (agar vaqt o'tib ketgan bo'lsa)
-            if item.isOvertime {
-                overtimeWarning
-            }
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onCardTap)
 
             // Ongoing: 2 ta button, Completed/Cancelled: 1 ta button
             if tab == .ongoing {
