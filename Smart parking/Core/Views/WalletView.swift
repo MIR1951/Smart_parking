@@ -61,7 +61,7 @@ struct WalletView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(loc.str(.walletBalance))
                         .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.8))
+                        .foregroundColor(.white.opacity(0.7))
 
                     Text(wallet.formattedBalance)
                         .font(.system(size: 34, weight: .bold, design: .rounded))
@@ -72,13 +72,18 @@ struct WalletView: View {
 
                 Image(systemName: "wallet.pass.fill")
                     .font(.system(size: 40))
-                    .foregroundColor(.white.opacity(0.5))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.white.opacity(0.6), .white.opacity(0.2)],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                    )
             }
 
             Button {
                 showTopUpSheet = true
             } label: {
-                HStack {
+                HStack(spacing: 8) {
                     Image(systemName: "plus.circle.fill")
                     Text(loc.str(.walletTopUp))
                         .fontWeight(.semibold)
@@ -86,21 +91,30 @@ struct WalletView: View {
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
-                .background(.white.opacity(0.2))
-                .clipShape(Capsule())
+                .background(
+                    Capsule()
+                        .fill(.white.opacity(0.18))
+                        .overlay(
+                            Capsule()
+                                .stroke(.white.opacity(0.25), lineWidth: 1)
+                        )
+                )
             }
             .pressStyle()
         }
         .padding(24)
         .background(
             LinearGradient(
-                colors: [AppTheme.Palette.brand, AppTheme.Palette.brand.opacity(0.7)],
+                colors: [
+                    AppTheme.Palette.brand, AppTheme.Palette.brandDark,
+                    AppTheme.Palette.brandLight.opacity(0.6),
+                ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
         )
-        .clipShape(RoundedRectangle(cornerRadius: 24))
-        .shadow(color: AppTheme.Palette.brand.opacity(0.3), radius: 16, y: 8)
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.xLarge, style: .continuous))
+        .shadow(color: AppTheme.Palette.brand.opacity(0.35), radius: 20, y: 10)
     }
 
     // MARK: - Quick Top Up
@@ -135,7 +149,11 @@ struct WalletView: View {
         }
         .padding()
         .background(AppTheme.Palette.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.large, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppTheme.Radius.large, style: .continuous)
+                .stroke(AppTheme.Palette.border, lineWidth: 1)
+        )
     }
 
     // MARK: - Transactions
@@ -164,14 +182,27 @@ struct WalletView: View {
         }
         .padding()
         .background(AppTheme.Palette.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.large, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppTheme.Radius.large, style: .continuous)
+                .stroke(AppTheme.Palette.border, lineWidth: 1)
+        )
     }
 
     private func transactionRow(_ tx: WalletTransaction) -> some View {
         HStack(spacing: 12) {
             Image(systemName: tx.type == .topUp ? "arrow.down.circle.fill" : "arrow.up.circle.fill")
                 .font(.title2)
-                .foregroundColor(tx.type == .topUp ? .green : AppTheme.Palette.brand)
+                .foregroundStyle(
+                    tx.type == .topUp
+                        ? LinearGradient(
+                            colors: [
+                                AppTheme.Palette.success, AppTheme.Palette.success.opacity(0.7),
+                            ], startPoint: .top, endPoint: .bottom)
+                        : LinearGradient(
+                            colors: [AppTheme.Palette.brand, AppTheme.Palette.brandLight],
+                            startPoint: .top, endPoint: .bottom)
+                )
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(tx.description)
@@ -188,7 +219,8 @@ struct WalletView: View {
             Text("\(tx.amount >= 0 ? "+" : "")\(wallet.formatCurrency(abs(tx.amount)))")
                 .font(.subheadline)
                 .fontWeight(.bold)
-                .foregroundColor(tx.type == .topUp ? .green : .red)
+                .foregroundColor(
+                    tx.type == .topUp ? AppTheme.Palette.success : AppTheme.Palette.danger)
         }
         .padding(.vertical, 4)
     }

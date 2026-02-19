@@ -10,6 +10,7 @@ struct ParkingDetailView: View {
     let parking: Parking
     @State private var showShareSheet = false
     @State private var selectedTab: DetailTab = .about
+    @Namespace private var tabNamespace
 
     // Computed: real available spots
     private var availableSpots: Int {
@@ -88,7 +89,12 @@ extension ParkingDetailView {
             }
 
             .frame(height: 260)
-            .clipped()
+            .clipShape(
+                UnevenRoundedRectangle(
+                    bottomLeadingRadius: AppTheme.Radius.large,
+                    bottomTrailingRadius: AppTheme.Radius.large
+                )
+            )
 
             HStack {
                 circularButton(system: "chevron.left") {
@@ -148,26 +154,28 @@ extension ParkingDetailView {
     private var tabSelector: some View {
         HStack {
             ForEach(DetailTab.allCases, id: \.self) { tab in
-                VStack {
+                VStack(spacing: 6) {
                     Text(tab.title)
-                        .font(.headline)
+                        .font(AppTheme.Typography.headline)
                         .foregroundColor(
                             selectedTab == tab
-                                ? AppTheme.Palette.brand : AppTheme.Palette.textSecondary)
+                                ? AppTheme.Palette.brand : AppTheme.Palette.textTertiary)
 
                     if selectedTab == tab {
-                        Rectangle()
-                            .fill(AppTheme.Palette.brand)
+                        Capsule()
+                            .fill(AppTheme.Gradient.brand)
                             .frame(height: 3)
-
+                            .matchedGeometryEffect(id: "tabUnderline", in: tabNamespace)
                     } else {
-                        Rectangle()
+                        Capsule()
                             .fill(Color.clear)
                             .frame(height: 3)
                     }
                 }
+                .frame(maxWidth: .infinity)
                 .onTapGesture {
-                    withAnimation(.easeInOut) { selectedTab = tab }
+                    withAnimation(AppTheme.Anim.smooth) { selectedTab = tab }
+                    AppTheme.Haptic.light()
                 }
             }
         }
@@ -182,9 +190,11 @@ extension ParkingDetailView {
             HStack {
                 HStack(spacing: 4) {
                     Image(systemName: "car.fill")
-                        .foregroundColor(isAvailable ? .green : .red)
+                        .foregroundColor(
+                            isAvailable ? AppTheme.Palette.success : AppTheme.Palette.danger)
                     Text("\(availableSpots) \(loc.str(.detailSpotsAvailable))")
-                        .foregroundColor(isAvailable ? .green : .red)
+                        .foregroundColor(
+                            isAvailable ? AppTheme.Palette.success : AppTheme.Palette.danger)
                 }
 
                 Spacer()
@@ -253,7 +263,7 @@ extension ParkingDetailView {
         }
         .padding(10)
         .background(AppTheme.Palette.brandSoft)
-        .cornerRadius(10)
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous))
     }
 
     private func iconForFeature(_ feature: String) -> String {
@@ -352,7 +362,8 @@ extension ParkingDetailView {
                 }
                 .padding()
                 .background(AppTheme.Palette.brandSoft)
-                .cornerRadius(12)
+                .clipShape(
+                    RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
 
                 Spacer()
             }
@@ -413,7 +424,7 @@ extension ParkingDetailView {
         }
         .padding()
         .background(AppTheme.Palette.pageBackground)
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
     }
 
     // MARK: Bottom Booking Bar
@@ -442,7 +453,8 @@ extension ParkingDetailView {
                             Color.gray
                         }
                     }
-                    .cornerRadius(14)
+                    .clipShape(
+                        RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
             }
             .disabled(!isAvailable)
             .pressStyle()
@@ -450,7 +462,14 @@ extension ParkingDetailView {
         .padding(.horizontal)
         .padding(.top, 12)
         .padding(.bottom, 12)
-        .background(AppTheme.Palette.surface)
+        .background(
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    Rectangle()
+                        .fill(AppTheme.Palette.surface.opacity(0.7))
+                )
+        )
     }
 
     // MARK: Button UI
@@ -460,9 +479,9 @@ extension ParkingDetailView {
                 .font(.headline)
                 .foregroundColor(AppTheme.Palette.textPrimary)
                 .padding(10)
-                .background(AppTheme.Palette.surface)
+                .background(.ultraThinMaterial)
                 .clipShape(Circle())
-                .shadow(radius: 3)
+                .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
         }
         .pressStyle()
     }

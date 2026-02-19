@@ -92,6 +92,7 @@ enum BookingTab: String, CaseIterable {
 
 // MARK: - Main View
 struct BookingsView: View {
+    @EnvironmentObject private var availabilityStore: ParkingAvailabilityStore
 
     // Sheet types
     enum SheetType { case detail, ticket }
@@ -158,8 +159,6 @@ struct BookingsView: View {
                 }
             }
         }
-        .navigationTitle(LocalizationManager.shared.str(.bookingsTitle))
-        .navigationBarTitleDisplayMode(.inline)
         .task { await vm.load() }
         .refreshable { await vm.load() }
         .alert(
@@ -187,23 +186,43 @@ struct BookingsView: View {
                 BookingDetailSheet(item: item.booking)
             }
         }
+        .toolbar(.hidden, for: .navigationBar)
         .animation(AppTheme.Anim.snappy, value: tab)
         .animation(AppTheme.Anim.smooth, value: vm.items.count)
     }
 
     // MARK: - Empty State
     private var emptyState: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "ticket")
-                .font(.system(size: 60))
-                .foregroundColor(.gray.opacity(0.5))
+        VStack(spacing: 20) {
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                AppTheme.Palette.brand.opacity(0.15),
+                                AppTheme.Palette.brandLight.opacity(0.05),
+                            ],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 90, height: 90)
+
+                Image(systemName: "ticket")
+                    .font(.system(size: 36))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [AppTheme.Palette.brand, AppTheme.Palette.brandLight],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                    )
+            }
 
             Text(LocalizationManager.shared.str(.bookingsNoBookings))
-                .font(.headline)
+                .font(AppTheme.Typography.title3)
                 .foregroundColor(AppTheme.Palette.textPrimary)
 
             Text(LocalizationManager.shared.str(.bookingsEmptySubtitle))
-                .font(.caption)
+                .font(AppTheme.Typography.subheadline)
                 .foregroundColor(AppTheme.Palette.textSecondary)
         }
         .padding(.top, 80)
@@ -211,29 +230,38 @@ struct BookingsView: View {
 
     // MARK: - Tabs
     private var bookingTabs: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 6) {
             ForEach(BookingTab.allCases, id: \.self) { t in
-                VStack(spacing: 8) {
+                Button {
+                    withAnimation(AppTheme.Anim.snappy) { tab = t }
+                } label: {
                     Text(t.displayName)
-                        .font(.headline)
-                        .foregroundColor(
-                            tab == t ? AppTheme.Palette.brand : AppTheme.Palette.textSecondary)
-
-                    Capsule()
-                        .fill(tab == t ? AppTheme.Palette.brand : Color.clear)
-                        .frame(height: 3)
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundColor(tab == t ? .white : AppTheme.Palette.textSecondary)
+                        .padding(.vertical, 10)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            tab == t
+                                ? AnyShapeStyle(
+                                    LinearGradient(
+                                        colors: [
+                                            AppTheme.Palette.brand, AppTheme.Palette.brandLight,
+                                        ],
+                                        startPoint: .leading, endPoint: .trailing
+                                    ))
+                                : AnyShapeStyle(Color.clear)
+                        )
+                        .clipShape(Capsule())
                 }
-                .frame(maxWidth: .infinity)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    withAnimation(.easeInOut) { tab = t }
-                }
+                .buttonStyle(.plain)
             }
         }
+        .padding(4)
+        .background(AppTheme.Palette.surfaceSecondary)
+        .clipShape(Capsule())
         .padding(.horizontal)
         .padding(.top, 8)
         .padding(.bottom, 10)
-        .background(AppTheme.Palette.surface.opacity(0.90))
     }
 
     // MARK: - Actions
@@ -262,6 +290,7 @@ struct BookingsView: View {
             do {
                 try await ReservationManager.shared.cancelReservation(reservationId: item.id)
                 await vm.load()
+                await availabilityStore.refreshNow(force: true)
             } catch {
                 cancelErrorMessage =
                     "\(LocalizationManager.shared.str(.bookingsCannotCancel)): \(error.localizedDescription)"
@@ -310,14 +339,14 @@ struct BookingCard: View {
         switch tab {
         case .ongoing:
             if item.canCancel {
-                return (Color.red.opacity(0.1), Color.red)
+                return (AppTheme.Palette.danger.opacity(0.12), AppTheme.Palette.danger)
             } else {
-                return (AppTheme.Palette.brand.opacity(0.1), AppTheme.Palette.brand)
+                return (AppTheme.Palette.brand.opacity(0.12), AppTheme.Palette.brand)
             }
         case .completed:
-            return (Color.green.opacity(0.1), Color.green)
+            return (AppTheme.Palette.success.opacity(0.12), AppTheme.Palette.success)
         case .cancelled:
-            return (Color.orange.opacity(0.1), Color.orange)
+            return (AppTheme.Palette.warning.opacity(0.12), AppTheme.Palette.warning)
         }
     }
 
@@ -433,8 +462,12 @@ struct BookingCard: View {
         }
         .padding(14)
         .background(AppTheme.Palette.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.large, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppTheme.Radius.large, style: .continuous)
+                .stroke(AppTheme.Palette.border, lineWidth: 1)
+        )
+        .appShadow(AppTheme.Shadow.small())
     }
 
     // MARK: - Time Info

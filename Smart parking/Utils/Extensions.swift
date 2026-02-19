@@ -31,4 +31,22 @@ extension Parking {
         let parkingLoc = CLLocation(latitude: latitude, longitude: longitude)
         return userLocation.distance(from: parkingLoc)
     }
+
+    /// Convenience: URL built from thumbnail_url
+    var imageUrl: URL? {
+        guard let str = thumbnail_url, !str.isEmpty else { return nil }
+        return URL(string: str)
+    }
+
+    /// Formatted price string, e.g. "15000 so'm"
+    var formattedPrice: String {
+        "\(Int(price_per_hour)) so'm"
+    }
+}
+
+extension ParkingAvailability {
+    /// Alias matching naming used in card views
+    var available: Int { availableSpots }
+    /// Approximate total spots for availability ratio
+    var total: Int { availableSpots + liveOccupancy + reservedSpots }
 }

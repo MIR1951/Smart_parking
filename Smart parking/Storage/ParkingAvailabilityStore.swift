@@ -16,10 +16,16 @@ final class ParkingAvailabilityStore: ObservableObject, Sendable {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published private(set) var available: [UUID: Int] = [:]
+    @Published private(set) var isRealtimeConnected = false
 
     private let client: SupabaseClient
     private var channel: RealtimeChannelV2?
+    private var updatesTask: Task<Void, Never>?
+    private var retryTask: Task<Void, Never>?
     private var hasLoadedOnce = false
+    private var reconnectAttempt = 0
+    private var isConnectingRealtime = false
+    private var shouldMaintainRealtime = false
 
     init(client: SupabaseClient) {
         self.client = client
@@ -30,84 +36,168 @@ final class ParkingAvailabilityStore: ObservableObject, Sendable {
         byParkingId[parkingId]
     }
 
-    // MARK: - Initial load (select)
+    // MARK: - Initial load / Refresh
     func initialLoad(force: Bool = false) {
+        Task { [weak self] in
+            await self?.refreshNow(force: force)
+        }
+    }
+
+    func refreshNow(force: Bool = false) async {
         if hasLoadedOnce && !force { return }
 
-        Task { [weak self] in
-            guard let self else { return }
-            do {
-                self.isLoading = true
-                self.errorMessage = nil
-                defer { self.isLoading = false }
+        do {
+            isLoading = true
+            errorMessage = nil
+            defer { isLoading = false }
 
-                let rows: [ParkingAvailability] =
-                    try await client
-                    .from("parking_availability")
-                    .select()
-                    .execute()
-                    .value
+            let rows: [ParkingAvailability] =
+                try await client
+                .from("parking_availability")
+                .select()
+                .execute()
+                .value
 
-                var map: [UUID: ParkingAvailability] = [:]
-                var avail: [UUID: Int] = [:]
-                rows.forEach {
-                    map[$0.parkingId] = $0
-                    avail[$0.parkingId] = $0.availableSpots
-                }
-                self.byParkingId = map
-                self.available = avail
-                self.hasLoadedOnce = true
-            } catch {
-                self.errorMessage = "Availability yuklanmadi"
+            var map: [UUID: ParkingAvailability] = [:]
+            var avail: [UUID: Int] = [:]
+            rows.forEach {
+                map[$0.parkingId] = $0
+                avail[$0.parkingId] = $0.availableSpots
+            }
+            byParkingId = map
+            available = avail
+            hasLoadedOnce = true
+        } catch {
+            errorMessage = "Availability yuklanmadi"
+        }
+    }
 
+    // MARK: - Realtime
+    func startRealtime() {
+        shouldMaintainRealtime = true
+        connectRealtimeIfNeeded()
+    }
+
+    func stopRealtime() {
+        shouldMaintainRealtime = false
+        reconnectAttempt = 0
+        isRealtimeConnected = false
+        isConnectingRealtime = false
+
+        retryTask?.cancel()
+        retryTask = nil
+
+        updatesTask?.cancel()
+        updatesTask = nil
+
+        let existingChannel = channel
+        channel = nil
+
+        Task {
+            if let existingChannel {
+                await existingChannel.unsubscribe()
             }
         }
     }
 
-    // MARK: - Realtime subscribe (UPDATE)
-    func startRealtime() {
-        // ikki marta subscribe bo'lib ketmasin
-        if channel != nil { return }
+    private func connectRealtimeIfNeeded() {
+        guard shouldMaintainRealtime else { return }
+        guard channel == nil else { return }
+        guard !isConnectingRealtime else { return }
+
+        isConnectingRealtime = true
+        retryTask?.cancel()
+        retryTask = nil
 
         Task { [weak self] in
             guard let self else { return }
+            defer { self.isConnectingRealtime = false }
 
             do {
-                let channel = client.realtimeV2.channel("realtime:parking_availability")
-                self.channel = channel
-
-                // ✅ Muhim: UpdateAction ishlatamiz, shunda update.record bor.
-                let updates = channel.postgresChange(
+                let realtimeChannel = client.realtimeV2.channel("realtime:parking_availability")
+                let updates = realtimeChannel.postgresChange(
                     UpdateAction.self,
                     schema: "public",
                     table: "parking_availability"
                 )
+                let inserts = realtimeChannel.postgresChange(
+                    InsertAction.self,
+                    schema: "public",
+                    table: "parking_availability"
+                )
 
-                try await channel.subscribeWithError()
+                try await realtimeChannel.subscribeWithError()
+                guard shouldMaintainRealtime else {
+                    await realtimeChannel.unsubscribe()
+                    return
+                }
+                channel = realtimeChannel
+                isRealtimeConnected = true
+                reconnectAttempt = 0
+                errorMessage = nil
 
-                // stream listener
-                Task { [weak self] in
+                updatesTask?.cancel()
+                updatesTask = Task { [weak self] in
                     guard let self else { return }
-                    for await update in updates {
-                        if let decoded = self.decodeAvailability(from: update.record) {
-                            self.byParkingId[decoded.parkingId] = decoded
-                            self.available[decoded.parkingId] = decoded.availableSpots
+                    await withTaskGroup(of: Void.self) { group in
+                        group.addTask { [weak self] in
+                            guard let self else { return }
+                            for await update in updates {
+                                await self.applyRealtimeRecord(update.record)
+                            }
+                        }
+                        group.addTask { [weak self] in
+                            guard let self else { return }
+                            for await insert in inserts {
+                                await self.applyRealtimeRecord(insert.record)
+                            }
                         }
                     }
+                    await self.handleRealtimeDisconnected()
                 }
-
+            } catch is CancellationError {
+                isRealtimeConnected = false
+                channel = nil
             } catch {
-                self.errorMessage = "Realtime ishlamadi"
-
+                isRealtimeConnected = false
+                channel = nil
+                errorMessage = "Realtime ishlamadi"
+                scheduleReconnectIfNeeded()
             }
         }
     }
 
-    func stopRealtime() {
-        Task { [weak self] in
-            guard let self, let ch = self.channel else { return }
-            await ch.unsubscribe()
-            self.channel = nil
+    private func applyRealtimeRecord(_ record: JSONObject) {
+        if let decoded = decodeAvailability(from: record) {
+            byParkingId[decoded.parkingId] = decoded
+            available[decoded.parkingId] = decoded.availableSpots
+        }
+    }
+
+    private func handleRealtimeDisconnected() async {
+        guard shouldMaintainRealtime else { return }
+
+        isRealtimeConnected = false
+
+        if let channel {
+            await channel.unsubscribe()
+        }
+        self.channel = nil
+        scheduleReconnectIfNeeded()
+    }
+
+    private func scheduleReconnectIfNeeded() {
+        guard shouldMaintainRealtime else { return }
+        retryTask?.cancel()
+
+        reconnectAttempt += 1
+        let delaySeconds = min(pow(2.0, Double(reconnectAttempt)), 30.0)
+
+        retryTask = Task { [weak self] in
+            guard let self else { return }
+            try? await Task.sleep(nanoseconds: UInt64(delaySeconds * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+            connectRealtimeIfNeeded()
         }
     }
 

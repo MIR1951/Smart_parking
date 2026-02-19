@@ -1,91 +1,65 @@
+//
+//  NearbyParkingCard.swift
+//  Smart parking
+//
+//  Created by Kenjaboy Xajiyev on 02/12/25.
+//
+
 import SwiftUI
 
 struct NearbyParkingCard: View {
-
-    @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
+    @Environment(LocalizationManager.self) private var loc
     let parking: Parking
+    let availability: ParkingAvailability?
     var isFavorite: Bool = false
-    let onHeartTap: (() -> Void)?
-    @State private var didAppear = false
+    var onToggleFavorite: (() -> Void)? = nil
 
-    private var availableSpots: Int {
-        availabilityStore.availability(for: parking.id)?.availableSpots
-            ?? availabilityStore.available[parking.id]
-            ?? max(parking.total_spots - (parking.live_occupancy ?? 0), 0)
+    private var spotsText: String {
+        if let avail = availability {
+            return "\(avail.available)/\(avail.total)"
+        }
+        return "--"
     }
 
-    private var isAvailable: Bool { availableSpots > 0 }
-
     var body: some View {
-        HStack(spacing: 15) {
-
-            // Image + heart overlay
-            ZStack(alignment: .topTrailing) {
-                CachedAsyncImage(url: URL(string: parking.thumbnail_url ?? "")) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    Rectangle()
-                        .fill(AppTheme.Palette.surfaceSecondary)
-                        .overlay(
-                            Image(systemName: "car.fill")
-                                .foregroundColor(AppTheme.Palette.textTertiary)
+        HStack(spacing: 14) {
+            // Parking image
+            CachedAsyncImage(url: parking.imageUrl) { image in
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } placeholder: {
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                AppTheme.Palette.brand.opacity(0.12),
+                                AppTheme.Palette.brandLight.opacity(0.06),
+                            ],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
                         )
-                }
-                .frame(width: 90, height: 90)
-                .overlay(AppTheme.Gradient.cardOverlay)
-                .cornerRadius(AppTheme.Radius.medium)
-                .clipped()
-
-                if let onHeartTap {
-                    Button(action: onHeartTap) {
-                        Image(systemName: isFavorite ? "heart.fill" : "heart")
-                            .font(.caption)
-                            .foregroundColor(isFavorite ? .red : AppTheme.Palette.textPrimary)
-                            .padding(6)
-                            .background(AppTheme.Palette.surface)
-                            .clipShape(Circle())
-                            .shadow(radius: 2)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(4)
-                }
+                    )
+                    .overlay(
+                        Image(systemName: "car.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(AppTheme.Palette.brand.opacity(0.3))
+                    )
             }
+            .frame(width: 90, height: 90)
+            .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
 
-            VStack(alignment: .leading, spacing: 5) {
-
-                HStack {
-                    Text(LocalizationManager.shared.str(.detailCarParking))
-                        .font(AppTheme.Typography.captionBold)
-                        .foregroundColor(AppTheme.Palette.brand)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(AppTheme.Palette.brandSoft)
-                        .clipShape(Capsule())
-
-                    Spacer()
-
-                    HStack(spacing: 4) {
-                        Image(systemName: "star.fill")
-                            .font(.caption2)
-                            .foregroundColor(.yellow)
-                        Text(String(format: "%.1f", parking.rating ?? 5))
-                            .font(AppTheme.Typography.caption)
-                            .foregroundColor(AppTheme.Palette.textSecondary)
-                    }
-                }
-
+            // Info
+            VStack(alignment: .leading, spacing: 6) {
                 Text(parking.name)
                     .font(AppTheme.Typography.headline)
                     .foregroundColor(AppTheme.Palette.textPrimary)
                     .lineLimit(1)
 
-                HStack(spacing: 4) {
-                    Image(systemName: "mappin.and.ellipse")
-                        .font(.caption2)
-                        .foregroundColor(AppTheme.Palette.textTertiary)
-                    Text(parking.address ?? "Unknown")
+                HStack(spacing: 5) {
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(AppTheme.Palette.brandLight)
+                    Text(parking.address ?? "")
                         .font(AppTheme.Typography.caption)
                         .foregroundColor(AppTheme.Palette.textSecondary)
                         .lineLimit(1)
@@ -93,39 +67,74 @@ struct NearbyParkingCard: View {
 
                 HStack {
                     // Price
-                    HStack(spacing: 2) {
-                        Text("\(Int(parking.price_per_hour)) so'm")
-                            .font(AppTheme.Typography.headline)
-                            .foregroundColor(AppTheme.Palette.brand)
-                        Text(LocalizationManager.shared.str(.bookingsPerHour))
-                            .font(AppTheme.Typography.caption)
-                            .foregroundColor(AppTheme.Palette.textSecondary)
-                    }
+                    Text(parking.formattedPrice)
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [AppTheme.Palette.brand, AppTheme.Palette.brandLight],
+                                startPoint: .leading, endPoint: .trailing
+                            )
+                        )
+                        + Text("/\(loc.str(.bookingsPerHour))")
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundColor(AppTheme.Palette.textSecondary)
 
                     Spacer()
 
-                    // Availability
+                    // Spots indicator
                     HStack(spacing: 4) {
                         Circle()
-                            .fill(isAvailable ? AppTheme.Palette.success : AppTheme.Palette.danger)
+                            .fill(availabilityColor)
                             .frame(width: 6, height: 6)
-                        Text("\(availableSpots) Spots")
-                            .font(AppTheme.Typography.captionBold)
-                            .foregroundColor(
-                                isAvailable ? AppTheme.Palette.success : AppTheme.Palette.danger)
+                        Text(spotsText)
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundColor(AppTheme.Palette.textSecondary)
                     }
                 }
             }
 
-            Spacer()
+            Spacer(minLength: 0)
+
+            // Favorite button
+            if let onToggleFavorite {
+                Button {
+                    AppTheme.Haptic.light()
+                    onToggleFavorite()
+                } label: {
+                    Image(systemName: isFavorite ? "heart.fill" : "heart")
+                        .font(.system(size: 18))
+                        .foregroundStyle(
+                            isFavorite
+                                ? LinearGradient(
+                                    colors: [AppTheme.Palette.danger, Color(hex: "#FF7675")],
+                                    startPoint: .top, endPoint: .bottom)
+                                : LinearGradient(
+                                    colors: [
+                                        AppTheme.Palette.textTertiary,
+                                        AppTheme.Palette.textTertiary,
+                                    ],
+                                    startPoint: .top, endPoint: .bottom)
+                        )
+                        .frame(width: 34, height: 34)
+                        .contentTransition(.symbolEffect(.replace))
+                }
+            }
         }
-        .padding(14)
-        .appCard()
-        .scaleEffect(didAppear ? 1 : 0.97)
-        .opacity(didAppear ? 1 : 0)
-        .animation(.spring(response: 0.55, dampingFraction: 0.86), value: didAppear)
-        .onAppear {
-            didAppear = true
-        }
+        .padding(12)
+        .background(AppTheme.Palette.surface)
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.large, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppTheme.Radius.large, style: .continuous)
+                .stroke(AppTheme.Palette.border, lineWidth: 1)
+        )
+        .appShadow(AppTheme.Shadow.small())
+    }
+
+    private var availabilityColor: Color {
+        guard let avail = availability else { return AppTheme.Palette.textTertiary }
+        let ratio = Double(avail.available) / Double(max(avail.total, 1))
+        if ratio > 0.3 { return AppTheme.Palette.success }
+        if ratio > 0 { return AppTheme.Palette.warning }
+        return AppTheme.Palette.danger
     }
 }

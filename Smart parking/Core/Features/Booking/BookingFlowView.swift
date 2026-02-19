@@ -20,6 +20,7 @@ struct BookingFlowView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(AppCoordinator.self) private var coordinator
+    @EnvironmentObject private var availabilityStore: ParkingAvailabilityStore
     private let loc = LocalizationManager.shared
 
     // Flow State
@@ -164,6 +165,7 @@ struct BookingFlowView: View {
                     parkingId: parking.id,
                     durationMinutes: selectedMinutes
                 )
+                await availabilityStore.refreshNow(force: true)
 
                 await MainActor.run {
                     reservationId = resId

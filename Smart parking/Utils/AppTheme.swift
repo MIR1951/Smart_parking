@@ -3,6 +3,7 @@
 //  Smart parking
 //
 //  Shared design tokens and reusable modifiers.
+//  Premium Indigo/Purple glassmorphism design system.
 //  Supports both Light and Dark mode via adaptive colors.
 //
 
@@ -46,37 +47,49 @@ extension Color {
 
 enum AppTheme {
 
-    // MARK: - Colors (Adaptive)
+    // MARK: - Colors (Adaptive) — Indigo/Purple Palette
     enum Palette {
-        // Brand
-        static let brand = Color(hex: "#0E9F8A")
-        static let brandDark = Color(hex: "#0A6E5E")
-        static let brandSoft = Color(lightHex: "#DAF7F1", darkHex: "#0D2E29")
-        static let accent = Color(hex: "#FF7A59")
+        // Brand — Indigo gradient
+        static let brand = Color(hex: "#6C5CE7")
+        static let brandDark = Color(hex: "#5A4BD1")
+        static let brandLight = Color(hex: "#A29BFE")
+        static let brandSoft = Color(lightHex: "#EDE9FF", darkHex: "#1A1533")
+
+        // Accent — Teal
+        static let accent = Color(hex: "#00CEC9")
+        static let accentSoft = Color(lightHex: "#E0FFFE", darkHex: "#0A2928")
 
         // Surfaces
-        static let surface = Color(lightHex: "#FFFFFF", darkHex: "#151A1E")
-        static let surfaceSecondary = Color(lightHex: "#F6FAF9", darkHex: "#1D2328")
-        static let pageBackground = Color(lightHex: "#EFF7F5", darkHex: "#070B0F")
+        static let surface = Color(lightHex: "#FFFFFF", darkHex: "#161630")
+        static let surfaceSecondary = Color(lightHex: "#F4F3FF", darkHex: "#1E1E3F")
+        static let surfaceGlass = Color(
+            light: .white.opacity(0.72),
+            dark: Color(hex: "#1E1E3F").opacity(0.65)
+        )
+        static let pageBackground = Color(lightHex: "#F8F9FE", darkHex: "#0D0D1F")
 
         // Border
         static let border = Color(
-            light: .black.opacity(0.08),
+            light: Color(hex: "#6C5CE7").opacity(0.10),
+            dark: .white.opacity(0.10)
+        )
+        static let borderGlass = Color(
+            light: .white.opacity(0.6),
             dark: .white.opacity(0.12)
         )
 
         // Text
-        static let textPrimary = Color(lightHex: "#111827", darkHex: "#F9FAFB")
-        static let textSecondary = Color(lightHex: "#6B7280", darkHex: "#9CA3AF")
+        static let textPrimary = Color(lightHex: "#1A1A2E", darkHex: "#F0F0FF")
+        static let textSecondary = Color(lightHex: "#6B6B8D", darkHex: "#9B9BBC")
         static let textTertiary = Color(lightHex: "#9CA3AF", darkHex: "#6B7280")
 
         // Semantic
-        static let success = Color(hex: "#16A34A")
-        static let successSoft = Color(lightHex: "#DCFCE7", darkHex: "#052E16")
-        static let warning = Color(hex: "#D97706")
-        static let warningSoft = Color(lightHex: "#FEF3C7", darkHex: "#451A03")
-        static let danger = Color(hex: "#DC2626")
-        static let dangerSoft = Color(lightHex: "#FEE2E2", darkHex: "#450A0A")
+        static let success = Color(hex: "#00B894")
+        static let successSoft = Color(lightHex: "#D5FFF5", darkHex: "#052E22")
+        static let warning = Color(hex: "#FDCB6E")
+        static let warningSoft = Color(lightHex: "#FFF8E1", darkHex: "#3D2E05")
+        static let danger = Color(hex: "#FF7675")
+        static let dangerSoft = Color(lightHex: "#FFE0E0", darkHex: "#3D0A0A")
     }
 
     // MARK: - Typography
@@ -85,22 +98,22 @@ enum AppTheme {
         static let title = Font.system(size: 28, weight: .bold, design: .rounded)
         static let title2 = Font.system(size: 22, weight: .semibold, design: .rounded)
         static let title3 = Font.system(size: 20, weight: .semibold, design: .rounded)
-        static let headline = Font.system(size: 17, weight: .semibold)
-        static let body = Font.system(size: 17, weight: .regular)
-        static let callout = Font.system(size: 16, weight: .regular)
-        static let subheadline = Font.system(size: 15, weight: .regular)
-        static let footnote = Font.system(size: 13, weight: .regular)
-        static let caption = Font.system(size: 12, weight: .regular)
-        static let captionBold = Font.system(size: 12, weight: .semibold)
+        static let headline = Font.system(size: 17, weight: .semibold, design: .rounded)
+        static let body = Font.system(size: 17, weight: .regular, design: .rounded)
+        static let callout = Font.system(size: 16, weight: .regular, design: .rounded)
+        static let subheadline = Font.system(size: 15, weight: .regular, design: .rounded)
+        static let footnote = Font.system(size: 13, weight: .regular, design: .rounded)
+        static let caption = Font.system(size: 12, weight: .regular, design: .rounded)
+        static let captionBold = Font.system(size: 12, weight: .semibold, design: .rounded)
     }
 
     // MARK: - Radius
     enum Radius {
-        static let xSmall: CGFloat = 6
-        static let small: CGFloat = 10
-        static let medium: CGFloat = 14
-        static let large: CGFloat = 18
-        static let xLarge: CGFloat = 24
+        static let xSmall: CGFloat = 8
+        static let small: CGFloat = 12
+        static let medium: CGFloat = 16
+        static let large: CGFloat = 20
+        static let xLarge: CGFloat = 28
         static let pill: CGFloat = 999
     }
 
@@ -116,45 +129,68 @@ enum AppTheme {
 
     // MARK: - Shadow
     enum Shadow {
-        static func small(_ color: Color = .black.opacity(0.04)) -> (
+        static func small(_ color: Color = Color(hex: "#6C5CE7").opacity(0.08)) -> (
             color: Color, radius: CGFloat, x: CGFloat, y: CGFloat
         ) {
-            (color, 4, 0, 2)
+            (color, 6, 0, 3)
         }
-        static func medium(_ color: Color = .black.opacity(0.06)) -> (
+        static func medium(_ color: Color = Color(hex: "#6C5CE7").opacity(0.12)) -> (
             color: Color, radius: CGFloat, x: CGFloat, y: CGFloat
         ) {
-            (color, 10, 0, 4)
+            (color, 14, 0, 6)
         }
-        static func large(_ color: Color = .black.opacity(0.10)) -> (
+        static func large(_ color: Color = Color(hex: "#6C5CE7").opacity(0.18)) -> (
             color: Color, radius: CGFloat, x: CGFloat, y: CGFloat
         ) {
-            (color, 20, 0, 8)
+            (color, 24, 0, 10)
+        }
+        static func glow(_ color: Color = Color(hex: "#6C5CE7").opacity(0.35)) -> (
+            color: Color, radius: CGFloat, x: CGFloat, y: CGFloat
+        ) {
+            (color, 20, 0, 0)
         }
     }
 
     // MARK: - Animation
     enum Anim {
-        static let spring = Animation.spring(response: 0.4, dampingFraction: 0.75)
-        static let snappy = Animation.spring(response: 0.3, dampingFraction: 0.8)
+        static let spring = Animation.spring(response: 0.45, dampingFraction: 0.72)
+        static let snappy = Animation.spring(response: 0.3, dampingFraction: 0.78)
+        static let bouncy = Animation.spring(response: 0.35, dampingFraction: 0.65)
         static let smooth = Animation.easeOut(duration: 0.3)
         static let gentle = Animation.easeInOut(duration: 0.5)
         static let quick = Animation.easeOut(duration: 0.15)
+        static let morph = Animation.spring(response: 0.55, dampingFraction: 0.82)
     }
 
     // MARK: - Gradient
     enum Gradient {
         static var brand: LinearGradient {
             LinearGradient(
-                colors: [Palette.brand, Palette.brandDark],
+                colors: [Palette.brand, Palette.brandLight],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
         }
 
+        static var brandDeep: LinearGradient {
+            LinearGradient(
+                colors: [Color(hex: "#4A3EC8"), Palette.brand, Palette.brandLight],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+
+        static var brandAccent: LinearGradient {
+            LinearGradient(
+                colors: [Palette.brand, Palette.accent],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        }
+
         static var imageOverlay: LinearGradient {
             LinearGradient(
-                colors: [.clear, .clear, .black.opacity(0.5)],
+                colors: [.clear, .clear, Color(hex: "#0D0D1F").opacity(0.6)],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -162,7 +198,7 @@ enum AppTheme {
 
         static var cardOverlay: LinearGradient {
             LinearGradient(
-                colors: [.clear, .black.opacity(0.35)],
+                colors: [.clear, Color(hex: "#0D0D1F").opacity(0.45)],
                 startPoint: .center,
                 endPoint: .bottom
             )
@@ -171,9 +207,35 @@ enum AppTheme {
         static var aurora: LinearGradient {
             LinearGradient(
                 colors: [
-                    Palette.brand.opacity(0.22),
-                    Color(hex: "#4EB6FF").opacity(0.16),
+                    Palette.brand.opacity(0.15),
+                    Palette.brandLight.opacity(0.08),
+                    Palette.accent.opacity(0.06),
                     Palette.pageBackground,
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+
+        static var mesh: LinearGradient {
+            LinearGradient(
+                colors: [
+                    Color(hex: "#6C5CE7").opacity(0.20),
+                    Color(hex: "#A29BFE").opacity(0.12),
+                    Color(hex: "#00CEC9").opacity(0.08),
+                    Palette.pageBackground,
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        }
+
+        static var glassBorder: LinearGradient {
+            LinearGradient(
+                colors: [
+                    .white.opacity(0.3),
+                    .white.opacity(0.05),
+                    .white.opacity(0.15),
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -206,6 +268,48 @@ enum AppTheme {
     }
 }
 
+// MARK: - Glass Card Modifier (Glassmorphism)
+
+struct GlassCardModifier: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+    var cornerRadius: CGFloat = AppTheme.Radius.large
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(AppTheme.Palette.surfaceGlass)
+                    .background(
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .fill(.ultraThinMaterial)
+                    )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                .white.opacity(colorScheme == .dark ? 0.15 : 0.5),
+                                .white.opacity(colorScheme == .dark ? 0.03 : 0.1),
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            )
+            .shadow(
+                color: colorScheme == .dark
+                    ? Color(hex: "#6C5CE7").opacity(0.15)
+                    : Color(hex: "#6C5CE7").opacity(0.08),
+                radius: 16,
+                x: 0,
+                y: 6
+            )
+    }
+}
+
 // MARK: - App Card Modifier (Adaptive)
 
 struct AppCardModifier: ViewModifier {
@@ -221,11 +325,11 @@ struct AppCardModifier: ViewModifier {
             )
             .shadow(
                 color: colorScheme == .dark
-                    ? Color.black.opacity(0.25)
-                    : Color.black.opacity(0.04),
-                radius: colorScheme == .dark ? 6 : 10,
+                    ? Color(hex: "#6C5CE7").opacity(0.18)
+                    : Color(hex: "#6C5CE7").opacity(0.06),
+                radius: colorScheme == .dark ? 8 : 14,
                 x: 0,
-                y: colorScheme == .dark ? 2 : 4
+                y: colorScheme == .dark ? 3 : 5
             )
     }
 }
@@ -235,8 +339,8 @@ struct AppCardModifier: ViewModifier {
 struct PressButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
-            .opacity(configuration.isPressed ? 0.9 : 1.0)
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .opacity(configuration.isPressed ? 0.85 : 1.0)
             .animation(AppTheme.Anim.quick, value: configuration.isPressed)
     }
 }
@@ -265,10 +369,10 @@ struct RevealOnAppearModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .opacity(didAppear ? 1 : 0)
-            .offset(y: didAppear ? 0 : 18)
-            .scaleEffect(didAppear ? 1 : 0.98)
+            .offset(y: didAppear ? 0 : 20)
+            .scaleEffect(didAppear ? 1 : 0.97)
             .animation(
-                .spring(response: 0.55, dampingFraction: 0.84).delay(delay),
+                .spring(response: 0.5, dampingFraction: 0.82).delay(delay),
                 value: didAppear
             )
             .onAppear {
@@ -278,37 +382,99 @@ struct RevealOnAppearModifier: ViewModifier {
     }
 }
 
+// MARK: - Animated Background (Premium Aurora Mesh)
+
 struct AppAnimatedBackground: View {
     @State private var animate = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        AppTheme.Gradient.aurora
-            .overlay(alignment: .topLeading) {
-                Circle()
-                    .fill(AppTheme.Palette.brand.opacity(0.18))
-                    .frame(width: 260, height: 260)
-                    .blur(radius: 34)
-                    .offset(x: animate ? -92 : -126, y: animate ? -72 : -96)
-                    .animation(
-                        .easeInOut(duration: 7.5).repeatForever(autoreverses: true),
-                        value: animate
+        ZStack {
+            AppTheme.Palette.pageBackground
+
+            // Top-left indigo orb
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            AppTheme.Palette.brand.opacity(colorScheme == .dark ? 0.25 : 0.15),
+                            AppTheme.Palette.brand.opacity(0),
+                        ],
+                        center: .center,
+                        startRadius: 20,
+                        endRadius: 160
                     )
-            }
-            .overlay(alignment: .bottomTrailing) {
-                Circle()
-                    .fill(AppTheme.Palette.accent.opacity(0.14))
-                    .frame(width: 240, height: 240)
-                    .blur(radius: 40)
-                    .offset(x: animate ? 98 : 72, y: animate ? 112 : 84)
-                    .animation(
-                        .easeInOut(duration: 9.0).repeatForever(autoreverses: true),
-                        value: animate
+                )
+                .frame(width: 320, height: 320)
+                .offset(x: animate ? -80 : -120, y: animate ? -60 : -100)
+                .animation(
+                    .easeInOut(duration: 8).repeatForever(autoreverses: true),
+                    value: animate
+                )
+
+            // Bottom-right teal orb
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            AppTheme.Palette.accent.opacity(colorScheme == .dark ? 0.18 : 0.10),
+                            AppTheme.Palette.accent.opacity(0),
+                        ],
+                        center: .center,
+                        startRadius: 20,
+                        endRadius: 140
                     )
-            }
-            .ignoresSafeArea()
-            .onAppear {
-                animate = true
-            }
+                )
+                .frame(width: 280, height: 280)
+                .offset(x: animate ? 100 : 70, y: animate ? 120 : 80)
+                .animation(
+                    .easeInOut(duration: 10).repeatForever(autoreverses: true),
+                    value: animate
+                )
+
+            // Center subtle purple glow
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            AppTheme.Palette.brandLight.opacity(colorScheme == .dark ? 0.08 : 0.05),
+                            .clear,
+                        ],
+                        center: .center,
+                        startRadius: 30,
+                        endRadius: 200
+                    )
+                )
+                .frame(width: 400, height: 400)
+                .offset(x: animate ? 20 : -20, y: animate ? -30 : 30)
+                .animation(
+                    .easeInOut(duration: 12).repeatForever(autoreverses: true),
+                    value: animate
+                )
+        }
+        .ignoresSafeArea()
+        .onAppear { animate = true }
+    }
+}
+
+// MARK: - Gradient Branded Button
+
+struct GradientButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(AppTheme.Typography.headline)
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(AppTheme.Gradient.brand)
+            .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
+            .shadow(
+                color: AppTheme.Palette.brand.opacity(configuration.isPressed ? 0.15 : 0.3),
+                radius: configuration.isPressed ? 4 : 12,
+                y: configuration.isPressed ? 2 : 6
+            )
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(AppTheme.Anim.quick, value: configuration.isPressed)
     }
 }
 
@@ -319,8 +485,16 @@ extension View {
         modifier(AppCardModifier())
     }
 
+    func glassCard(cornerRadius: CGFloat = AppTheme.Radius.large) -> some View {
+        modifier(GlassCardModifier(cornerRadius: cornerRadius))
+    }
+
     func pressStyle() -> some View {
         buttonStyle(PressButtonStyle())
+    }
+
+    func gradientButton() -> some View {
+        buttonStyle(GradientButtonStyle())
     }
 
     func appShadow(_ preset: (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat)) -> some View {
@@ -333,5 +507,9 @@ extension View {
 
     func appReveal(_ delay: Double = 0) -> some View {
         modifier(RevealOnAppearModifier(delay: delay))
+    }
+
+    func brandGlow() -> some View {
+        self.shadow(color: AppTheme.Palette.brand.opacity(0.3), radius: 16, y: 6)
     }
 }

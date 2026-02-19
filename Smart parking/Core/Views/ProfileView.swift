@@ -148,10 +148,10 @@ struct ProfileView: View {
                 }
             }
         }
-        .navigationTitle(loc.str(.profileTitle))
         .task {
             await userManager.fetchCurrentUser()
         }
+        .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showEditProfile) {
             EditProfileView()
         }
@@ -238,7 +238,18 @@ struct ProfileView: View {
         .padding(.top, headerProgress > 0.3 ? 8 : 20)
         .padding(.bottom, 4)
         .background(
-            AppTheme.Palette.surface.opacity(headerProgress * 0.9)
+            Group {
+                if headerProgress > 0.3 {
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                        .overlay(
+                            Rectangle()
+                                .fill(AppTheme.Palette.surface.opacity(headerProgress * 0.6))
+                        )
+                } else {
+                    Color.clear
+                }
+            }
         )
     }
 
@@ -340,10 +351,15 @@ struct ProfileRow: View {
             Image(systemName: icon)
                 .font(.body)
                 .foregroundColor(color)
-                .frame(width: 34, height: 34)
-                .background(color.opacity(0.1))
+                .frame(width: 36, height: 36)
+                .background(
+                    LinearGradient(
+                        colors: [color.opacity(0.15), color.opacity(0.05)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    )
+                )
                 .clipShape(
-                    RoundedRectangle(cornerRadius: AppTheme.Radius.xSmall, style: .continuous))
+                    RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)

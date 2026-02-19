@@ -2,116 +2,136 @@
 //  PopularParkingCard.swift
 //  Smart parking
 //
-//  Created by Kenjaboy Xajiyev on 12/12/25.
+//  Created by Kenjaboy Xajiyev on 02/12/25.
 //
 
 import SwiftUI
 
 struct PopularParkingCard: View {
-    @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
+    @Environment(LocalizationManager.self) private var loc
     let parking: Parking
-    @State private var didAppear = false
+    let availability: ParkingAvailability?
 
-    private var availableSpots: Int {
-        availabilityStore.availability(for: parking.id)?.availableSpots
-            ?? availabilityStore.available[parking.id]
-            ?? max(parking.total_spots - (parking.live_occupancy ?? 0), 0)
+    private var spotsText: String {
+        if let avail = availability {
+            return "\(avail.available)/\(avail.total)"
+        }
+        return "--"
     }
 
-    private var isAvailable: Bool { availableSpots > 0 }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-
-            // Image + overlay
+        VStack(alignment: .leading, spacing: 0) {
+            // Image with overlays
             ZStack(alignment: .topLeading) {
-                CachedAsyncImage(url: URL(string: parking.thumbnail_url ?? "")) { image in
+                CachedAsyncImage(url: parking.imageUrl) { image in
                     image
                         .resizable()
-                        .scaledToFill()
+                        .aspectRatio(contentMode: .fill)
                 } placeholder: {
                     Rectangle()
-                        .fill(AppTheme.Palette.surfaceSecondary)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    AppTheme.Palette.brand.opacity(0.15),
+                                    AppTheme.Palette.brandLight.opacity(0.08),
+                                ],
+                                startPoint: .topLeading, endPoint: .bottomTrailing
+                            )
+                        )
                         .overlay(
                             Image(systemName: "car.fill")
-                                .font(.title)
-                                .foregroundColor(AppTheme.Palette.textTertiary)
+                                .font(.system(size: 28))
+                                .foregroundColor(AppTheme.Palette.brand.opacity(0.3))
                         )
                 }
                 .frame(width: 220, height: 140)
                 .clipped()
                 .overlay(AppTheme.Gradient.cardOverlay)
-                .cornerRadius(AppTheme.Radius.medium)
 
                 // Rating badge
-                HStack(spacing: 4) {
-                    Image(systemName: "star.fill")
-                        .foregroundColor(.yellow)
-                        .font(.caption2)
-                    Text("\(parking.rating ?? 1.0, specifier: "%.1f")")
-                        .foregroundColor(.white)
-                        .font(AppTheme.Typography.captionBold)
+                if let rating = parking.rating {
+                    HStack(spacing: 4) {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 10))
+                        Text(String(format: "%.1f", rating))
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(
+                        Capsule()
+                            .fill(Color.white.opacity(0.15))
+                            .background(
+                                Capsule().fill(.ultraThinMaterial)
+                            )
+                    )
+                    .clipShape(Capsule())
+                    .padding(10)
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 5)
-                .background(.ultraThinMaterial)
-                .cornerRadius(AppTheme.Radius.xSmall)
-                .padding(8)
+            }
 
-                // Availability badge (bottom-right of image)
-                VStack {
+            // Info section
+            VStack(alignment: .leading, spacing: 8) {
+                Text(parking.name)
+                    .font(AppTheme.Typography.headline)
+                    .foregroundColor(AppTheme.Palette.textPrimary)
+                    .lineLimit(1)
+
+                HStack(spacing: 6) {
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(AppTheme.Palette.brandLight)
+                    Text(parking.address ?? "")
+                        .font(AppTheme.Typography.caption)
+                        .foregroundColor(AppTheme.Palette.textSecondary)
+                        .lineLimit(1)
+                }
+
+                HStack {
+                    // Price
+                    Text(parking.formattedPrice)
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [AppTheme.Palette.brand, AppTheme.Palette.brandLight],
+                                startPoint: .leading, endPoint: .trailing
+                            )
+                        )
+                        + Text("/\(loc.str(.bookingsPerHour))")
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundColor(AppTheme.Palette.textSecondary)
+
                     Spacer()
-                    HStack {
-                        Spacer()
-                        HStack(spacing: 4) {
-                            Circle()
-                                .fill(
-                                    isAvailable ? AppTheme.Palette.success : AppTheme.Palette.danger
-                                )
-                                .frame(width: 6, height: 6)
-                            Text("\(availableSpots) spots")
-                                .font(AppTheme.Typography.captionBold)
-                                .foregroundColor(.white)
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(AppTheme.Radius.xSmall)
-                        .padding(8)
+
+                    // Availability
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(availabilityColor)
+                            .frame(width: 6, height: 6)
+                        Text(spotsText)
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundColor(AppTheme.Palette.textSecondary)
                     }
                 }
-                .frame(width: 220, height: 140)
             }
-
-            // Category
-            Text(LocalizationManager.shared.str(.detailCarParking))
-                .font(AppTheme.Typography.captionBold)
-                .foregroundColor(AppTheme.Palette.brand)
-
-            // Name
-            Text(parking.name)
-                .font(AppTheme.Typography.headline)
-                .foregroundColor(AppTheme.Palette.textPrimary)
-                .lineLimit(1)
-
-            // Price
-            HStack(spacing: 2) {
-                Text("\(Int(parking.price_per_hour)) so'm")
-                    .font(AppTheme.Typography.headline)
-                    .foregroundColor(AppTheme.Palette.brand)
-                Text(LocalizationManager.shared.str(.bookingsPerHour))
-                    .font(AppTheme.Typography.caption)
-                    .foregroundColor(AppTheme.Palette.textSecondary)
-            }
+            .padding(14)
         }
         .frame(width: 220)
-        .padding(12)
-        .appCard()
-        .scaleEffect(didAppear ? 1 : 0.96)
-        .opacity(didAppear ? 1 : 0)
-        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: didAppear)
-        .onAppear {
-            didAppear = true
-        }
+        .background(AppTheme.Palette.surface)
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.large, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppTheme.Radius.large, style: .continuous)
+                .stroke(AppTheme.Palette.border, lineWidth: 1)
+        )
+        .appShadow(AppTheme.Shadow.medium())
+    }
+
+    private var availabilityColor: Color {
+        guard let avail = availability else { return AppTheme.Palette.textTertiary }
+        let ratio = Double(avail.available) / Double(max(avail.total, 1))
+        if ratio > 0.3 { return AppTheme.Palette.success }
+        if ratio > 0 { return AppTheme.Palette.warning }
+        return AppTheme.Palette.danger
     }
 }

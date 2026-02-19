@@ -28,6 +28,7 @@ struct ForgotPasswordView: View {
     @State private var isConfirmVisible = false
     @State private var showSuccessAlert = false
     @State private var showErrorAlert = false
+    @State private var appeared = false
 
     // Validation touched states
     @State private var emailTouched = false
@@ -83,12 +84,45 @@ struct ForgotPasswordView: View {
     // MARK: - Body
     var body: some View {
         ZStack {
-            AppAnimatedBackground()
+            // Premium gradient background
+            LinearGradient(
+                colors: [
+                    Color(hex: "#0D0D1F"),
+                    Color(hex: "#161630"),
+                    Color(hex: "#1A1545"),
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+
+            // Animated orbs
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [Color(hex: "#6C5CE7").opacity(0.20), .clear],
+                        center: .center, startRadius: 20, endRadius: 160
+                    )
+                )
+                .frame(width: 320, height: 320)
+                .offset(x: -80, y: -200)
+
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [Color(hex: "#00CEC9").opacity(0.12), .clear],
+                        center: .center, startRadius: 20, endRadius: 140
+                    )
+                )
+                .frame(width: 280, height: 280)
+                .offset(x: 100, y: 250)
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: AppTheme.Spacing.xLarge) {
+                VStack(spacing: 24) {
                     // Header
                     headerSection
+                        .offset(y: appeared ? 0 : 20)
+                        .opacity(appeared ? 1 : 0)
 
                     // Step indicator
                     stepIndicator
@@ -108,11 +142,18 @@ struct ForgotPasswordView: View {
                         .asymmetric(
                             insertion: .move(edge: .trailing).combined(with: .opacity),
                             removal: .move(edge: .leading).combined(with: .opacity)
-                        ))
+                        )
+                    )
+                    .offset(y: appeared ? 0 : 30)
+                    .opacity(appeared ? 1 : 0)
                 }
-                .padding(.horizontal, 18)
+                .padding(.horizontal, 22)
                 .padding(.vertical)
-                .appReveal(0.03)
+            }
+        }
+        .onAppear {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.78).delay(0.1)) {
+                appeared = true
             }
         }
         .navigationBarBackButtonHidden(true)
@@ -129,7 +170,10 @@ struct ForgotPasswordView: View {
                 } label: {
                     Image(systemName: "chevron.left")
                         .font(.body.weight(.semibold))
-                        .foregroundColor(AppTheme.Palette.textPrimary)
+                        .foregroundColor(.white)
+                        .frame(width: 36, height: 36)
+                        .background(Color.white.opacity(0.08))
+                        .clipShape(Circle())
                 }
             }
         }
@@ -153,12 +197,32 @@ struct ForgotPasswordView: View {
 
     // MARK: - Header
     private var headerSection: some View {
-        VStack(spacing: AppTheme.Spacing.small) {
-            // Icon
+        VStack(spacing: 12) {
+            // Glass icon circle
             ZStack {
                 Circle()
-                    .fill(AppTheme.Palette.brand.opacity(0.12))
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(hex: "#6C5CE7").opacity(0.3),
+                                Color(hex: "#6C5CE7").opacity(0.1),
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
                     .frame(width: 80, height: 80)
+                    .overlay(
+                        Circle()
+                            .stroke(
+                                LinearGradient(
+                                    colors: [.white.opacity(0.3), .white.opacity(0.05)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1
+                            )
+                    )
 
                 Image(
                     systemName: currentStep == .newPassword
@@ -166,18 +230,24 @@ struct ForgotPasswordView: View {
                         : currentStep == .otp ? "envelope.badge.shield.half.filled" : "key.fill"
                 )
                 .font(.system(size: 32))
-                .foregroundColor(AppTheme.Palette.brand)
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.white, Color(hex: "#A29BFE")],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                )
                 .contentTransition(.symbolEffect(.replace))
             }
+            .shadow(color: Color(hex: "#6C5CE7").opacity(0.4), radius: 20, y: 8)
             .padding(.top, 20)
 
             Text(stepTitle)
-                .font(.system(size: 28, weight: .bold))
-                .foregroundColor(AppTheme.Palette.textPrimary)
+                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .foregroundColor(.white)
 
             Text(stepSubtitle)
                 .font(.subheadline)
-                .foregroundColor(AppTheme.Palette.textSecondary)
+                .foregroundColor(.white.opacity(0.5))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
         }
@@ -206,8 +276,14 @@ struct ForgotPasswordView: View {
                 Capsule()
                     .fill(
                         step.rawValue <= currentStep.rawValue
-                            ? AppTheme.Palette.brand
-                            : AppTheme.Palette.border
+                            ? LinearGradient(
+                                colors: [Color(hex: "#6C5CE7"), Color(hex: "#A29BFE")],
+                                startPoint: .leading, endPoint: .trailing
+                            )
+                            : LinearGradient(
+                                colors: [Color.white.opacity(0.1), Color.white.opacity(0.1)],
+                                startPoint: .leading, endPoint: .trailing
+                            )
                     )
                     .frame(height: 4)
                     .animation(AppTheme.Anim.smooth, value: currentStep)
@@ -218,51 +294,154 @@ struct ForgotPasswordView: View {
 
     // MARK: - Step 1: Email
     private var emailStep: some View {
-        VStack(spacing: AppTheme.Spacing.medium) {
-            AppInputField(
-                title: loc.str(.loginEmail),
-                placeholder: loc.str(.loginEmailPlaceholder),
-                text: $email,
-                keyboardType: .emailAddress,
-                autocapitalization: .never,
-                errorMessage: emailError
-            )
-            .onSubmit { emailTouched = true }
+        VStack(spacing: 18) {
+            // Glass card
+            VStack(alignment: .leading, spacing: 6) {
+                Text(loc.str(.loginEmail))
+                    .font(AppTheme.Typography.caption)
+                    .foregroundColor(.white.opacity(0.6))
 
-            AppPrimaryButton(
-                title: authManager.isLoading ? loc.str(.forgotSending) : loc.str(.forgotSendCode),
-                isLoading: authManager.isLoading,
-                isEnabled: isEmailValid && !authManager.isLoading
-            ) {
-                sendResetCode()
+                HStack(spacing: 12) {
+                    Image(systemName: "envelope.fill")
+                        .foregroundColor(Color(hex: "#A29BFE"))
+                        .font(.system(size: 15))
+
+                    TextField(loc.str(.loginEmailPlaceholder), text: $email)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.emailAddress)
+                        .foregroundColor(.white)
+                        .tint(Color(hex: "#A29BFE"))
+                        .onSubmit { emailTouched = true }
+                }
+                .padding(14)
+                .background(Color.white.opacity(0.06))
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+
+                if let error = emailError {
+                    Text(error)
+                        .font(.caption2)
+                        .foregroundColor(Color(hex: "#FF7675"))
+                }
             }
+            .padding(22)
+            .background(Color.white.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [.white.opacity(0.12), .white.opacity(0.03)],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            )
+
+            // Button
+            Button {
+                sendResetCode()
+            } label: {
+                HStack(spacing: 10) {
+                    if authManager.isLoading {
+                        ProgressView().tint(.white)
+                    } else {
+                        Text(loc.str(.forgotSendCode))
+                            .fontWeight(.semibold)
+                        Image(systemName: "paperplane.fill")
+                            .font(.system(size: 14))
+                    }
+                }
+                .font(AppTheme.Typography.headline)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(
+                    LinearGradient(
+                        colors: isEmailValid && !authManager.isLoading
+                            ? [Color(hex: "#6C5CE7"), Color(hex: "#A29BFE")]
+                            : [Color.gray.opacity(0.3), Color.gray.opacity(0.2)],
+                        startPoint: .leading, endPoint: .trailing
+                    )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .shadow(
+                    color: isEmailValid ? Color(hex: "#6C5CE7").opacity(0.4) : .clear,
+                    radius: 16, y: 6
+                )
+            }
+            .disabled(!isEmailValid || authManager.isLoading)
+            .pressStyle()
         }
     }
 
     // MARK: - Step 2: OTP
     private var otpStep: some View {
-        VStack(spacing: AppTheme.Spacing.medium) {
-            otpInputSection
-
-            AppPrimaryButton(
-                title: authManager.isLoading ? loc.str(.forgotVerifying) : loc.str(.forgotVerify),
-                isLoading: authManager.isLoading,
-                isEnabled: isOTPValid && !authManager.isLoading
-            ) {
-                verifyCode()
+        VStack(spacing: 18) {
+            VStack(spacing: 16) {
+                otpInputSection
             }
+            .padding(22)
+            .background(Color.white.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [.white.opacity(0.12), .white.opacity(0.03)],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            )
+
+            Button {
+                verifyCode()
+            } label: {
+                HStack(spacing: 10) {
+                    if authManager.isLoading {
+                        ProgressView().tint(.white)
+                    } else {
+                        Text(loc.str(.forgotVerify))
+                            .fontWeight(.semibold)
+                        Image(systemName: "checkmark.shield.fill")
+                            .font(.system(size: 14))
+                    }
+                }
+                .font(AppTheme.Typography.headline)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(
+                    LinearGradient(
+                        colors: isOTPValid && !authManager.isLoading
+                            ? [Color(hex: "#6C5CE7"), Color(hex: "#A29BFE")]
+                            : [Color.gray.opacity(0.3), Color.gray.opacity(0.2)],
+                        startPoint: .leading, endPoint: .trailing
+                    )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .shadow(
+                    color: isOTPValid ? Color(hex: "#6C5CE7").opacity(0.4) : .clear,
+                    radius: 16, y: 6
+                )
+            }
+            .disabled(!isOTPValid || authManager.isLoading)
+            .pressStyle()
 
             HStack {
                 if resendCountdown > 0 {
                     Text("\(loc.str(.forgotResendIn)) (\(resendCountdown)s)")
                         .font(.footnote)
-                        .foregroundColor(AppTheme.Palette.textSecondary)
+                        .foregroundColor(.white.opacity(0.4))
                 } else {
-                    Button(loc.str(.forgotResendCode)) {
-                        resendCode()
-                    }
-                    .font(.footnote.weight(.semibold))
-                    .foregroundColor(AppTheme.Palette.brand)
+                    Button(loc.str(.forgotResendCode)) { resendCode() }
+                        .font(.footnote.weight(.semibold))
+                        .foregroundColor(Color(hex: "#A29BFE"))
                 }
             }
             .padding(.top, 4)
@@ -271,10 +450,10 @@ struct ForgotPasswordView: View {
 
     // MARK: - OTP Input
     private var otpInputSection: some View {
-        VStack(alignment: .leading, spacing: AppTheme.Spacing.xSmall) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(loc.str(.forgotConfirmCode))
                 .font(.subheadline.weight(.medium))
-                .foregroundColor(AppTheme.Palette.textPrimary)
+                .foregroundColor(.white)
 
             HStack(spacing: 6) {
                 ForEach(0..<8, id: \.self) { index in
@@ -285,24 +464,21 @@ struct ForgotPasswordView: View {
 
                     Text(char)
                         .font(.system(size: 18, weight: .bold, design: .monospaced))
-                        .foregroundColor(AppTheme.Palette.textPrimary)
+                        .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 48)
-                        .background(AppTheme.Palette.surface)
+                        .background(Color.white.opacity(0.06))
                         .clipShape(
-                            RoundedRectangle(
-                                cornerRadius: AppTheme.Radius.medium, style: .continuous)
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
                         )
                         .overlay(
-                            RoundedRectangle(
-                                cornerRadius: AppTheme.Radius.medium, style: .continuous
-                            )
-                            .stroke(
-                                index < otpCode.count
-                                    ? AppTheme.Palette.brand
-                                    : AppTheme.Palette.border,
-                                lineWidth: index < otpCode.count ? 1.5 : 1
-                            )
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(
+                                    index < otpCode.count
+                                        ? Color(hex: "#6C5CE7").opacity(0.6)
+                                        : Color.white.opacity(0.08),
+                                    lineWidth: index < otpCode.count ? 1.5 : 1
+                                )
                         )
                         .scaleEffect(index < otpCode.count ? 1.05 : 1.0)
                         .animation(AppTheme.Anim.smooth, value: otpCode)
@@ -314,7 +490,6 @@ struct ForgotPasswordView: View {
                     .foregroundColor(.clear)
                     .tint(.clear)
                     .onChange(of: otpCode) { _, newValue in
-                        // Only digits, max 6
                         let filtered = String(newValue.filter { $0.isNumber }.prefix(8))
                         if filtered != newValue { otpCode = filtered }
                     }
@@ -327,7 +502,7 @@ struct ForgotPasswordView: View {
                     Text(error)
                         .font(.caption)
                 }
-                .foregroundColor(AppTheme.Palette.danger)
+                .foregroundColor(Color(hex: "#FF7675"))
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
@@ -336,39 +511,151 @@ struct ForgotPasswordView: View {
 
     // MARK: - Step 3: New Password
     private var newPasswordStep: some View {
-        VStack(spacing: AppTheme.Spacing.medium) {
-            AppInputField(
-                title: loc.str(.forgotNewPassword),
-                placeholder: loc.str(.forgotMinChars),
-                text: $newPassword,
-                isSecure: true,
-                revealSecureText: $isPasswordVisible,
-                errorMessage: passwordError
-            )
-            .onSubmit { passwordTouched = true }
+        VStack(spacing: 18) {
+            VStack(spacing: 16) {
+                // New password
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(loc.str(.forgotNewPassword))
+                        .font(AppTheme.Typography.caption)
+                        .foregroundColor(.white.opacity(0.6))
 
-            AppInputField(
-                title: loc.str(.forgotConfirmPassword),
-                placeholder: loc.str(.forgotConfirmPassword),
-                text: $confirmPassword,
-                isSecure: true,
-                revealSecureText: $isConfirmVisible,
-                errorMessage: confirmError
-            )
-            .onSubmit { confirmTouched = true }
+                    HStack(spacing: 12) {
+                        Image(systemName: "lock.fill")
+                            .foregroundColor(Color(hex: "#A29BFE"))
+                            .font(.system(size: 15))
 
-            if !newPassword.isEmpty {
-                passwordStrengthBar
+                        if isPasswordVisible {
+                            TextField(loc.str(.forgotMinChars), text: $newPassword)
+                                .foregroundColor(.white)
+                                .tint(Color(hex: "#A29BFE"))
+                                .onSubmit { passwordTouched = true }
+                        } else {
+                            SecureField(loc.str(.forgotMinChars), text: $newPassword)
+                                .foregroundColor(.white)
+                                .tint(Color(hex: "#A29BFE"))
+                                .onSubmit { passwordTouched = true }
+                        }
+
+                        Button {
+                            isPasswordVisible.toggle()
+                        } label: {
+                            Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
+                                .foregroundColor(.white.opacity(0.4))
+                                .font(.system(size: 14))
+                        }
+                    }
+                    .padding(14)
+                    .background(Color.white.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
+
+                    if let error = passwordError {
+                        Text(error)
+                            .font(.caption2)
+                            .foregroundColor(Color(hex: "#FF7675"))
+                    }
+                }
+
+                // Confirm password
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(loc.str(.forgotConfirmPassword))
+                        .font(AppTheme.Typography.caption)
+                        .foregroundColor(.white.opacity(0.6))
+
+                    HStack(spacing: 12) {
+                        Image(systemName: "lock.rotation")
+                            .foregroundColor(Color(hex: "#A29BFE"))
+                            .font(.system(size: 15))
+
+                        if isConfirmVisible {
+                            TextField(loc.str(.forgotConfirmPassword), text: $confirmPassword)
+                                .foregroundColor(.white)
+                                .tint(Color(hex: "#A29BFE"))
+                                .onSubmit { confirmTouched = true }
+                        } else {
+                            SecureField(loc.str(.forgotConfirmPassword), text: $confirmPassword)
+                                .foregroundColor(.white)
+                                .tint(Color(hex: "#A29BFE"))
+                                .onSubmit { confirmTouched = true }
+                        }
+
+                        Button {
+                            isConfirmVisible.toggle()
+                        } label: {
+                            Image(systemName: isConfirmVisible ? "eye.slash.fill" : "eye.fill")
+                                .foregroundColor(.white.opacity(0.4))
+                                .font(.system(size: 14))
+                        }
+                    }
+                    .padding(14)
+                    .background(Color.white.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
+
+                    if let error = confirmError {
+                        Text(error)
+                            .font(.caption2)
+                            .foregroundColor(Color(hex: "#FF7675"))
+                    }
+                }
+
+                if !newPassword.isEmpty {
+                    passwordStrengthBar
+                }
             }
+            .padding(22)
+            .background(Color.white.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [.white.opacity(0.12), .white.opacity(0.03)],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            )
 
-            AppPrimaryButton(
-                title: authManager.isLoading
-                    ? loc.str(.forgotSaving) : loc.str(.forgotUpdatePassword),
-                isLoading: authManager.isLoading,
-                isEnabled: isPasswordValid && !authManager.isLoading
-            ) {
+            Button {
                 updatePassword()
+            } label: {
+                HStack(spacing: 10) {
+                    if authManager.isLoading {
+                        ProgressView().tint(.white)
+                    } else {
+                        Text(loc.str(.forgotUpdatePassword))
+                            .fontWeight(.semibold)
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 14))
+                    }
+                }
+                .font(AppTheme.Typography.headline)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(
+                    LinearGradient(
+                        colors: isPasswordValid && !authManager.isLoading
+                            ? [Color(hex: "#6C5CE7"), Color(hex: "#A29BFE")]
+                            : [Color.gray.opacity(0.3), Color.gray.opacity(0.2)],
+                        startPoint: .leading, endPoint: .trailing
+                    )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .shadow(
+                    color: isPasswordValid ? Color(hex: "#6C5CE7").opacity(0.4) : .clear,
+                    radius: 16, y: 6
+                )
             }
+            .disabled(!isPasswordValid || authManager.isLoading)
+            .pressStyle()
         }
     }
 
@@ -379,11 +666,16 @@ struct ForgotPasswordView: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(AppTheme.Palette.border.opacity(0.3))
+                        .fill(Color.white.opacity(0.08))
                         .frame(height: 4)
 
                     Capsule()
-                        .fill(strength.color)
+                        .fill(
+                            LinearGradient(
+                                colors: [strength.color, strength.color.opacity(0.7)],
+                                startPoint: .leading, endPoint: .trailing
+                            )
+                        )
                         .frame(width: geo.size.width * strength.progress, height: 4)
                         .animation(AppTheme.Anim.smooth, value: newPassword)
                 }
@@ -412,11 +704,11 @@ struct ForgotPasswordView: View {
         if hasSpecial { score += 1 }
 
         switch score {
-        case 0...1: return (loc.str(.strengthWeak), AppTheme.Palette.danger, 0.2)
+        case 0...1: return (loc.str(.strengthWeak), Color(hex: "#FF7675"), 0.2)
         case 2: return (loc.str(.strengthFair), Color.orange, 0.4)
-        case 3: return (loc.str(.strengthGood), Color.yellow, 0.6)
-        case 4: return (loc.str(.strengthStrong), AppTheme.Palette.success, 0.8)
-        default: return (loc.str(.strengthVeryStrong), AppTheme.Palette.success, 1.0)
+        case 3: return (loc.str(.strengthGood), Color(hex: "#FDCB6E"), 0.6)
+        case 4: return (loc.str(.strengthStrong), Color(hex: "#00B894"), 0.8)
+        default: return (loc.str(.strengthVeryStrong), Color(hex: "#00B894"), 1.0)
         }
     }
 

@@ -1,170 +1,156 @@
+//
+//  FavoriteView.swift
+//  Smart parking
+//
+//  Created by Kenjaboy Xajiyev on 02/12/25.
+//
+
 import SwiftUI
 
-// MARK: - FavoriteView
-
 struct FavoriteView: View {
-    private let loc = LocalizationManager.shared
+    @Environment(LocalizationManager.self) private var loc
 
-    @EnvironmentObject var favorites: FavoritesStore
-    @EnvironmentObject var parkings: ParkingsStore
+    @EnvironmentObject var parkingsStore: ParkingsStore
+    @EnvironmentObject var favoritesStore: FavoritesStore
     @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
-    @Environment(AppCoordinator.self) private var coordinator
 
-    @State private var selectedToRemove: Parking?
+    @State private var parkingToRemove: Parking?
 
     private var favoriteParkings: [Parking] {
-        parkings.all.filter { favorites.isFavorite($0.id) }
+        parkingsStore.all.filter { favoritesStore.isFavorite($0.id) }
     }
 
     var body: some View {
         ZStack {
             AppAnimatedBackground()
 
-            if favoriteParkings.isEmpty {
-                AppStateView(
-                    kind: .empty(
-                        icon: "heart.slash",
-                        title: loc.str(.favoriteNoFavorites),
-                        subtitle: loc.str(.favoriteNoFavoritesSub)
-                    )
-                )
-                .appReveal(0.05)
+            if favoriteParkings.isEmpty && !parkingsStore.isLoading {
+                emptyState
             } else {
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 16) {
+                    VStack(spacing: 14) {
+                        // Header
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(loc.str(.favoriteTitle))
+                                    .font(AppTheme.Typography.title)
+                                    .foregroundColor(AppTheme.Palette.textPrimary)
+
+                                Text("\(favoriteParkings.count) \(loc.str(.tabFavorite))")
+                                    .font(AppTheme.Typography.subheadline)
+                                    .foregroundColor(AppTheme.Palette.textSecondary)
+                            }
+
+                            Spacer()
+
+                            Image(systemName: "heart.fill")
+                                .font(.system(size: 22))
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [
+                                            AppTheme.Palette.brand, AppTheme.Palette.brandLight,
+                                        ],
+                                        startPoint: .top, endPoint: .bottom
+                                    )
+                                )
+                                .frame(width: 46, height: 46)
+                                .background(AppTheme.Palette.surfaceGlass)
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .stroke(AppTheme.Palette.borderGlass, lineWidth: 1)
+                                )
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 16)
+                        .appReveal(0.0)
+
+                        // Parking list
                         ForEach(Array(favoriteParkings.enumerated()), id: \.element.id) {
                             index, parking in
-                            Button {
-                                coordinator.showParkingDetail(parking)
-                            } label: {
+                            NavigationLink(value: AppRoute.parkingDetail(parking)) {
                                 NearbyParkingCard(
-                                    availabilityStore: _availabilityStore,
                                     parking: parking,
+                                    availability: availabilityStore.availability(for: parking.id),
                                     isFavorite: true,
-                                    onHeartTap: {
-                                        selectedToRemove = parking
+                                    onToggleFavorite: {
+                                        parkingToRemove = parking
                                     }
                                 )
-                                .appReveal(Double(index) * 0.03)
                             }
                             .buttonStyle(.plain)
+                            .pressStyle()
+                            .appReveal(Double(index) * 0.05)
                         }
+                        .padding(.horizontal, 20)
+
+                        Spacer(minLength: 100)
                     }
-                    .padding(.horizontal)
-                    .padding(.top, 12)
-                    .padding(.bottom, 24)
                 }
             }
         }
-        .navigationTitle(loc.str(.favoriteTitle))
-        .navigationBarTitleDisplayMode(.large)
-
-        // Realtime + initial load (agar root’da start qilingan bo‘lsa ham zarar qilmaydi)
+        .confirmationDialog(
+            loc.str(.favoriteRemoveTitle),
+            isPresented: .init(
+                get: { parkingToRemove != nil },
+                set: { if !$0 { parkingToRemove = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button(loc.str(.favoriteYesRemove), role: .destructive) {
+                if let parking = parkingToRemove {
+                    Task {
+                        favoritesStore.toggle(parking.id)
+                    }
+                }
+                parkingToRemove = nil
+            }
+        }
         .task {
+            if parkingsStore.all.isEmpty {
+                parkingsStore.load(userLocation: nil)
+            }
             availabilityStore.initialLoad()
-            availabilityStore.startRealtime()
         }
-
-        .sheet(item: $selectedToRemove) { p in
-            RemoveFavoriteSheet(
-                parking: p,
-                onCancel: { selectedToRemove = nil },
-                onRemove: {
-                    favorites.remove(p.id)
-                    selectedToRemove = nil
-                }
-            )
-            .presentationDetents([.height(260)])
-            .presentationDragIndicator(.visible)
-        }
+        .toolbar(.hidden, for: .navigationBar)
     }
-}
-struct RemoveFavoriteSheet: View {
-    let parking: Parking
-    let onCancel: () -> Void
-    let onRemove: () -> Void
 
-    private let loc = LocalizationManager.shared
-
-    var body: some View {
-        VStack(spacing: 14) {
-            Text(loc.str(.favoriteRemoveTitle))
-                .font(.headline)
-                .padding(.top, 6)
-
-            HStack(spacing: 12) {
-                AsyncImage(url: URL(string: parking.thumbnail_url ?? "")) { phase in
-                    switch phase {
-                    case .success(let img): img.resizable().scaledToFill()
-                    default: Rectangle().fill(Color.gray.opacity(0.2))
-                    }
-                }
-                .frame(width: 70, height: 56)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Text(loc.str(.detailCarParking))
-                            .font(.caption)
-                            .foregroundColor(AppTheme.Palette.brand)
-
-                        Spacer()
-
-                        HStack(spacing: 4) {
-                            Image(systemName: "star.fill")
-                                .font(.caption)
-                                .foregroundColor(.yellow)
-                            Text(String(format: "%.1f", parking.rating ?? 5))
-                                .font(.caption)
-                                .foregroundColor(AppTheme.Palette.textSecondary)
-                        }
-                    }
-
-                    Text(parking.name)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .lineLimit(1)
-
-                    Text(
-                        "\(Int(parking.price_per_hour)) so'm \(loc.str(.bookingsPerHour))"
+    // MARK: - Empty State
+    private var emptyState: some View {
+        VStack(spacing: 20) {
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                AppTheme.Palette.brand.opacity(0.15),
+                                AppTheme.Palette.brandLight.opacity(0.05),
+                            ],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        )
                     )
-                    .font(.subheadline)
-                    .foregroundColor(AppTheme.Palette.brand)
-                }
+                    .frame(width: 100, height: 100)
+
+                Image(systemName: "heart.slash.fill")
+                    .font(.system(size: 40))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [AppTheme.Palette.brand, AppTheme.Palette.brandLight],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                    )
             }
-            .padding()
-            .background(AppTheme.Palette.pageBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
 
-            HStack(spacing: 12) {
-                Button(action: onCancel) {
-                    Text(loc.str(.favoriteCancel))
-                        .fontWeight(.semibold)
-                        .foregroundColor(AppTheme.Palette.brand)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(AppTheme.Palette.brandSoft)
-                        .clipShape(Capsule())
-                }
-                .pressStyle()
+            Text(loc.str(.favoriteEmpty))
+                .font(AppTheme.Typography.title3)
+                .foregroundColor(AppTheme.Palette.textPrimary)
 
-                Button(action: onRemove) {
-                    Text(loc.str(.favoriteYesRemove))
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(AppTheme.Palette.brand)
-                        .clipShape(Capsule())
-                }
-                .pressStyle()
-            }
-            .padding(.top, 4)
-
-            Spacer(minLength: 0)
+            Text(loc.str(.favoriteEmptySubtitle))
+                .font(AppTheme.Typography.subheadline)
+                .foregroundColor(AppTheme.Palette.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
         }
-        .padding(.horizontal)
-        .padding(.bottom, 14)
-        .background(AppTheme.Palette.surface)
+        .appReveal(0.1)
     }
 }

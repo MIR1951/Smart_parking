@@ -12,9 +12,12 @@ import SwiftUI
 struct ContentView: View {
 
     @Environment(AuthManager.self) private var authManager
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var availabilityStore = ParkingAvailabilityStore(client: SB.shared.client)
     @StateObject private var parkingsStore = ParkingsStore()
     @StateObject private var favoritesStore = FavoritesStore()
+    @StateObject private var locationManager = LocationManager()
+    @StateObject private var notificationManager = NotificationManager.shared
     @State private var appCoordinator = AppCoordinator.shared
 
     @State private var didStart = false
@@ -38,10 +41,13 @@ struct ContentView: View {
                     .environmentObject(parkingsStore)
                     .environmentObject(favoritesStore)
                     .environmentObject(availabilityStore)
+                    .environmentObject(locationManager)
+                    .environmentObject(notificationManager)
                     .onAppear {
                         guard !didStart else { return }
                         didStart = true
                         availabilityStore.initialLoad()
+                        availabilityStore.startRealtime()
                     }
                     .fullScreenCover(
                         item: $appCoordinator.fullScreenRoute,
@@ -54,6 +60,8 @@ struct ContentView: View {
                             .environmentObject(parkingsStore)
                             .environmentObject(favoritesStore)
                             .environmentObject(availabilityStore)
+                            .environmentObject(locationManager)
+                            .environmentObject(notificationManager)
                     }
                 } else {
                     LoginView()
@@ -66,6 +74,16 @@ struct ContentView: View {
                     .opacity(splashOpacity)
                     .transition(.opacity)
                     .zIndex(100)
+            }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else { return }
+            guard authManager.currentUserID != nil else { return }
+            Task {
+                await availabilityStore.refreshNow(force: true)
+                if !availabilityStore.isRealtimeConnected {
+                    availabilityStore.startRealtime()
+                }
             }
         }
         .onChange(of: authManager.currentUserID) { _, newValue in
@@ -94,6 +112,7 @@ struct ContentView: View {
             didStart = false
             activeNotificationUserID = nil
             appCoordinator.resetForLogout()
+            availabilityStore.stopRealtime()
             NotificationManager.shared.stopRealtime()
             NotificationManager.shared.resetState()
             return
@@ -118,9 +137,11 @@ struct ContentView: View {
                 .toolbar(.hidden, for: .tabBar)
         case .settings:
             SettingsView()
+                .toolbar(.visible, for: .navigationBar)
                 .toolbar(.hidden, for: .tabBar)
         case .wallet:
             WalletView()
+                .toolbar(.visible, for: .navigationBar)
                 .toolbar(.hidden, for: .tabBar)
         }
     }

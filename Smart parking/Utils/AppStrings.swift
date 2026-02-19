@@ -344,6 +344,8 @@ enum StringKey: String {
     case exploreNoResults
     case exploreChangeSearch
     case exploreFilterInfo
+    case mapZoomIn
+    case mapZoomOut
 
     // Home extra
     case homeLocation
@@ -733,6 +735,8 @@ enum StringKey: String {
         case .exploreNoResults: return "Natija topilmadi"
         case .exploreChangeSearch: return "Qidiruv matnini o'zgartirib ko'ring."
         case .exploreFilterInfo: return "Filter bo'limi keyingi versiyada qo'shiladi."
+        case .mapZoomIn: return "Yaqinlashtirish"
+        case .mapZoomOut: return "Uzoqlashtirish"
 
         // Home extra
         case .homeLocation: return "Joylashuv"
@@ -1116,6 +1120,8 @@ enum StringKey: String {
         case .exploreNoResults: return "No results found"
         case .exploreChangeSearch: return "Try a different search term."
         case .exploreFilterInfo: return "Filter section coming in next update."
+        case .mapZoomIn: return "Zoom in"
+        case .mapZoomOut: return "Zoom out"
 
         // Home extra
         case .homeLocation: return "Location"
@@ -1497,6 +1503,8 @@ enum StringKey: String {
         case .exploreNoResults: return "Ничего не найдено"
         case .exploreChangeSearch: return "Попробуйте другой запрос."
         case .exploreFilterInfo: return "Раздел фильтров появится в следующем обновлении."
+        case .mapZoomIn: return "Увеличить"
+        case .mapZoomOut: return "Уменьшить"
 
         // Home extra
         case .homeLocation: return "Местоположение"
