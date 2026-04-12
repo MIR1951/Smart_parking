@@ -10,6 +10,7 @@ import SwiftUI
 struct LoginView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(LocalizationManager.self) private var loc
+    @Environment(\.colorScheme) private var colorScheme
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var isPasswordVisible: Bool = false
@@ -43,16 +44,61 @@ struct LoginView: View {
         return nil
     }
 
+    // MARK: - Adaptive Colors
+    private var bgGradientColors: [Color] {
+        colorScheme == .dark
+            ? [Color(hex: "#020617"), Color(hex: "#0C1929"), Color(hex: "#0F293E")]
+            : [Color(hex: "#F0F9FF"), Color(hex: "#E0F2FE"), Color(hex: "#BAE6FD")]
+    }
+
+    private var orbColor1: Color {
+        colorScheme == .dark
+            ? Color(hex: "#0EA5E9").opacity(0.25) : Color(hex: "#0EA5E9").opacity(0.12)
+    }
+
+    private var orbColor2: Color {
+        colorScheme == .dark
+            ? Color(hex: "#00CEC9").opacity(0.12) : Color(hex: "#00CEC9").opacity(0.08)
+    }
+
+    private var primaryText: Color {
+        AppTheme.Palette.textPrimary
+    }
+
+    private var secondaryText: Color {
+        AppTheme.Palette.textSecondary
+    }
+
+    private var accentColor: Color { AppTheme.Palette.brandLight }
+
+    private var inputBg: Color {
+        colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04)
+    }
+
+    private var inputBorder: Color {
+        colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08)
+    }
+
+    private var inputFocusBorder: Color {
+        AppTheme.Palette.brand.opacity(0.6)
+    }
+
+    private var cardBg: Color {
+        colorScheme == .dark ? Color.white.opacity(0.05) : Color.white.opacity(0.7)
+    }
+
+    private var cardBorderColors: [Color] {
+        colorScheme == .dark
+            ? [.white.opacity(0.12), .white.opacity(0.03)]
+            : [.white.opacity(0.8), .white.opacity(0.3)]
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
-                // Premium gradient background
+                // Adaptive gradient background
                 LinearGradient(
-                    colors: [
-                        Color(hex: "#0D0D1F"),
-                        Color(hex: "#161630"),
-                        Color(hex: "#1A1545"),
-                    ],
+                    colors: bgGradientColors,
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -62,7 +108,7 @@ struct LoginView: View {
                 Circle()
                     .fill(
                         RadialGradient(
-                            colors: [Color(hex: "#6C5CE7").opacity(0.25), .clear],
+                            colors: [orbColor1, .clear],
                             center: .center, startRadius: 20, endRadius: 180
                         )
                     )
@@ -72,7 +118,7 @@ struct LoginView: View {
                 Circle()
                     .fill(
                         RadialGradient(
-                            colors: [Color(hex: "#00CEC9").opacity(0.12), .clear],
+                            colors: [orbColor2, .clear],
                             center: .center, startRadius: 20, endRadius: 150
                         )
                     )
@@ -87,8 +133,8 @@ struct LoginView: View {
                                 .fill(
                                     LinearGradient(
                                         colors: [
-                                            Color(hex: "#6C5CE7").opacity(0.3),
-                                            Color(hex: "#6C5CE7").opacity(0.1),
+                                            AppTheme.Palette.brand.opacity(0.3),
+                                            AppTheme.Palette.brand.opacity(0.1),
                                         ],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
@@ -100,7 +146,8 @@ struct LoginView: View {
                                         .stroke(
                                             LinearGradient(
                                                 colors: [
-                                                    .white.opacity(0.3), .white.opacity(0.05),
+                                                    primaryText.opacity(0.3),
+                                                    primaryText.opacity(0.05),
                                                 ],
                                                 startPoint: .topLeading,
                                                 endPoint: .bottomTrailing
@@ -113,12 +160,12 @@ struct LoginView: View {
                                 .font(.system(size: 32, weight: .medium))
                                 .foregroundStyle(
                                     LinearGradient(
-                                        colors: [.white, Color(hex: "#A29BFE")],
+                                        colors: [primaryText, accentColor],
                                         startPoint: .top, endPoint: .bottom
                                     )
                                 )
                         }
-                        .shadow(color: Color(hex: "#6C5CE7").opacity(0.4), radius: 20, y: 8)
+                        .shadow(color: AppTheme.Palette.brand.opacity(0.4), radius: 20, y: 8)
                         .padding(.top, 50)
                         .scaleEffect(appeared ? 1 : 0.5)
                         .opacity(appeared ? 1 : 0)
@@ -127,11 +174,11 @@ struct LoginView: View {
                         VStack(spacing: 8) {
                             Text(loc.str(.loginTitle))
                                 .font(.system(size: 32, weight: .bold, design: .rounded))
-                                .foregroundColor(.white)
+                                .foregroundColor(primaryText)
 
                             Text(loc.str(.loginSubtitle))
                                 .font(.subheadline)
-                                .foregroundColor(.white.opacity(0.5))
+                                .foregroundColor(secondaryText)
                         }
                         .offset(y: appeared ? 0 : 20)
                         .opacity(appeared ? 1 : 0)
@@ -142,33 +189,35 @@ struct LoginView: View {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(loc.str(.loginEmail))
                                     .font(AppTheme.Typography.caption)
-                                    .foregroundColor(.white.opacity(0.6))
+                                    .foregroundColor(secondaryText)
 
                                 HStack(spacing: 12) {
                                     Image(systemName: "envelope.fill")
-                                        .foregroundColor(Color(hex: "#A29BFE"))
+                                        .foregroundColor(accentColor)
                                         .font(.system(size: 15))
 
                                     TextField(loc.str(.loginEmailPlaceholder), text: $email)
                                         .autocorrectionDisabled()
                                         .textInputAutocapitalization(.never)
                                         .keyboardType(.emailAddress)
-                                        .foregroundColor(.white)
-                                        .tint(Color(hex: "#A29BFE"))
+                                        .foregroundColor(primaryText)
+                                        .tint(accentColor)
                                         .focused($focusedField, equals: .email)
-                                        .onChange(of: focusedField) { _, newValue in
-                                            if newValue != .email { emailTouched = true }
+                                        .onChange(of: focusedField) { oldValue, newValue in
+                                            if oldValue == .email && newValue != .email {
+                                                emailTouched = true
+                                            }
                                         }
                                 }
                                 .padding(14)
-                                .background(Color.white.opacity(0.06))
+                                .background(inputBg)
                                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                                         .stroke(
                                             focusedField == .email
-                                                ? Color(hex: "#6C5CE7").opacity(0.6)
-                                                : Color.white.opacity(0.08),
+                                                ? inputFocusBorder
+                                                : inputBorder,
                                             lineWidth: 1
                                         )
                                 )
@@ -176,7 +225,7 @@ struct LoginView: View {
                                 if let error = emailError {
                                     Text(error)
                                         .font(.caption2)
-                                        .foregroundColor(Color(hex: "#FF7675"))
+                                        .foregroundColor(AppTheme.Palette.danger)
                                 }
                             }
 
@@ -184,33 +233,27 @@ struct LoginView: View {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(loc.str(.loginPassword))
                                     .font(AppTheme.Typography.caption)
-                                    .foregroundColor(.white.opacity(0.6))
+                                    .foregroundColor(secondaryText)
 
                                 HStack(spacing: 12) {
                                     Image(systemName: "lock.fill")
-                                        .foregroundColor(Color(hex: "#A29BFE"))
+                                        .foregroundColor(accentColor)
                                         .font(.system(size: 15))
 
                                     if isPasswordVisible {
                                         TextField(
                                             loc.str(.loginPasswordPlaceholder), text: $password
                                         )
-                                        .foregroundColor(.white)
-                                        .tint(Color(hex: "#A29BFE"))
+                                        .foregroundColor(primaryText)
+                                        .tint(accentColor)
                                         .focused($focusedField, equals: .password)
-                                        .onChange(of: focusedField) { _, newValue in
-                                            if newValue != .password { passwordTouched = true }
-                                        }
                                     } else {
                                         SecureField(
                                             loc.str(.loginPasswordPlaceholder), text: $password
                                         )
-                                        .foregroundColor(.white)
-                                        .tint(Color(hex: "#A29BFE"))
+                                        .foregroundColor(primaryText)
+                                        .tint(accentColor)
                                         .focused($focusedField, equals: .password)
-                                        .onChange(of: focusedField) { _, newValue in
-                                            if newValue != .password { passwordTouched = true }
-                                        }
                                     }
 
                                     Button {
@@ -220,19 +263,19 @@ struct LoginView: View {
                                             systemName: isPasswordVisible
                                                 ? "eye.slash.fill" : "eye.fill"
                                         )
-                                        .foregroundColor(.white.opacity(0.4))
+                                        .foregroundColor(secondaryText)
                                         .font(.system(size: 14))
                                     }
                                 }
                                 .padding(14)
-                                .background(Color.white.opacity(0.06))
+                                .background(inputBg)
                                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                                         .stroke(
                                             focusedField == .password
-                                                ? Color(hex: "#6C5CE7").opacity(0.6)
-                                                : Color.white.opacity(0.08),
+                                                ? inputFocusBorder
+                                                : inputBorder,
                                             lineWidth: 1
                                         )
                                 )
@@ -240,7 +283,7 @@ struct LoginView: View {
                                 if let error = passwordError {
                                     Text(error)
                                         .font(.caption2)
-                                        .foregroundColor(Color(hex: "#FF7675"))
+                                        .foregroundColor(AppTheme.Palette.danger)
                                 }
                             }
 
@@ -250,17 +293,17 @@ struct LoginView: View {
                                     ForgotPasswordView()
                                 }
                                 .font(.footnote)
-                                .foregroundColor(Color(hex: "#A29BFE"))
+                                .foregroundColor(accentColor)
                             }
                         }
                         .padding(22)
-                        .background(Color.white.opacity(0.05))
+                        .background(cardBg)
                         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 22, style: .continuous)
                                 .stroke(
                                     LinearGradient(
-                                        colors: [.white.opacity(0.12), .white.opacity(0.03)],
+                                        colors: cardBorderColors,
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     ),
@@ -292,7 +335,7 @@ struct LoginView: View {
                             .background(
                                 LinearGradient(
                                     colors: isValidCredentials && !authManager.isLoading
-                                        ? [Color(hex: "#6C5CE7"), Color(hex: "#A29BFE")]
+                                        ? [AppTheme.Palette.brand, AppTheme.Palette.brandLight]
                                         : [Color.gray.opacity(0.3), Color.gray.opacity(0.2)],
                                     startPoint: .leading,
                                     endPoint: .trailing
@@ -301,7 +344,7 @@ struct LoginView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                             .shadow(
                                 color: isValidCredentials
-                                    ? Color(hex: "#6C5CE7").opacity(0.4)
+                                    ? AppTheme.Palette.brand.opacity(0.4)
                                     : .clear,
                                 radius: 16,
                                 y: 6
@@ -313,13 +356,13 @@ struct LoginView: View {
                         // Divider
                         HStack(spacing: 14) {
                             Rectangle()
-                                .fill(Color.white.opacity(0.1))
+                                .fill(secondaryText.opacity(0.2))
                                 .frame(height: 1)
                             Text(loc.str(.loginOrWith))
                                 .font(.caption)
-                                .foregroundColor(.white.opacity(0.4))
+                                .foregroundColor(secondaryText)
                             Rectangle()
-                                .fill(Color.white.opacity(0.1))
+                                .fill(secondaryText.opacity(0.2))
                                 .frame(height: 1)
                         }
 
@@ -337,9 +380,9 @@ struct LoginView: View {
                         } label: {
                             HStack(spacing: 4) {
                                 Text(loc.str(.loginNoAccount))
-                                    .foregroundColor(.white.opacity(0.5))
+                                    .foregroundColor(secondaryText)
                                 Text(loc.str(.loginSignUp))
-                                    .foregroundColor(Color(hex: "#A29BFE"))
+                                    .foregroundColor(accentColor)
                                     .fontWeight(.semibold)
                             }
                             .font(.subheadline)
@@ -375,9 +418,18 @@ struct LoginView: View {
     }
 }
 
-// Social sign-in button (glassmorphism style)
+// Social sign-in button (adaptive glassmorphism style)
 struct SocialSignInButton: View {
     let imageName: String
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var iconBg: Color {
+        colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04)
+    }
+
+    private var iconBorder: Color {
+        colorScheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.08)
+    }
 
     var body: some View {
         Group {
@@ -386,7 +438,7 @@ struct SocialSignInButton: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 20, height: 20)
-                    .foregroundColor(.white)
+                    .foregroundColor(AppTheme.Palette.textPrimary)
             } else if imageName == "google" {
                 Text("G")
                     .font(.system(size: 20, weight: .bold, design: .rounded))
@@ -407,21 +459,23 @@ struct SocialSignInButton: View {
                 Text(imageName.prefix(1).uppercased())
                     .font(.title3)
                     .fontWeight(.bold)
-                    .foregroundColor(.white)
+                    .foregroundColor(AppTheme.Palette.textPrimary)
             }
         }
         .frame(width: 56, height: 56)
-        .background(Color.white.opacity(0.06))
+        .background(iconBg)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                .stroke(iconBorder, lineWidth: 1)
         )
     }
 }
 
 extension LoginView {
     fileprivate func signIn() {
+        emailTouched = true
+        passwordTouched = true
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedEmail.isEmpty, password.count >= 6, !authManager.isLoading else { return }
 

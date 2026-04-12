@@ -11,6 +11,7 @@ struct RegistrationView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthManager.self) private var authManager
     @Environment(LocalizationManager.self) private var loc
+    @Environment(\.colorScheme) private var colorScheme
     @State private var username: String = ""
     @State private var email: String = ""
     @State private var password: String = ""
@@ -57,15 +58,44 @@ struct RegistrationView: View {
         return nil
     }
 
+    // MARK: - Adaptive Colors
+    private var bgGradientColors: [Color] {
+        colorScheme == .dark
+            ? [Color(hex: "#020617"), Color(hex: "#0C1929"), Color(hex: "#0F293E")]
+            : [Color(hex: "#F0F9FF"), Color(hex: "#E0F2FE"), Color(hex: "#BAE6FD")]
+    }
+
+    private var primaryText: Color { AppTheme.Palette.textPrimary }
+    private var secondaryText: Color { AppTheme.Palette.textSecondary }
+    private var accentColor: Color { AppTheme.Palette.brandLight }
+
+    private var inputBg: Color {
+        colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04)
+    }
+
+    private var inputBorder: Color {
+        colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08)
+    }
+
+    private var inputFocusBorder: Color {
+        AppTheme.Palette.brand.opacity(0.6)
+    }
+
+    private var cardBg: Color {
+        colorScheme == .dark ? Color.white.opacity(0.05) : Color.white.opacity(0.7)
+    }
+
+    private var cardBorderColors: [Color] {
+        colorScheme == .dark
+            ? [.white.opacity(0.12), .white.opacity(0.03)]
+            : [.white.opacity(0.8), .white.opacity(0.3)]
+    }
+
     var body: some View {
         ZStack {
-            // Premium gradient background
+            // Adaptive gradient background
             LinearGradient(
-                colors: [
-                    Color(hex: "#0D0D1F"),
-                    Color(hex: "#161630"),
-                    Color(hex: "#1A1545"),
-                ],
+                colors: bgGradientColors,
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -75,7 +105,10 @@ struct RegistrationView: View {
             Circle()
                 .fill(
                     RadialGradient(
-                        colors: [Color(hex: "#A29BFE").opacity(0.20), .clear],
+                        colors: [
+                            AppTheme.Palette.brandLight.opacity(colorScheme == .dark ? 0.20 : 0.10),
+                            .clear,
+                        ],
                         center: .center, startRadius: 20, endRadius: 180
                     )
                 )
@@ -85,7 +118,10 @@ struct RegistrationView: View {
             Circle()
                 .fill(
                     RadialGradient(
-                        colors: [Color(hex: "#00CEC9").opacity(0.12), .clear],
+                        colors: [
+                            Color(hex: "#00CEC9").opacity(colorScheme == .dark ? 0.12 : 0.08),
+                            .clear,
+                        ],
                         center: .center, startRadius: 20, endRadius: 150
                     )
                 )
@@ -98,11 +134,11 @@ struct RegistrationView: View {
                     VStack(spacing: 8) {
                         Text(loc.str(.registerTitle))
                             .font(.system(size: 32, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
+                            .foregroundColor(primaryText)
 
                         Text(loc.str(.registerSubtitle))
                             .font(.subheadline)
-                            .foregroundColor(.white.opacity(0.5))
+                            .foregroundColor(secondaryText)
                             .multilineTextAlignment(.center)
                     }
                     .padding(.top, 40)
@@ -121,8 +157,8 @@ struct RegistrationView: View {
                             error: nameError
                         )
                         .focused($focusedField, equals: .name)
-                        .onChange(of: focusedField) { _, newValue in
-                            if newValue != .name { nameTouched = true }
+                        .onChange(of: focusedField) { oldValue, newValue in
+                            if oldValue == .name && newValue != .name { nameTouched = true }
                         }
                         .textInputAutocapitalization(.words)
 
@@ -136,8 +172,8 @@ struct RegistrationView: View {
                             error: emailError
                         )
                         .focused($focusedField, equals: .email)
-                        .onChange(of: focusedField) { _, newValue in
-                            if newValue != .email { emailTouched = true }
+                        .onChange(of: focusedField) { oldValue, newValue in
+                            if oldValue == .email && newValue != .email { emailTouched = true }
                         }
                         .textInputAutocapitalization(.never)
                         .keyboardType(.emailAddress)
@@ -146,22 +182,22 @@ struct RegistrationView: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Text(loc.str(.loginPassword))
                                 .font(AppTheme.Typography.caption)
-                                .foregroundColor(.white.opacity(0.6))
+                                .foregroundColor(secondaryText)
 
                             HStack(spacing: 12) {
                                 Image(systemName: "lock.fill")
-                                    .foregroundColor(Color(hex: "#A29BFE"))
+                                    .foregroundColor(accentColor)
                                     .font(.system(size: 15))
 
                                 if isPasswordVisible {
                                     TextField(loc.str(.loginPasswordPlaceholder), text: $password)
-                                        .foregroundColor(.white)
-                                        .tint(Color(hex: "#A29BFE"))
+                                        .foregroundColor(primaryText)
+                                        .tint(accentColor)
                                         .focused($focusedField, equals: .password)
                                 } else {
                                     SecureField(loc.str(.loginPasswordPlaceholder), text: $password)
-                                        .foregroundColor(.white)
-                                        .tint(Color(hex: "#A29BFE"))
+                                        .foregroundColor(primaryText)
+                                        .tint(accentColor)
                                         .focused($focusedField, equals: .password)
                                 }
 
@@ -172,30 +208,27 @@ struct RegistrationView: View {
                                         systemName: isPasswordVisible
                                             ? "eye.slash.fill" : "eye.fill"
                                     )
-                                    .foregroundColor(.white.opacity(0.4))
+                                    .foregroundColor(secondaryText)
                                     .font(.system(size: 14))
                                 }
                             }
                             .padding(14)
-                            .background(Color.white.opacity(0.06))
+                            .background(inputBg)
                             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                                     .stroke(
                                         focusedField == .password
-                                            ? Color(hex: "#6C5CE7").opacity(0.6)
-                                            : Color.white.opacity(0.08),
+                                            ? inputFocusBorder
+                                            : inputBorder,
                                         lineWidth: 1
                                     )
                             )
-                            .onChange(of: focusedField) { _, newValue in
-                                if newValue != .password { passwordTouched = true }
-                            }
 
                             if let error = passwordError {
                                 Text(error)
                                     .font(.caption2)
-                                    .foregroundColor(Color(hex: "#FF7675"))
+                                    .foregroundColor(AppTheme.Palette.danger)
                             }
                         }
 
@@ -206,13 +239,13 @@ struct RegistrationView: View {
                                 .toggleStyle(CheckboxToggleStyle())
 
                             Text(loc.str(.registerAgreeWith))
-                                .foregroundColor(.white.opacity(0.5))
+                                .foregroundColor(secondaryText)
                                 .font(.footnote)
 
                             Button(loc.str(.registerTerms)) {
                                 showInfo(loc.str(.profileComingSoon))
                             }
-                            .foregroundColor(Color(hex: "#A29BFE"))
+                            .foregroundColor(accentColor)
                             .fontWeight(.semibold)
                             .font(.footnote)
 
@@ -220,13 +253,13 @@ struct RegistrationView: View {
                         }
                     }
                     .padding(22)
-                    .background(Color.white.opacity(0.05))
+                    .background(cardBg)
                     .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 22, style: .continuous)
                             .stroke(
                                 LinearGradient(
-                                    colors: [.white.opacity(0.12), .white.opacity(0.03)],
+                                    colors: cardBorderColors,
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 ),
@@ -257,14 +290,14 @@ struct RegistrationView: View {
                         .background(
                             LinearGradient(
                                 colors: isValidForm && !authManager.isLoading
-                                    ? [Color(hex: "#6C5CE7"), Color(hex: "#A29BFE")]
+                                    ? [AppTheme.Palette.brand, AppTheme.Palette.brandLight]
                                     : [Color.gray.opacity(0.3), Color.gray.opacity(0.2)],
                                 startPoint: .leading, endPoint: .trailing
                             )
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                         .shadow(
-                            color: isValidForm ? Color(hex: "#6C5CE7").opacity(0.4) : .clear,
+                            color: isValidForm ? AppTheme.Palette.brand.opacity(0.4) : .clear,
                             radius: 16, y: 6
                         )
                     }
@@ -273,11 +306,11 @@ struct RegistrationView: View {
 
                     // Divider
                     HStack(spacing: 14) {
-                        Rectangle().fill(Color.white.opacity(0.1)).frame(height: 1)
+                        Rectangle().fill(secondaryText.opacity(0.2)).frame(height: 1)
                         Text(loc.str(.loginOrWith))
                             .font(.caption)
-                            .foregroundColor(.white.opacity(0.4))
-                        Rectangle().fill(Color.white.opacity(0.1)).frame(height: 1)
+                            .foregroundColor(secondaryText)
+                        Rectangle().fill(secondaryText.opacity(0.2)).frame(height: 1)
                     }
 
                     HStack(spacing: 20) {
@@ -288,9 +321,9 @@ struct RegistrationView: View {
 
                     HStack(spacing: 4) {
                         Text(loc.str(.registerHaveAccount))
-                            .foregroundColor(.white.opacity(0.5))
+                            .foregroundColor(secondaryText)
                         Button(loc.str(.registerSignIn)) { dismiss() }
-                            .foregroundColor(Color(hex: "#A29BFE"))
+                            .foregroundColor(accentColor)
                             .fontWeight(.semibold)
                     }
                     .font(.subheadline)
@@ -334,27 +367,27 @@ struct RegistrationView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(AppTheme.Typography.caption)
-                .foregroundColor(.white.opacity(0.6))
+                .foregroundColor(secondaryText)
 
             HStack(spacing: 12) {
                 Image(systemName: icon)
-                    .foregroundColor(Color(hex: "#A29BFE"))
+                    .foregroundColor(accentColor)
                     .font(.system(size: 15))
 
                 TextField(placeholder, text: text)
                     .autocorrectionDisabled()
-                    .foregroundColor(.white)
-                    .tint(Color(hex: "#A29BFE"))
+                    .foregroundColor(primaryText)
+                    .tint(accentColor)
             }
             .padding(14)
-            .background(Color.white.opacity(0.06))
+            .background(inputBg)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .stroke(
                         isFocused
-                            ? Color(hex: "#6C5CE7").opacity(0.6)
-                            : Color.white.opacity(0.08),
+                            ? inputFocusBorder
+                            : inputBorder,
                         lineWidth: 1
                     )
             )
@@ -362,7 +395,7 @@ struct RegistrationView: View {
             if let error {
                 Text(error)
                     .font(.caption2)
-                    .foregroundColor(Color(hex: "#FF7675"))
+                    .foregroundColor(AppTheme.Palette.danger)
             }
         }
     }
@@ -375,7 +408,9 @@ struct CheckboxToggleStyle: ToggleStyle {
             configuration.isOn.toggle()
         } label: {
             Image(systemName: configuration.isOn ? "checkmark.square.fill" : "square")
-                .foregroundColor(configuration.isOn ? Color(hex: "#6C5CE7") : .white.opacity(0.3))
+                .foregroundColor(
+                    configuration.isOn ? AppTheme.Palette.brand : AppTheme.Palette.textTertiary
+                )
                 .font(.title2)
         }
     }
@@ -383,6 +418,9 @@ struct CheckboxToggleStyle: ToggleStyle {
 
 extension RegistrationView {
     fileprivate func signUp() {
+        nameTouched = true
+        emailTouched = true
+        passwordTouched = true
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedUsername = username.trimmingCharacters(in: .whitespacesAndNewlines)
         guard

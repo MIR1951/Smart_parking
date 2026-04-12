@@ -80,7 +80,7 @@ struct AddVehicleView: View {
                     } label: {
                         HStack {
                             Text(selectedBrand?.name ?? loc.str(.vehicleSelectBrand))
-                                .foregroundColor(selectedBrand == nil ? .gray : .black)
+                                .foregroundColor(selectedBrand == nil ? .gray : .primary)
                             Spacer()
                             Image(systemName: "chevron.right")
                                 .foregroundColor(AppTheme.Palette.brand)
@@ -108,7 +108,7 @@ struct AddVehicleView: View {
                     } label: {
                         HStack {
                             Text(selectedModel ?? loc.str(.vehicleSelectModel))
-                                .foregroundColor(selectedModel == nil ? .gray : .black)
+                                .foregroundColor(selectedModel == nil ? .gray : .primary)
                             Spacer()
                             Image(systemName: "chevron.right")
                                 .foregroundColor(AppTheme.Palette.brand)

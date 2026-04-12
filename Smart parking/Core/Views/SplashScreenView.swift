@@ -28,9 +28,9 @@ struct SplashScreenView: View {
             // Deep indigo gradient background
             LinearGradient(
                 gradient: Gradient(colors: [
-                    Color(hex: "#0D0D1F"),
-                    Color(hex: "#1A1545"),
-                    Color(hex: "#2D2470"),
+                    Color(hex: "#020617"),
+                    Color(hex: "#0C1929"),
+                    Color(hex: "#0F293E"),
                 ]),
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -42,7 +42,7 @@ struct SplashScreenView: View {
                 .fill(
                     RadialGradient(
                         gradient: Gradient(colors: [
-                            Color(hex: "#6C5CE7").opacity(0.35),
+                            Color(hex: "#0EA5E9").opacity(0.35),
                             Color.clear,
                         ]),
                         center: .center,
@@ -80,7 +80,7 @@ struct SplashScreenView: View {
                 .fill(
                     RadialGradient(
                         gradient: Gradient(colors: [
-                            Color(hex: "#A29BFE").opacity(0.15),
+                            Color(hex: "#38BDF8").opacity(0.15),
                             Color.clear,
                         ]),
                         center: .center,
@@ -105,11 +105,11 @@ struct SplashScreenView: View {
                         .stroke(
                             AngularGradient(
                                 colors: [
-                                    Color(hex: "#6C5CE7"),
-                                    Color(hex: "#A29BFE"),
+                                    Color(hex: "#0EA5E9"),
+                                    Color(hex: "#38BDF8"),
                                     Color(hex: "#00CEC9"),
-                                    Color(hex: "#A29BFE"),
-                                    Color(hex: "#6C5CE7"),
+                                    Color(hex: "#38BDF8"),
+                                    Color(hex: "#0EA5E9"),
                                 ],
                                 center: .center
                             ),
@@ -122,7 +122,7 @@ struct SplashScreenView: View {
 
                     // Outer glow ring
                     Circle()
-                        .stroke(Color(hex: "#6C5CE7").opacity(0.2), lineWidth: 1.5)
+                        .stroke(Color(hex: "#0EA5E9").opacity(0.2), lineWidth: 1.5)
                         .frame(width: 150, height: 150)
                         .scaleEffect(ringScale)
                         .opacity(ringOpacity * 0.6)
@@ -133,8 +133,8 @@ struct SplashScreenView: View {
                             .fill(
                                 LinearGradient(
                                     colors: [
-                                        Color(hex: "#6C5CE7").opacity(0.4),
-                                        Color(hex: "#6C5CE7").opacity(0.15),
+                                        Color(hex: "#0EA5E9").opacity(0.4),
+                                        Color(hex: "#0EA5E9").opacity(0.15),
                                     ],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
@@ -157,7 +157,7 @@ struct SplashScreenView: View {
                             .font(.system(size: 42, weight: .medium))
                             .foregroundStyle(
                                 LinearGradient(
-                                    colors: [.white, Color(hex: "#A29BFE")],
+                                    colors: [.white, Color(hex: "#38BDF8")],
                                     startPoint: .top,
                                     endPoint: .bottom
                                 )
@@ -165,7 +165,7 @@ struct SplashScreenView: View {
                     }
                     .scaleEffect(logoScale)
                     .opacity(logoOpacity)
-                    .shadow(color: Color(hex: "#6C5CE7").opacity(0.5), radius: 30, y: 8)
+                    .shadow(color: Color(hex: "#0EA5E9").opacity(0.5), radius: 30, y: 8)
                 }
 
                 // App title
@@ -174,7 +174,7 @@ struct SplashScreenView: View {
                         .font(.system(size: 34, weight: .bold, design: .rounded))
                         .foregroundStyle(
                             LinearGradient(
-                                colors: [.white, Color(hex: "#A29BFE")],
+                                colors: [.white, Color(hex: "#38BDF8")],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -198,7 +198,7 @@ struct SplashScreenView: View {
                             .fill(
                                 activeDot == index
                                     ? LinearGradient(
-                                        colors: [Color(hex: "#6C5CE7"), Color(hex: "#A29BFE")],
+                                        colors: [Color(hex: "#0EA5E9"), Color(hex: "#38BDF8")],
                                         startPoint: .top, endPoint: .bottom)
                                     : LinearGradient(
                                         colors: [.white.opacity(0.3), .white.opacity(0.15)],
@@ -210,7 +210,7 @@ struct SplashScreenView: View {
                             )
                             .shadow(
                                 color: activeDot == index
-                                    ? Color(hex: "#6C5CE7").opacity(0.6) : .clear, radius: 6
+                                    ? Color(hex: "#0EA5E9").opacity(0.6) : .clear, radius: 6
                             )
                             .animation(
                                 .spring(response: 0.3, dampingFraction: 0.5),

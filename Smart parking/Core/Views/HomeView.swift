@@ -35,30 +35,39 @@ struct HomeView: View {
             VStack(spacing: 0) {
                 topSection
 
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 24) {
-                        if !popularParkings.isEmpty {
-                            popularSection
-                                .appReveal(0.04)
-                        }
-
-                        if !nearbyParkings.isEmpty {
-                            nearbySection
-                                .appReveal(0.08)
-                        }
-
-                        if popularParkings.isEmpty && nearbyParkings.isEmpty && !parkingsStore.isLoading {
-                            emptyState
-                                .appReveal(0.1)
-                        }
-
-                        Spacer(minLength: 100)
+                if parkingsStore.isLoading && popularParkings.isEmpty && nearbyParkings.isEmpty {
+                    ScrollView(showsIndicators: false) {
+                        HomeShimmerView()
+                            .padding(.top, 16)
                     }
-                    .padding(.top, 16)
-                    .padding(.bottom, 24)
-                }
-                .refreshable {
-                    await refreshAllHomeData()
+                } else {
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 24) {
+                            if !popularParkings.isEmpty {
+                                popularSection
+                                    .appReveal(0.04)
+                            }
+
+                            if !nearbyParkings.isEmpty {
+                                nearbySection
+                                    .appReveal(0.08)
+                            }
+
+                            if popularParkings.isEmpty && nearbyParkings.isEmpty
+                                && !parkingsStore.isLoading
+                            {
+                                emptyState
+                                    .appReveal(0.1)
+                            }
+
+                            Spacer(minLength: 100)
+                        }
+                        .padding(.top, 16)
+                        .padding(.bottom, 24)
+                    }
+                    .refreshable {
+                        await refreshAllHomeData()
+                    }
                 }
             }
         }
@@ -114,25 +123,6 @@ struct HomeView: View {
                 Text(userManager.currentUser?.username ?? loc.str(.homeGreeting))
                     .font(AppTheme.Typography.title)
                     .foregroundColor(AppTheme.Palette.textPrimary)
-
-                HStack(spacing: 6) {
-                    Image(systemName: "mappin.circle.fill")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(AppTheme.Palette.brand)
-
-                    Text("\(loc.str(.homeCityLabel)): \(parkingsStore.selectedCity)")
-                        .font(AppTheme.Typography.captionBold)
-                        .foregroundColor(AppTheme.Palette.textSecondary)
-                        .lineLimit(1)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(AppTheme.Palette.surfaceGlass)
-                .clipShape(Capsule())
-                .overlay(
-                    Capsule()
-                        .stroke(AppTheme.Palette.borderGlass, lineWidth: 1)
-                )
             }
 
             Spacer()
@@ -168,7 +158,9 @@ struct HomeView: View {
                                 Capsule()
                                     .fill(
                                         LinearGradient(
-                                            colors: [AppTheme.Palette.danger, Color(hex: "#FF7675")],
+                                            colors: [
+                                                AppTheme.Palette.danger, Color(hex: "#FF7675"),
+                                            ],
                                             startPoint: .top,
                                             endPoint: .bottom
                                         )

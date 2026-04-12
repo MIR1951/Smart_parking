@@ -11,6 +11,7 @@ struct ForgotPasswordView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthManager.self) private var authManager
     @Environment(LocalizationManager.self) private var loc
+    @Environment(\.colorScheme) private var colorScheme
 
     // MARK: - Steps
     enum Step: Int, CaseIterable {
@@ -39,6 +40,39 @@ struct ForgotPasswordView: View {
     // Timer for resend
     @State private var resendCountdown = 0
     @State private var resendTimer: Timer?
+
+    // MARK: - Adaptive Colors
+    private var bgGradientColors: [Color] {
+        colorScheme == .dark
+            ? [Color(hex: "#020617"), Color(hex: "#0C1929"), Color(hex: "#0F293E")]
+            : [Color(hex: "#F0F9FF"), Color(hex: "#E0F2FE"), Color(hex: "#BAE6FD")]
+    }
+
+    private var primaryText: Color { AppTheme.Palette.textPrimary }
+    private var secondaryText: Color { AppTheme.Palette.textSecondary }
+    private var accentColor: Color { AppTheme.Palette.brandLight }
+
+    private var inputBg: Color {
+        colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04)
+    }
+
+    private var inputBorder: Color {
+        colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08)
+    }
+
+    private var inputFocusBorder: Color {
+        AppTheme.Palette.brand.opacity(0.6)
+    }
+
+    private var cardBg: Color {
+        colorScheme == .dark ? Color.white.opacity(0.05) : Color.white.opacity(0.7)
+    }
+
+    private var cardBorderColors: [Color] {
+        colorScheme == .dark
+            ? [.white.opacity(0.12), .white.opacity(0.03)]
+            : [.white.opacity(0.8), .white.opacity(0.3)]
+    }
 
     // MARK: - Validation
     private var emailError: String? {
@@ -84,13 +118,9 @@ struct ForgotPasswordView: View {
     // MARK: - Body
     var body: some View {
         ZStack {
-            // Premium gradient background
+            // Adaptive gradient background
             LinearGradient(
-                colors: [
-                    Color(hex: "#0D0D1F"),
-                    Color(hex: "#161630"),
-                    Color(hex: "#1A1545"),
-                ],
+                colors: bgGradientColors,
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -100,7 +130,10 @@ struct ForgotPasswordView: View {
             Circle()
                 .fill(
                     RadialGradient(
-                        colors: [Color(hex: "#6C5CE7").opacity(0.20), .clear],
+                        colors: [
+                            AppTheme.Palette.brand.opacity(colorScheme == .dark ? 0.20 : 0.10),
+                            .clear,
+                        ],
                         center: .center, startRadius: 20, endRadius: 160
                     )
                 )
@@ -110,7 +143,10 @@ struct ForgotPasswordView: View {
             Circle()
                 .fill(
                     RadialGradient(
-                        colors: [Color(hex: "#00CEC9").opacity(0.12), .clear],
+                        colors: [
+                            Color(hex: "#00CEC9").opacity(colorScheme == .dark ? 0.12 : 0.08),
+                            .clear,
+                        ],
                         center: .center, startRadius: 20, endRadius: 140
                     )
                 )
@@ -170,9 +206,9 @@ struct ForgotPasswordView: View {
                 } label: {
                     Image(systemName: "chevron.left")
                         .font(.body.weight(.semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(primaryText)
                         .frame(width: 36, height: 36)
-                        .background(Color.white.opacity(0.08))
+                        .background(inputBg)
                         .clipShape(Circle())
                 }
             }
@@ -204,8 +240,8 @@ struct ForgotPasswordView: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color(hex: "#6C5CE7").opacity(0.3),
-                                Color(hex: "#6C5CE7").opacity(0.1),
+                                AppTheme.Palette.brand.opacity(0.3),
+                                AppTheme.Palette.brand.opacity(0.1),
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -216,7 +252,7 @@ struct ForgotPasswordView: View {
                         Circle()
                             .stroke(
                                 LinearGradient(
-                                    colors: [.white.opacity(0.3), .white.opacity(0.05)],
+                                    colors: [primaryText.opacity(0.3), primaryText.opacity(0.05)],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 ),
@@ -232,22 +268,22 @@ struct ForgotPasswordView: View {
                 .font(.system(size: 32))
                 .foregroundStyle(
                     LinearGradient(
-                        colors: [.white, Color(hex: "#A29BFE")],
+                        colors: [primaryText, accentColor],
                         startPoint: .top, endPoint: .bottom
                     )
                 )
                 .contentTransition(.symbolEffect(.replace))
             }
-            .shadow(color: Color(hex: "#6C5CE7").opacity(0.4), radius: 20, y: 8)
+            .shadow(color: AppTheme.Palette.brand.opacity(0.4), radius: 20, y: 8)
             .padding(.top, 20)
 
             Text(stepTitle)
                 .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
+                .foregroundColor(primaryText)
 
             Text(stepSubtitle)
                 .font(.subheadline)
-                .foregroundColor(.white.opacity(0.5))
+                .foregroundColor(secondaryText)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
         }
@@ -277,11 +313,11 @@ struct ForgotPasswordView: View {
                     .fill(
                         step.rawValue <= currentStep.rawValue
                             ? LinearGradient(
-                                colors: [Color(hex: "#6C5CE7"), Color(hex: "#A29BFE")],
+                                colors: [AppTheme.Palette.brand, AppTheme.Palette.brandLight],
                                 startPoint: .leading, endPoint: .trailing
                             )
                             : LinearGradient(
-                                colors: [Color.white.opacity(0.1), Color.white.opacity(0.1)],
+                                colors: [secondaryText.opacity(0.2), secondaryText.opacity(0.2)],
                                 startPoint: .leading, endPoint: .trailing
                             )
                     )
@@ -299,43 +335,43 @@ struct ForgotPasswordView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(loc.str(.loginEmail))
                     .font(AppTheme.Typography.caption)
-                    .foregroundColor(.white.opacity(0.6))
+                    .foregroundColor(secondaryText)
 
                 HStack(spacing: 12) {
                     Image(systemName: "envelope.fill")
-                        .foregroundColor(Color(hex: "#A29BFE"))
+                        .foregroundColor(accentColor)
                         .font(.system(size: 15))
 
                     TextField(loc.str(.loginEmailPlaceholder), text: $email)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
                         .keyboardType(.emailAddress)
-                        .foregroundColor(.white)
-                        .tint(Color(hex: "#A29BFE"))
+                        .foregroundColor(primaryText)
+                        .tint(accentColor)
                         .onSubmit { emailTouched = true }
                 }
                 .padding(14)
-                .background(Color.white.opacity(0.06))
+                .background(inputBg)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        .stroke(inputBorder, lineWidth: 1)
                 )
 
                 if let error = emailError {
                     Text(error)
                         .font(.caption2)
-                        .foregroundColor(Color(hex: "#FF7675"))
+                        .foregroundColor(AppTheme.Palette.danger)
                 }
             }
             .padding(22)
-            .background(Color.white.opacity(0.05))
+            .background(cardBg)
             .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .stroke(
                         LinearGradient(
-                            colors: [.white.opacity(0.12), .white.opacity(0.03)],
+                            colors: cardBorderColors,
                             startPoint: .topLeading, endPoint: .bottomTrailing
                         ),
                         lineWidth: 1
@@ -363,14 +399,14 @@ struct ForgotPasswordView: View {
                 .background(
                     LinearGradient(
                         colors: isEmailValid && !authManager.isLoading
-                            ? [Color(hex: "#6C5CE7"), Color(hex: "#A29BFE")]
+                            ? [AppTheme.Palette.brand, AppTheme.Palette.brandLight]
                             : [Color.gray.opacity(0.3), Color.gray.opacity(0.2)],
                         startPoint: .leading, endPoint: .trailing
                     )
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .shadow(
-                    color: isEmailValid ? Color(hex: "#6C5CE7").opacity(0.4) : .clear,
+                    color: isEmailValid ? AppTheme.Palette.brand.opacity(0.4) : .clear,
                     radius: 16, y: 6
                 )
             }
@@ -386,13 +422,13 @@ struct ForgotPasswordView: View {
                 otpInputSection
             }
             .padding(22)
-            .background(Color.white.opacity(0.05))
+            .background(cardBg)
             .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .stroke(
                         LinearGradient(
-                            colors: [.white.opacity(0.12), .white.opacity(0.03)],
+                            colors: cardBorderColors,
                             startPoint: .topLeading, endPoint: .bottomTrailing
                         ),
                         lineWidth: 1
@@ -419,14 +455,14 @@ struct ForgotPasswordView: View {
                 .background(
                     LinearGradient(
                         colors: isOTPValid && !authManager.isLoading
-                            ? [Color(hex: "#6C5CE7"), Color(hex: "#A29BFE")]
+                            ? [AppTheme.Palette.brand, AppTheme.Palette.brandLight]
                             : [Color.gray.opacity(0.3), Color.gray.opacity(0.2)],
                         startPoint: .leading, endPoint: .trailing
                     )
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .shadow(
-                    color: isOTPValid ? Color(hex: "#6C5CE7").opacity(0.4) : .clear,
+                    color: isOTPValid ? AppTheme.Palette.brand.opacity(0.4) : .clear,
                     radius: 16, y: 6
                 )
             }
@@ -437,11 +473,11 @@ struct ForgotPasswordView: View {
                 if resendCountdown > 0 {
                     Text("\(loc.str(.forgotResendIn)) (\(resendCountdown)s)")
                         .font(.footnote)
-                        .foregroundColor(.white.opacity(0.4))
+                        .foregroundColor(secondaryText)
                 } else {
                     Button(loc.str(.forgotResendCode)) { resendCode() }
                         .font(.footnote.weight(.semibold))
-                        .foregroundColor(Color(hex: "#A29BFE"))
+                        .foregroundColor(accentColor)
                 }
             }
             .padding(.top, 4)
@@ -453,7 +489,7 @@ struct ForgotPasswordView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(loc.str(.forgotConfirmCode))
                 .font(.subheadline.weight(.medium))
-                .foregroundColor(.white)
+                .foregroundColor(primaryText)
 
             HStack(spacing: 6) {
                 ForEach(0..<8, id: \.self) { index in
@@ -464,10 +500,10 @@ struct ForgotPasswordView: View {
 
                     Text(char)
                         .font(.system(size: 18, weight: .bold, design: .monospaced))
-                        .foregroundColor(.white)
+                        .foregroundColor(primaryText)
                         .frame(maxWidth: .infinity)
                         .frame(height: 48)
-                        .background(Color.white.opacity(0.06))
+                        .background(inputBg)
                         .clipShape(
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
                         )
@@ -475,8 +511,8 @@ struct ForgotPasswordView: View {
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
                                 .stroke(
                                     index < otpCode.count
-                                        ? Color(hex: "#6C5CE7").opacity(0.6)
-                                        : Color.white.opacity(0.08),
+                                        ? inputFocusBorder
+                                        : inputBorder,
                                     lineWidth: index < otpCode.count ? 1.5 : 1
                                 )
                         )
@@ -502,7 +538,7 @@ struct ForgotPasswordView: View {
                     Text(error)
                         .font(.caption)
                 }
-                .foregroundColor(Color(hex: "#FF7675"))
+                .foregroundColor(AppTheme.Palette.danger)
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
@@ -517,22 +553,22 @@ struct ForgotPasswordView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(loc.str(.forgotNewPassword))
                         .font(AppTheme.Typography.caption)
-                        .foregroundColor(.white.opacity(0.6))
+                        .foregroundColor(secondaryText)
 
                     HStack(spacing: 12) {
                         Image(systemName: "lock.fill")
-                            .foregroundColor(Color(hex: "#A29BFE"))
+                            .foregroundColor(accentColor)
                             .font(.system(size: 15))
 
                         if isPasswordVisible {
                             TextField(loc.str(.forgotMinChars), text: $newPassword)
-                                .foregroundColor(.white)
-                                .tint(Color(hex: "#A29BFE"))
+                                .foregroundColor(primaryText)
+                                .tint(accentColor)
                                 .onSubmit { passwordTouched = true }
                         } else {
                             SecureField(loc.str(.forgotMinChars), text: $newPassword)
-                                .foregroundColor(.white)
-                                .tint(Color(hex: "#A29BFE"))
+                                .foregroundColor(primaryText)
+                                .tint(accentColor)
                                 .onSubmit { passwordTouched = true }
                         }
 
@@ -540,22 +576,22 @@ struct ForgotPasswordView: View {
                             isPasswordVisible.toggle()
                         } label: {
                             Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
-                                .foregroundColor(.white.opacity(0.4))
+                                .foregroundColor(secondaryText)
                                 .font(.system(size: 14))
                         }
                     }
                     .padding(14)
-                    .background(Color.white.opacity(0.06))
+                    .background(inputBg)
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            .stroke(inputBorder, lineWidth: 1)
                     )
 
                     if let error = passwordError {
                         Text(error)
                             .font(.caption2)
-                            .foregroundColor(Color(hex: "#FF7675"))
+                            .foregroundColor(AppTheme.Palette.danger)
                     }
                 }
 
@@ -563,22 +599,22 @@ struct ForgotPasswordView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(loc.str(.forgotConfirmPassword))
                         .font(AppTheme.Typography.caption)
-                        .foregroundColor(.white.opacity(0.6))
+                        .foregroundColor(secondaryText)
 
                     HStack(spacing: 12) {
                         Image(systemName: "lock.rotation")
-                            .foregroundColor(Color(hex: "#A29BFE"))
+                            .foregroundColor(accentColor)
                             .font(.system(size: 15))
 
                         if isConfirmVisible {
                             TextField(loc.str(.forgotConfirmPassword), text: $confirmPassword)
-                                .foregroundColor(.white)
-                                .tint(Color(hex: "#A29BFE"))
+                                .foregroundColor(primaryText)
+                                .tint(accentColor)
                                 .onSubmit { confirmTouched = true }
                         } else {
                             SecureField(loc.str(.forgotConfirmPassword), text: $confirmPassword)
-                                .foregroundColor(.white)
-                                .tint(Color(hex: "#A29BFE"))
+                                .foregroundColor(primaryText)
+                                .tint(accentColor)
                                 .onSubmit { confirmTouched = true }
                         }
 
@@ -586,22 +622,22 @@ struct ForgotPasswordView: View {
                             isConfirmVisible.toggle()
                         } label: {
                             Image(systemName: isConfirmVisible ? "eye.slash.fill" : "eye.fill")
-                                .foregroundColor(.white.opacity(0.4))
+                                .foregroundColor(secondaryText)
                                 .font(.system(size: 14))
                         }
                     }
                     .padding(14)
-                    .background(Color.white.opacity(0.06))
+                    .background(inputBg)
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            .stroke(inputBorder, lineWidth: 1)
                     )
 
                     if let error = confirmError {
                         Text(error)
                             .font(.caption2)
-                            .foregroundColor(Color(hex: "#FF7675"))
+                            .foregroundColor(AppTheme.Palette.danger)
                     }
                 }
 
@@ -610,13 +646,13 @@ struct ForgotPasswordView: View {
                 }
             }
             .padding(22)
-            .background(Color.white.opacity(0.05))
+            .background(cardBg)
             .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .stroke(
                         LinearGradient(
-                            colors: [.white.opacity(0.12), .white.opacity(0.03)],
+                            colors: cardBorderColors,
                             startPoint: .topLeading, endPoint: .bottomTrailing
                         ),
                         lineWidth: 1
@@ -643,14 +679,14 @@ struct ForgotPasswordView: View {
                 .background(
                     LinearGradient(
                         colors: isPasswordValid && !authManager.isLoading
-                            ? [Color(hex: "#6C5CE7"), Color(hex: "#A29BFE")]
+                            ? [AppTheme.Palette.brand, AppTheme.Palette.brandLight]
                             : [Color.gray.opacity(0.3), Color.gray.opacity(0.2)],
                         startPoint: .leading, endPoint: .trailing
                     )
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .shadow(
-                    color: isPasswordValid ? Color(hex: "#6C5CE7").opacity(0.4) : .clear,
+                    color: isPasswordValid ? AppTheme.Palette.brand.opacity(0.4) : .clear,
                     radius: 16, y: 6
                 )
             }
@@ -666,7 +702,7 @@ struct ForgotPasswordView: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(Color.white.opacity(0.08))
+                        .fill(secondaryText.opacity(0.15))
                         .frame(height: 4)
 
                     Capsule()
@@ -704,11 +740,11 @@ struct ForgotPasswordView: View {
         if hasSpecial { score += 1 }
 
         switch score {
-        case 0...1: return (loc.str(.strengthWeak), Color(hex: "#FF7675"), 0.2)
+        case 0...1: return (loc.str(.strengthWeak), AppTheme.Palette.danger, 0.2)
         case 2: return (loc.str(.strengthFair), Color.orange, 0.4)
         case 3: return (loc.str(.strengthGood), Color(hex: "#FDCB6E"), 0.6)
-        case 4: return (loc.str(.strengthStrong), Color(hex: "#00B894"), 0.8)
-        default: return (loc.str(.strengthVeryStrong), Color(hex: "#00B894"), 1.0)
+        case 4: return (loc.str(.strengthStrong), AppTheme.Palette.success, 0.8)
+        default: return (loc.str(.strengthVeryStrong), AppTheme.Palette.success, 1.0)
         }
     }
 

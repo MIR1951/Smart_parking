@@ -3,7 +3,7 @@
 //  Smart parking
 //
 //  Shared design tokens and reusable modifiers.
-//  Premium Indigo/Purple glassmorphism design system.
+//  Premium Sky-Blue/Teal glassmorphism design system.
 //  Supports both Light and Dark mode via adaptive colors.
 //
 
@@ -47,30 +47,30 @@ extension Color {
 
 enum AppTheme {
 
-    // MARK: - Colors (Adaptive) — Indigo/Purple Palette
+    // MARK: - Colors (Adaptive) — Sky-Blue/Teal Palette
     enum Palette {
-        // Brand — Indigo gradient
-        static let brand = Color(hex: "#6C5CE7")
-        static let brandDark = Color(hex: "#5A4BD1")
-        static let brandLight = Color(hex: "#A29BFE")
-        static let brandSoft = Color(lightHex: "#EDE9FF", darkHex: "#1A1533")
+        // Brand — Sky Blue gradient
+        static let brand = Color(hex: "#0EA5E9")
+        static let brandDark = Color(hex: "#0284C7")
+        static let brandLight = Color(hex: "#38BDF8")
+        static let brandSoft = Color(lightHex: "#E0F2FE", darkHex: "#0C1929")
 
         // Accent — Teal
         static let accent = Color(hex: "#00CEC9")
         static let accentSoft = Color(lightHex: "#E0FFFE", darkHex: "#0A2928")
 
         // Surfaces
-        static let surface = Color(lightHex: "#FFFFFF", darkHex: "#161630")
-        static let surfaceSecondary = Color(lightHex: "#F4F3FF", darkHex: "#1E1E3F")
+        static let surface = Color(lightHex: "#FFFFFF", darkHex: "#0F172A")
+        static let surfaceSecondary = Color(lightHex: "#F0F9FF", darkHex: "#1E293B")
         static let surfaceGlass = Color(
             light: .white.opacity(0.72),
-            dark: Color(hex: "#1E1E3F").opacity(0.65)
+            dark: Color(hex: "#1E293B").opacity(0.65)
         )
-        static let pageBackground = Color(lightHex: "#F8F9FE", darkHex: "#0D0D1F")
+        static let pageBackground = Color(lightHex: "#F8FAFC", darkHex: "#020617")
 
         // Border
         static let border = Color(
-            light: Color(hex: "#6C5CE7").opacity(0.10),
+            light: Color(hex: "#0EA5E9").opacity(0.10),
             dark: .white.opacity(0.10)
         )
         static let borderGlass = Color(
@@ -79,8 +79,8 @@ enum AppTheme {
         )
 
         // Text
-        static let textPrimary = Color(lightHex: "#1A1A2E", darkHex: "#F0F0FF")
-        static let textSecondary = Color(lightHex: "#6B6B8D", darkHex: "#9B9BBC")
+        static let textPrimary = Color(lightHex: "#0F172A", darkHex: "#F0F9FF")
+        static let textSecondary = Color(lightHex: "#64748B", darkHex: "#94A3B8")
         static let textTertiary = Color(lightHex: "#9CA3AF", darkHex: "#6B7280")
 
         // Semantic
@@ -129,22 +129,22 @@ enum AppTheme {
 
     // MARK: - Shadow
     enum Shadow {
-        static func small(_ color: Color = Color(hex: "#6C5CE7").opacity(0.08)) -> (
+        static func small(_ color: Color = Color(hex: "#0EA5E9").opacity(0.08)) -> (
             color: Color, radius: CGFloat, x: CGFloat, y: CGFloat
         ) {
             (color, 6, 0, 3)
         }
-        static func medium(_ color: Color = Color(hex: "#6C5CE7").opacity(0.12)) -> (
+        static func medium(_ color: Color = Color(hex: "#0EA5E9").opacity(0.12)) -> (
             color: Color, radius: CGFloat, x: CGFloat, y: CGFloat
         ) {
             (color, 14, 0, 6)
         }
-        static func large(_ color: Color = Color(hex: "#6C5CE7").opacity(0.18)) -> (
+        static func large(_ color: Color = Color(hex: "#0EA5E9").opacity(0.18)) -> (
             color: Color, radius: CGFloat, x: CGFloat, y: CGFloat
         ) {
             (color, 24, 0, 10)
         }
-        static func glow(_ color: Color = Color(hex: "#6C5CE7").opacity(0.35)) -> (
+        static func glow(_ color: Color = Color(hex: "#0EA5E9").opacity(0.35)) -> (
             color: Color, radius: CGFloat, x: CGFloat, y: CGFloat
         ) {
             (color, 20, 0, 0)
@@ -174,7 +174,7 @@ enum AppTheme {
 
         static var brandDeep: LinearGradient {
             LinearGradient(
-                colors: [Color(hex: "#4A3EC8"), Palette.brand, Palette.brandLight],
+                colors: [Color(hex: "#0369A1"), Palette.brand, Palette.brandLight],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -190,7 +190,7 @@ enum AppTheme {
 
         static var imageOverlay: LinearGradient {
             LinearGradient(
-                colors: [.clear, .clear, Color(hex: "#0D0D1F").opacity(0.6)],
+                colors: [.clear, .clear, Color(hex: "#020617").opacity(0.6)],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -198,7 +198,7 @@ enum AppTheme {
 
         static var cardOverlay: LinearGradient {
             LinearGradient(
-                colors: [.clear, Color(hex: "#0D0D1F").opacity(0.45)],
+                colors: [.clear, Color(hex: "#020617").opacity(0.45)],
                 startPoint: .center,
                 endPoint: .bottom
             )
@@ -220,8 +220,8 @@ enum AppTheme {
         static var mesh: LinearGradient {
             LinearGradient(
                 colors: [
-                    Color(hex: "#6C5CE7").opacity(0.20),
-                    Color(hex: "#A29BFE").opacity(0.12),
+                    Color(hex: "#0EA5E9").opacity(0.20),
+                    Color(hex: "#38BDF8").opacity(0.12),
                     Color(hex: "#00CEC9").opacity(0.08),
                     Palette.pageBackground,
                 ],
@@ -301,8 +301,8 @@ struct GlassCardModifier: ViewModifier {
             )
             .shadow(
                 color: colorScheme == .dark
-                    ? Color(hex: "#6C5CE7").opacity(0.15)
-                    : Color(hex: "#6C5CE7").opacity(0.08),
+                    ? Color(hex: "#0EA5E9").opacity(0.15)
+                    : Color(hex: "#0EA5E9").opacity(0.08),
                 radius: 16,
                 x: 0,
                 y: 6
@@ -325,8 +325,8 @@ struct AppCardModifier: ViewModifier {
             )
             .shadow(
                 color: colorScheme == .dark
-                    ? Color(hex: "#6C5CE7").opacity(0.18)
-                    : Color(hex: "#6C5CE7").opacity(0.06),
+                    ? Color(hex: "#0EA5E9").opacity(0.18)
+                    : Color(hex: "#0EA5E9").opacity(0.06),
                 radius: colorScheme == .dark ? 8 : 14,
                 x: 0,
                 y: colorScheme == .dark ? 3 : 5
@@ -510,6 +510,6 @@ extension View {
     }
 
     func brandGlow() -> some View {
-        self.shadow(color: AppTheme.Palette.brand.opacity(0.3), radius: 16, y: 6)
+        shadow(color: AppTheme.Palette.brand.opacity(0.3), radius: 16, y: 6)
     }
 }
