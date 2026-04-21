@@ -1,0 +1,17 @@
+**/DerivedData/
+ios/build/
+ios/Pods/
+**/*.pbxproj
+android/.gradle/
+android/build/
+**/*.apk
+**/*.ipa
+**/*.aab
+**/*.dSYM.zip
+**/*.keystore
+**/.env
+**/.env.*
+**/google-services.json
+**/GoogleService-Info.plist
+**/keystore.*
+**/release.jks

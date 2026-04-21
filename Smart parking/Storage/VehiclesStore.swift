@@ -5,8 +5,9 @@
 //  Foydalanuvchi mashinalarini boshqarish — Supabase + UserDefaults fallback
 //
 
-internal import Combine
+ import Combine
 import Foundation
+import os
 import Supabase
 import SwiftUI
 
@@ -42,10 +43,13 @@ final class VehiclesStore: ObservableObject {
 
     func add(_ vehicle: Vehicle) {
         guard let userID = currentUserID else { return }
+        let snapshot = vehicles
         vehicles.append(vehicle)
         saveLocal()
 
-        guard let userId = UUID(uuidString: userID) else { return }
+        guard let userId = UUID(uuidString: userID) else {
+            vehicles = snapshot; saveLocal(); return
+        }
 
         Task {
             do {
@@ -62,37 +66,42 @@ final class VehiclesStore: ObservableObject {
                     .insert(dto)
                     .execute()
             } catch {
-                print("VehiclesStore add error: \(error)")
+                vehicles = snapshot
+                saveLocal()
+                Logger.vehicles.error("Add error — rolled back: \(error.localizedDescription)")
             }
         }
     }
 
     func update(_ vehicle: Vehicle) {
-        if let index = vehicles.firstIndex(where: { $0.id == vehicle.id }) {
-            vehicles[index] = vehicle
-            saveLocal()
+        guard let index = vehicles.firstIndex(where: { $0.id == vehicle.id }) else { return }
+        let snapshot = vehicles
+        vehicles[index] = vehicle
+        saveLocal()
 
-            Task {
-                do {
-                    let updates: [String: AnyEncodable] = [
-                        "name": AnyEncodable(vehicle.name),
-                        "type": AnyEncodable(vehicle.type.rawValue),
-                        "plate_number": AnyEncodable(vehicle.plateNumber),
-                        "color": AnyEncodable(vehicle.color.rawValue),
-                    ]
-                    try await SB.shared.client
-                        .from("user_vehicles")
-                        .update(updates)
-                        .eq("id", value: vehicle.id)
-                        .execute()
-                } catch {
-                    print("VehiclesStore update error: \(error)")
-                }
+        Task {
+            do {
+                let updates: [String: AnyEncodable] = [
+                    "name": AnyEncodable(vehicle.name),
+                    "type": AnyEncodable(vehicle.type.rawValue),
+                    "plate_number": AnyEncodable(vehicle.plateNumber),
+                    "color": AnyEncodable(vehicle.color.rawValue),
+                ]
+                try await SB.shared.client
+                    .from("user_vehicles")
+                    .update(updates)
+                    .eq("id", value: vehicle.id)
+                    .execute()
+            } catch {
+                vehicles = snapshot
+                saveLocal()
+                Logger.vehicles.error("Update error — rolled back: \(error.localizedDescription)")
             }
         }
     }
 
     func delete(_ vehicle: Vehicle) {
+        let snapshot = vehicles
         vehicles.removeAll { $0.id == vehicle.id }
         saveLocal()
 
@@ -104,27 +113,32 @@ final class VehiclesStore: ObservableObject {
                     .eq("id", value: vehicle.id)
                     .execute()
             } catch {
-                print("VehiclesStore delete error: \(error)")
+                vehicles = snapshot
+                saveLocal()
+                Logger.vehicles.error("Delete error — rolled back: \(error.localizedDescription)")
             }
         }
     }
 
     func deleteAt(offsets: IndexSet) {
+        let snapshot = vehicles
         let toDelete = offsets.map { vehicles[$0] }
         vehicles.remove(atOffsets: offsets)
         saveLocal()
 
-        for vehicle in toDelete {
-            Task {
-                do {
+        Task {
+            do {
+                for vehicle in toDelete {
                     try await SB.shared.client
                         .from("user_vehicles")
                         .delete()
                         .eq("id", value: vehicle.id)
                         .execute()
-                } catch {
-                    print("VehiclesStore delete error: \(error)")
                 }
+            } catch {
+                vehicles = snapshot
+                saveLocal()
+                Logger.vehicles.error("DeleteAt error — rolled back: \(error.localizedDescription)")
             }
         }
     }
@@ -177,7 +191,7 @@ final class VehiclesStore: ObservableObject {
             saveLocal()
         } catch {
             // Supabase xatolik — local ma'lumotlar qoladi
-            print("VehiclesStore sync error: \(error)")
+            Logger.vehicles.error("Sync error: \(error.localizedDescription)")
         }
     }
 

@@ -5,9 +5,11 @@
 //  Created by Kenjaboy Xajiyev on 24/01/26.
 //
 
-internal import Combine
+import Combine
 import CoreLocation
 import Foundation
+import os
+import Supabase
 
 @MainActor
 final class ParkingsStore: ObservableObject {
@@ -30,16 +32,19 @@ final class ParkingsStore: ObservableObject {
     private var lastUserLocation: CLLocation?
     private var activeRequestID = UUID()
 
+    // Realtime
+    private var realtimeTask: Task<Void, Never>?
+    private var parkingsChannel: RealtimeChannelV2?
+
     func load(userLocation: CLLocation?, force: Bool = false) {
         if hasLoadedOnce && !force {
             recomputeNearby(userLocation: userLocation)
             return
         }
-
         loadTask?.cancel()
         loadTask = Task { [weak self] in
             guard let self else { return }
-            await self.loadAsync(userLocation: userLocation, force: force)
+            try? await self.performLoad(userLocation: userLocation, force: force, cacheFirst: true)
         }
     }
 
@@ -48,78 +53,31 @@ final class ParkingsStore: ObservableObject {
             recomputeNearby(userLocation: userLocation)
             return
         }
-
         loadTask?.cancel()
-        try await loadAsyncOrThrow(userLocation: userLocation, force: force)
+        try await performLoad(userLocation: userLocation, force: force, cacheFirst: false)
     }
 
-    private func loadAsync(userLocation: CLLocation?, force: Bool) async {
+    private func performLoad(userLocation: CLLocation?, force: Bool, cacheFirst: Bool) async throws {
         if hasLoadedOnce && !force { return }
 
         let requestID = UUID()
         activeRequestID = requestID
-
         isLoading = true
         errorMessage = nil
 
-        // 1) Avval cache dan yuklaymiz (tezkor UI)
-        if !force, let cached = ParkingCache.shared.load() {
+        defer {
+            if activeRequestID == requestID { isLoading = false }
+        }
+
+        // Cache-first: tezkor UI, network yangilanishi keyinroq
+        if cacheFirst, !force, let cached = ParkingCache.shared.load() {
             guard activeRequestID == requestID else { return }
             updateParkings(cached, userLocation: userLocation)
-            // Darhol UI ko'rsatamiz, lekin network dan ham yangilaymiz
-        }
-
-        defer {
-            if activeRequestID == requestID {
-                isLoading = false
-            }
-        }
-
-        // 2) Har doim network dan yuklaymiz (yangi parkinglar ko'rinishi uchun)
-        do {
-            let items = try await service.fetchParkings()
-            guard !Task.isCancelled, activeRequestID == requestID else { return }
-
-            // Cache ga saqlaymiz
-            ParkingCache.shared.save(items)
-
-            updateParkings(items, userLocation: userLocation)
-            self.hasLoadedOnce = true
-            self.reloadToken = UUID()
-
-        } catch {
-            guard !Task.isCancelled, activeRequestID == requestID else { return }
-            if let urlError = error as? URLError, urlError.code == .cancelled { return }
-            // Agar cache dan yuklangan bo'lsa, xato ko'rsatmaymiz
-            if all.isEmpty {
-                errorMessage = "Ma'lumotlar yuklanmadi"
-            }
-            // Cache dan yuklagan bo'lsak, hasLoadedOnce ni belgilaymiz
-            if !all.isEmpty {
-                hasLoadedOnce = true
-            }
-        }
-    }
-
-    private func loadAsyncOrThrow(userLocation: CLLocation?, force: Bool) async throws {
-        if hasLoadedOnce && !force { return }
-
-        let requestID = UUID()
-        activeRequestID = requestID
-
-        isLoading = true
-        errorMessage = nil
-
-        defer {
-            if activeRequestID == requestID {
-                isLoading = false
-            }
         }
 
         do {
             let items = try await service.fetchParkings()
             guard !Task.isCancelled, activeRequestID == requestID else { return }
-
             ParkingCache.shared.save(items)
             updateParkings(items, userLocation: userLocation)
             hasLoadedOnce = true
@@ -127,12 +85,13 @@ final class ParkingsStore: ObservableObject {
         } catch {
             guard !Task.isCancelled, activeRequestID == requestID else { return }
             if let urlError = error as? URLError, urlError.code == .cancelled {
-                throw CancellationError()
+                if !cacheFirst { throw CancellationError() }
+                return
             }
-            if all.isEmpty {
-                errorMessage = "Ma'lumotlar yuklanmadi"
-            }
-            throw error
+            Logger.parking.error("Load failed: \(error.localizedDescription)")
+            if all.isEmpty { errorMessage = "Ma'lumotlar yuklanmadi" }
+            if !all.isEmpty { hasLoadedOnce = true }
+            if !cacheFirst { throw error }
         }
     }
 
@@ -146,7 +105,39 @@ final class ParkingsStore: ObservableObject {
     }
     func refresh(userLocation: CLLocation?) async {
         loadTask?.cancel()
-        await loadAsync(userLocation: userLocation, force: true)
+        try? await performLoad(userLocation: userLocation, force: true, cacheFirst: false)
+    }
+
+    // MARK: - Realtime
+
+    func startRealtime(userLocation: CLLocation? = nil) {
+        guard realtimeTask == nil else { return }
+        let client = SB.shared.client
+
+        realtimeTask = Task { [weak self] in
+            guard let self else { return }
+            let channel = client.realtimeV2.channel("parkings:public")
+            let changes = channel.postgresChange(AnyAction.self, schema: "public", table: "parkings")
+
+            do {
+                try await channel.subscribeWithError()
+                self.parkingsChannel = channel
+                for await _ in changes {
+                    guard !Task.isCancelled else { break }
+                    await self.refresh(userLocation: self.lastUserLocation)
+                }
+            } catch {
+                Logger.parking.error("Parkings realtime failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    func stopRealtime() {
+        realtimeTask?.cancel()
+        realtimeTask = nil
+        let ch = parkingsChannel
+        parkingsChannel = nil
+        Task { await ch?.unsubscribe() }
     }
 
     func recomputeNearby(userLocation: CLLocation?) {

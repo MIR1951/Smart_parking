@@ -84,7 +84,7 @@ struct PopularParkingCard: View {
                                 .foregroundStyle(
                                     isFavorite
                                         ? LinearGradient(
-                                            colors: [AppTheme.Palette.danger, Color(hex: "#FF7675")],
+                                            colors: [AppTheme.Palette.favoriteAccent, AppTheme.Palette.danger],
                                             startPoint: .top,
                                             endPoint: .bottom
                                         )
@@ -94,6 +94,7 @@ struct PopularParkingCard: View {
                                             endPoint: .bottom
                                         )
                                 )
+                                .symbolEffect(.bounce, value: isFavorite)
                                 .frame(width: 32, height: 32)
                                 .background(.ultraThinMaterial)
                                 .clipShape(Circle())

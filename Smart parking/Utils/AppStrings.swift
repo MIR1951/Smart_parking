@@ -92,6 +92,7 @@ enum StringKey: String {
     case profileVersion
     case profileUsernameEmpty
     case profileSaveFailed
+    case profilePhotoUploadFailed
     case profilePaymentNotReady
     case profileOnlyUsername
 
@@ -101,6 +102,11 @@ enum StringKey: String {
     case settingsChooseLanguage
     case settingsAppearance
     case settingsChooseTheme
+    case settingsColorTheme
+    case themeCarbon
+    case themeOcean
+    case themeForest
+    case themeSunset
 
     // Auth - Login
     case loginTitle
@@ -231,6 +237,9 @@ enum StringKey: String {
     case vehiclePlateNumber
     case vehiclePlatePlaceholder
     case vehicleAdd
+    case vehicleDeleteTitle
+    case vehicleDeleteConfirm
+    case vehicleDelete
 
     // Payment Methods
     case paymentTitle
@@ -400,6 +409,85 @@ enum StringKey: String {
     case unknown
     case back
 
+    // Admin - Editor
+    case adminSaving
+    case adminSave
+    case adminEdit
+    case adminNewParking
+    case adminAddParking
+    case adminError
+    case adminCancel
+    case adminBasicInfo
+    case adminParkingName
+    case adminSelectCity
+    case adminAddress
+    case adminLocation
+    case adminSearchLocation
+    case adminTapMapHint
+    case adminPriceCapacity
+    case adminPricePerHour
+    case adminTotalSpots
+    case adminDescription
+    case adminFeatures
+    case adminImages
+    case adminAddImage
+    case adminImageHint
+    case adminDropHint
+
+    // Admin - Dashboard
+    case adminDashboard
+    case adminTotalParkings
+    case adminTotalRevenue
+    case adminTotalReservations
+    case adminActiveNow
+    case adminQuickActions
+    case adminViewReports
+    case adminGreetingMorning
+    case adminGreetingDay
+    case adminGreetingEvening
+    case adminGreetingNight
+
+    // Admin - Parking List
+    case adminMyParkings
+    case adminSearchParkings
+    case adminEditParking
+    case adminDeleteParking
+    case adminDeleteConfirm
+    case adminDeleteYes
+    case adminDeleteNo
+    case adminNoParkings
+    case adminNoParkingsSub
+
+    // Admin - Reservations
+    case adminReservations
+    case adminAllParkings
+    case adminAllStatuses
+    case adminNoReservations
+    case adminFilterByParking
+    case adminCancelReservation
+    case adminCancelReservationConfirm
+
+    // Admin - Profile
+    case adminProfile
+    case adminRealtimeConnected
+    case adminRealtimeDisconnected
+    case adminManageParkings
+    case adminStatsParkings
+    case adminStatsReservations
+    case adminOwnerBadge
+    case adminStatistics
+    case adminStatParkings
+    case adminStatCompleted
+    case adminStatActive
+    case adminLanguageLabel
+    case adminAppearanceLabel
+    case adminVersionLabel
+    case adminClose
+    case adminSelectLanguage
+    case adminSelectAppearance
+    case adminSignOutTitle
+    case adminSignOutConfirm
+
     func localized(_ lang: AppLanguage) -> String {
         switch lang {
         case .uz: return uz
@@ -494,6 +582,7 @@ enum StringKey: String {
         case .profileVersion: return "Versiya 1.0.0"
         case .profileUsernameEmpty: return "Foydalanuvchi nomi bo'sh bo'lishi mumkin emas."
         case .profileSaveFailed: return "Profilni saqlab bo'lmadi"
+        case .profilePhotoUploadFailed: return "Rasm yuklanmadi. Iltimos qayta urinib ko'ring."
         case .profilePaymentNotReady: return "To'lov usulini qo'shish hali mavjud emas."
         case .profileOnlyUsername: return "Hozircha faqat foydalanuvchi nomi yangilanadi."
 
@@ -503,6 +592,11 @@ enum StringKey: String {
         case .settingsChooseLanguage: return "Tilni tanlang"
         case .settingsAppearance: return "Mavzu"
         case .settingsChooseTheme: return "Mavzuni tanlang"
+        case .settingsColorTheme: return "Rang mavzusi"
+        case .themeCarbon: return "Carbon"
+        case .themeOcean: return "Okean"
+        case .themeForest: return "O'rmon"
+        case .themeSunset: return "Quyosh botishi"
 
         // Login
         case .loginTitle: return "Kirish"
@@ -637,6 +731,9 @@ enum StringKey: String {
         case .vehiclePlateNumber: return "Davlat raqami"
         case .vehiclePlatePlaceholder: return "Masalan: 01 A 123 AA"
         case .vehicleAdd: return "Mashina qo'shish"
+        case .vehicleDeleteTitle: return "Mashinani o'chirish"
+        case .vehicleDeleteConfirm: return "Ushbu mashinani ro'yxatdan olib tashlashni xohlaysizmi?"
+        case .vehicleDelete: return "O'chirish"
 
         // Payment
         case .paymentTitle: return "To'lov usullari"
@@ -807,10 +904,89 @@ enum StringKey: String {
         case .info: return "Ma'lumot"
         case .unknown: return "Noma'lum"
         case .back: return "Orqaga"
+
+        // Admin - Editor
+        case .adminSaving: return "Saqlanmoqda..."
+        case .adminSave: return "Saqlash"
+        case .adminEdit: return "Tahrirlash"
+        case .adminNewParking: return "Yangi parking"
+        case .adminAddParking: return "Parking qo'shish"
+        case .adminError: return "Xatolik"
+        case .adminCancel: return "Bekor qilish"
+        case .adminBasicInfo: return "Asosiy ma'lumotlar"
+        case .adminParkingName: return "Parking nomi"
+        case .adminSelectCity: return "Shaharni tanlang"
+        case .adminAddress: return "Manzil"
+        case .adminLocation: return "Joylashuv"
+        case .adminSearchLocation: return "Manzil qidirish..."
+        case .adminTapMapHint: return "Joylashuvni belgilash uchun xaritaga bosing yoki bosib turing"
+        case .adminPriceCapacity: return "Narx va sig'im"
+        case .adminPricePerHour: return "Soatlik narx (so'm)"
+        case .adminTotalSpots: return "Joylar soni"
+        case .adminDescription: return "Tavsif"
+        case .adminFeatures: return "Qulayliklar"
+        case .adminImages: return "Rasmlar"
+        case .adminAddImage: return "Rasm qo'shish"
+        case .adminImageHint: return "Maksimal 5 ta rasm, JPEG formatda, har biri 5 MB gacha"
+        case .adminDropHint: return "Rasm tashlang yoki yuqoridagi tugmani bosing"
+
+        // Admin - Dashboard
+        case .adminDashboard: return "Boshqaruv paneli"
+        case .adminTotalParkings: return "Jami parkinglar"
+        case .adminTotalRevenue: return "Jami daromad"
+        case .adminTotalReservations: return "Jami rezervatsiyalar"
+        case .adminActiveNow: return "Hozir faol"
+        case .adminQuickActions: return "Tezkor harakatlar"
+        case .adminViewReports: return "Hisobotlar"
+        case .adminGreetingMorning: return "Xayrli tong"
+        case .adminGreetingDay: return "Xayrli kun"
+        case .adminGreetingEvening: return "Xayrli kech"
+        case .adminGreetingNight: return "Xayrli tun"
+
+        // Admin - Parking List
+        case .adminMyParkings: return "Parkinglarim"
+        case .adminSearchParkings: return "Parking qidirish..."
+        case .adminEditParking: return "Tahrirlash"
+        case .adminDeleteParking: return "O'chirish"
+        case .adminDeleteConfirm: return "Bu parkingni o'chirmoqchimisiz?"
+        case .adminDeleteYes: return "Ha, o'chirish"
+        case .adminDeleteNo: return "Bekor qilish"
+        case .adminNoParkings: return "Parkinglar yo'q"
+        case .adminNoParkingsSub: return "Yangi parking qo'shish uchun + tugmasini bosing"
+
+        // Admin - Reservations
+        case .adminReservations: return "Rezervatsiyalar"
+        case .adminAllParkings: return "Barchasi"
+        case .adminAllStatuses: return "Barcha holat"
+        case .adminNoReservations: return "Rezervatsiyalar yo'q"
+        case .adminFilterByParking: return "Parking bo'yicha filter"
+        case .adminCancelReservation: return "Rezervatsiyani bekor qilish"
+        case .adminCancelReservationConfirm: return "Ushbu rezervatsiyani bekor qilmoqchimisiz?"
+
+        // Admin - Profile
+        case .adminProfile: return "Admin profil"
+        case .adminRealtimeConnected: return "Real-time ulanilgan"
+        case .adminRealtimeDisconnected: return "Real-time uzilgan"
+        case .adminManageParkings: return "Parkinglarni boshqarish"
+        case .adminStatsParkings: return "ta parking"
+        case .adminStatsReservations: return "ta rezervatsiya"
+        case .adminOwnerBadge: return "Parking egasi"
+        case .adminStatistics: return "Statistika"
+        case .adminStatParkings: return "Parkinglar"
+        case .adminStatCompleted: return "Tugallangan"
+        case .adminStatActive: return "Faol"
+        case .adminLanguageLabel: return "Til"
+        case .adminAppearanceLabel: return "Ko'rinish"
+        case .adminVersionLabel: return "Versiya"
+        case .adminClose: return "Yopish"
+        case .adminSelectLanguage: return "Til tanlash"
+        case .adminSelectAppearance: return "Ko'rinish"
+        case .adminSignOutTitle: return "Chiqish"
+        case .adminSignOutConfirm: return "Hisobdan chiqishni tasdiqlaysizmi?"
         }
     }
 
-    // MARK: - English
+// MARK: - English
     private var en: String {
         switch self {
         // Tab
@@ -896,6 +1072,7 @@ enum StringKey: String {
         case .profileVersion: return "Version 1.0.0"
         case .profileUsernameEmpty: return "Username cannot be empty."
         case .profileSaveFailed: return "Failed to save profile"
+        case .profilePhotoUploadFailed: return "Photo upload failed. Please try again."
         case .profilePaymentNotReady: return "Adding payment method is not yet available."
         case .profileOnlyUsername: return "Currently only the username can be updated."
 
@@ -905,6 +1082,11 @@ enum StringKey: String {
         case .settingsChooseLanguage: return "Choose language"
         case .settingsAppearance: return "Appearance"
         case .settingsChooseTheme: return "Choose theme"
+        case .settingsColorTheme: return "Color Theme"
+        case .themeCarbon: return "Carbon"
+        case .themeOcean: return "Ocean"
+        case .themeForest: return "Forest"
+        case .themeSunset: return "Sunset"
 
         // Login
         case .loginTitle: return "Sign In"
@@ -1039,6 +1221,9 @@ enum StringKey: String {
         case .vehiclePlateNumber: return "Car Number Plate"
         case .vehiclePlatePlaceholder: return "Ex. GR 789-IJKL"
         case .vehicleAdd: return "Add Vehicle"
+        case .vehicleDeleteTitle: return "Delete Vehicle"
+        case .vehicleDeleteConfirm: return "Are you sure you want to remove this vehicle?"
+        case .vehicleDelete: return "Delete"
 
         // Payment
         case .paymentTitle: return "Payment Methods"
@@ -1209,6 +1394,85 @@ enum StringKey: String {
         case .info: return "Info"
         case .unknown: return "Unknown"
         case .back: return "Back"
+
+        // Admin - Editor
+        case .adminSaving: return "Saving..."
+        case .adminSave: return "Save"
+        case .adminEdit: return "Edit Parking"
+        case .adminNewParking: return "New Parking"
+        case .adminAddParking: return "Add Parking"
+        case .adminError: return "Error"
+        case .adminCancel: return "Cancel"
+        case .adminBasicInfo: return "Basic Information"
+        case .adminParkingName: return "Parking name"
+        case .adminSelectCity: return "Select city"
+        case .adminAddress: return "Address"
+        case .adminLocation: return "Location"
+        case .adminSearchLocation: return "Search address..."
+        case .adminTapMapHint: return "Tap or long-press on the map to set exact location"
+        case .adminPriceCapacity: return "Price & Capacity"
+        case .adminPricePerHour: return "Price per hour (so'm)"
+        case .adminTotalSpots: return "Total spots"
+        case .adminDescription: return "Description"
+        case .adminFeatures: return "Features"
+        case .adminImages: return "Images"
+        case .adminAddImage: return "Add Images"
+        case .adminImageHint: return "Max 5 images, JPEG format, up to 5 MB each"
+        case .adminDropHint: return "Drop image here or tap the button above"
+
+        // Admin - Dashboard
+        case .adminDashboard: return "Dashboard"
+        case .adminTotalParkings: return "Total Parkings"
+        case .adminTotalRevenue: return "Total Revenue"
+        case .adminTotalReservations: return "Total Reservations"
+        case .adminActiveNow: return "Active Now"
+        case .adminQuickActions: return "Quick Actions"
+        case .adminViewReports: return "Reports"
+        case .adminGreetingMorning: return "Good morning"
+        case .adminGreetingDay: return "Good afternoon"
+        case .adminGreetingEvening: return "Good evening"
+        case .adminGreetingNight: return "Good night"
+
+        // Admin - Parking List
+        case .adminMyParkings: return "My Parkings"
+        case .adminSearchParkings: return "Search parking..."
+        case .adminEditParking: return "Edit"
+        case .adminDeleteParking: return "Delete"
+        case .adminDeleteConfirm: return "Are you sure you want to delete this parking?"
+        case .adminDeleteYes: return "Yes, Delete"
+        case .adminDeleteNo: return "Cancel"
+        case .adminNoParkings: return "No parkings"
+        case .adminNoParkingsSub: return "Tap + to add your first parking"
+
+        // Admin - Reservations
+        case .adminReservations: return "Reservations"
+        case .adminAllParkings: return "All"
+        case .adminAllStatuses: return "All statuses"
+        case .adminNoReservations: return "No reservations"
+        case .adminFilterByParking: return "Filter by parking"
+        case .adminCancelReservation: return "Cancel Reservation"
+        case .adminCancelReservationConfirm: return "Are you sure you want to cancel this reservation?"
+
+        // Admin - Profile
+        case .adminProfile: return "Admin Profile"
+        case .adminRealtimeConnected: return "Real-time connected"
+        case .adminRealtimeDisconnected: return "Real-time disconnected"
+        case .adminManageParkings: return "Manage Parkings"
+        case .adminStatsParkings: return "parkings"
+        case .adminStatsReservations: return "reservations"
+        case .adminOwnerBadge: return "Parking Owner"
+        case .adminStatistics: return "Statistics"
+        case .adminStatParkings: return "Parkings"
+        case .adminStatCompleted: return "Completed"
+        case .adminStatActive: return "Active"
+        case .adminLanguageLabel: return "Language"
+        case .adminAppearanceLabel: return "Appearance"
+        case .adminVersionLabel: return "Version"
+        case .adminClose: return "Close"
+        case .adminSelectLanguage: return "Select Language"
+        case .adminSelectAppearance: return "Appearance"
+        case .adminSignOutTitle: return "Sign Out"
+        case .adminSignOutConfirm: return "Are you sure you want to sign out?"
         }
     }
 
@@ -1298,6 +1562,7 @@ enum StringKey: String {
         case .profileVersion: return "Версия 1.0.0"
         case .profileUsernameEmpty: return "Имя пользователя не может быть пустым."
         case .profileSaveFailed: return "Не удалось сохранить профиль"
+        case .profilePhotoUploadFailed: return "Не удалось загрузить фото. Попробуйте ещё раз."
         case .profilePaymentNotReady: return "Добавление способа оплаты пока недоступно."
         case .profileOnlyUsername:
             return "В настоящее время можно обновить только имя пользователя."
@@ -1308,6 +1573,11 @@ enum StringKey: String {
         case .settingsChooseLanguage: return "Выберите язык"
         case .settingsAppearance: return "Тема"
         case .settingsChooseTheme: return "Выберите тему"
+        case .settingsColorTheme: return "Цветовая тема"
+        case .themeCarbon: return "Карбон"
+        case .themeOcean: return "Океан"
+        case .themeForest: return "Лес"
+        case .themeSunset: return "Закат"
 
         // Login
         case .loginTitle: return "Вход"
@@ -1441,6 +1711,9 @@ enum StringKey: String {
         case .vehiclePlateNumber: return "Гос. номер"
         case .vehiclePlatePlaceholder: return "Напр. А 123 БВ"
         case .vehicleAdd: return "Добавить авто"
+        case .vehicleDeleteTitle: return "Удалить автомобиль"
+        case .vehicleDeleteConfirm: return "Вы хотите удалить этот автомобиль из списка?"
+        case .vehicleDelete: return "Удалить"
 
         // Payment
         case .paymentTitle: return "Способы оплаты"
@@ -1610,6 +1883,85 @@ enum StringKey: String {
         case .info: return "Информация"
         case .unknown: return "Неизвестно"
         case .back: return "Назад"
+
+        // Admin - Editor
+        case .adminSaving: return "Сохранение..."
+        case .adminSave: return "Сохранить"
+        case .adminEdit: return "Изменить парковку"
+        case .adminNewParking: return "Новая парковка"
+        case .adminAddParking: return "Добавить парковку"
+        case .adminError: return "Ошибка"
+        case .adminCancel: return "Отмена"
+        case .adminBasicInfo: return "Основная информация"
+        case .adminParkingName: return "Название парковки"
+        case .adminSelectCity: return "Выберите город"
+        case .adminAddress: return "Адрес"
+        case .adminLocation: return "Местоположение"
+        case .adminSearchLocation: return "Поиск адреса..."
+        case .adminTapMapHint: return "Нажмите или удерживайте карту для точного местоположения"
+        case .adminPriceCapacity: return "Цена и вместимость"
+        case .adminPricePerHour: return "Цена за час (сум)"
+        case .adminTotalSpots: return "Количество мест"
+        case .adminDescription: return "Описание"
+        case .adminFeatures: return "Удобства"
+        case .adminImages: return "Фотографии"
+        case .adminAddImage: return "Добавить фото"
+        case .adminImageHint: return "Максимум 5 фото, формат JPEG, до 5 МБ каждое"
+        case .adminDropHint: return "Перетащите фото или нажмите кнопку выше"
+
+        // Admin - Dashboard
+        case .adminDashboard: return "Панель управления"
+        case .adminTotalParkings: return "Всего парковок"
+        case .adminTotalRevenue: return "Общий доход"
+        case .adminTotalReservations: return "Всего бронирований"
+        case .adminActiveNow: return "Активных сейчас"
+        case .adminQuickActions: return "Быстрые действия"
+        case .adminViewReports: return "Отчёты"
+        case .adminGreetingMorning: return "Доброе утро"
+        case .adminGreetingDay: return "Добрый день"
+        case .adminGreetingEvening: return "Добрый вечер"
+        case .adminGreetingNight: return "Доброй ночи"
+
+        // Admin - Parking List
+        case .adminMyParkings: return "Мои парковки"
+        case .adminSearchParkings: return "Поиск парковки..."
+        case .adminEditParking: return "Изменить"
+        case .adminDeleteParking: return "Удалить"
+        case .adminDeleteConfirm: return "Вы уверены, что хотите удалить эту парковку?"
+        case .adminDeleteYes: return "Да, удалить"
+        case .adminDeleteNo: return "Отмена"
+        case .adminNoParkings: return "Нет парковок"
+        case .adminNoParkingsSub: return "Нажмите + чтобы добавить первую парковку"
+
+        // Admin - Reservations
+        case .adminReservations: return "Бронирования"
+        case .adminAllParkings: return "Все"
+        case .adminAllStatuses: return "Все статусы"
+        case .adminNoReservations: return "Нет бронирований"
+        case .adminFilterByParking: return "Фильтр по парковке"
+        case .adminCancelReservation: return "Отменить бронирование"
+        case .adminCancelReservationConfirm: return "Вы уверены, что хотите отменить это бронирование?"
+
+        // Admin - Profile
+        case .adminProfile: return "Профиль администратора"
+        case .adminRealtimeConnected: return "Real-time подключён"
+        case .adminRealtimeDisconnected: return "Real-time отключён"
+        case .adminManageParkings: return "Управление парковками"
+        case .adminStatsParkings: return "парковок"
+        case .adminStatsReservations: return "бронирований"
+        case .adminOwnerBadge: return "Владелец парковки"
+        case .adminStatistics: return "Статистика"
+        case .adminStatParkings: return "Парковки"
+        case .adminStatCompleted: return "Завершённые"
+        case .adminStatActive: return "Активные"
+        case .adminLanguageLabel: return "Язык"
+        case .adminAppearanceLabel: return "Вид"
+        case .adminVersionLabel: return "Версия"
+        case .adminClose: return "Закрыть"
+        case .adminSelectLanguage: return "Выбор языка"
+        case .adminSelectAppearance: return "Вид"
+        case .adminSignOutTitle: return "Выйти"
+        case .adminSignOutConfirm: return "Вы уверены, что хотите выйти?"
         }
     }
 }

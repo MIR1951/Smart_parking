@@ -5,7 +5,7 @@
 //  Created by Kenjaboy Xajiyev on 24/01/26.
 //
 
-internal import Combine
+ import Combine
 import Foundation
 import Supabase
 

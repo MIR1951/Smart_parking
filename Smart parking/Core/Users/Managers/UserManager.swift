@@ -6,11 +6,14 @@
 //
 
 import Foundation
+import os
 
 @Observable
 @MainActor
 class UserManager {
     var currentUser: User?
+    var lastError: String?
+    var isOwner: Bool { currentUser?.role == .owner }
     private var service: UserService
 
     init(service: UserService? = nil) {
@@ -21,16 +24,14 @@ class UserManager {
         do {
             self.currentUser = try await self.service.fetchCurrentUser()
         } catch {
-
+            Logger.auth.error("Failed to fetch current user: \(error.localizedDescription)")
+            lastError = error.localizedDescription
         }
     }
-    func updateProfileImageURL(_ imageURL: String) async {
-        do {
-            try await service.updateProfileImageURL(imageURL)
-            self.currentUser?.profileImageURL = imageURL
-        } catch {
 
-        }
+    func updateProfileImageURL(_ imageURL: String) async throws {
+        try await service.updateProfileImageURL(imageURL)
+        self.currentUser?.profileImageURL = imageURL
     }
 
     func updateUsername(_ username: String) async throws {

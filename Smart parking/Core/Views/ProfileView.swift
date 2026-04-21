@@ -7,6 +7,7 @@
 
 import SwiftUI
 import PhotosUI
+import os
 
 struct ProfileView: View {
     @Environment(AuthManager.self) private var authManager
@@ -25,9 +26,8 @@ struct ProfileView: View {
     @State private var selectedAvatarImage: Image?
     @State private var isUploadingAvatar = false
 
-    // Scroll offset asosida header qisqaradi
     private var headerProgress: CGFloat {
-        min(max(scrollOffset / 120, 0), 1)
+        min(max(scrollOffset / 250, 0), 1)
     }
 
     var body: some View {
@@ -198,8 +198,8 @@ struct ProfileView: View {
 
     // MARK: - Profile Header (sticky, animatsion bilan kichrayadi)
     private var profileHeader: some View {
-        let avatarSize: CGFloat = 100 - (headerProgress * 50)  // 100 → 50
-        let nameSize: CGFloat = 22 - (headerProgress * 6)  // 22 → 16
+        let avatarSize: CGFloat = 100 - (headerProgress * 20)  // 100 → 80
+        let nameSize: CGFloat = 22 - (headerProgress * 2)    // 22 → 20
         let showEmail = headerProgress < 0.5
 
         return HStack(spacing: 14) {
@@ -362,40 +362,42 @@ struct ProfileView: View {
     }
 
     private func onProfilePhotoSelected() async {
-        guard let selectedPhotoItem else { return }
+        guard let item = selectedPhotoItem else { return }
         guard let user = userManager.currentUser else { return }
 
         do {
-            guard let data = try await selectedPhotoItem.loadTransferable(type: Data.self) else {
-                return
-            }
-            guard let uiImage = UIImage(data: data) else { return }
+            guard let data = try await item.loadTransferable(type: Data.self),
+                  let uiImage = UIImage(data: data) else { return }
 
-            await MainActor.run {
-                selectedAvatarImage = Image(uiImage: uiImage)
-                isUploadingAvatar = true
+            selectedAvatarImage = Image(uiImage: uiImage)
+            isUploadingAvatar = true
+
+            // HEIC/PNG → JPEG konvertatsiya (iOS default HEIC formatini qo'llab-quvvatlash)
+            let jpegData: Data
+            if let d = uiImage.jpegData(compressionQuality: 0.85), d.count <= 5 * 1024 * 1024 {
+                jpegData = d
+            } else if let d = uiImage.jpegData(compressionQuality: 0.6), d.count <= 5 * 1024 * 1024 {
+                jpegData = d
+            } else if let d = uiImage.jpegData(compressionQuality: 0.4) {
+                jpegData = d
+            } else {
+                throw StorageError.invalidImageFormat
             }
 
             let uploadedURL = try await SupabaseStorageManager().uploadProfilePhoto(
                 for: user,
-                imageData: data
+                imageData: jpegData
             )
-            await userManager.updateProfileImageURL(uploadedURL)
+            try await userManager.updateProfileImageURL(uploadedURL)
+            isUploadingAvatar = false
         } catch {
-            infoMessage = "\(loc.str(.profileSaveFailed)): \(error.localizedDescription)"
+            selectedAvatarImage = nil
+            selectedPhotoItem = nil
+            isUploadingAvatar = false
+            infoMessage = loc.str(.profilePhotoUploadFailed)
             showInfoAlert = true
+            Logger.auth.error("Avatar upload failed: \(error.localizedDescription)")
         }
-
-        isUploadingAvatar = false
-    }
-}
-
-// MARK: - Scroll Offset Preference Key
-
-private struct ScrollOffsetPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
     }
 }
 

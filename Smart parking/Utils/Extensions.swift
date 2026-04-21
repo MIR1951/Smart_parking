@@ -40,7 +40,7 @@ extension Parking {
 
     /// Formatted price string, e.g. "15000 so'm"
     var formattedPrice: String {
-        "\(Int(price_per_hour)) so'm"
+        "\(Int(price_per_hour)) \(LocalizationManager.shared.str(.walletCurrency))"
     }
 }
 

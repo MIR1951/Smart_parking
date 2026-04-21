@@ -3,7 +3,7 @@
 //  Smart parking
 //
 //  Shared design tokens and reusable modifiers.
-//  Premium Sky-Blue/Teal glassmorphism design system.
+//  Racing Red + Carbon glassmorphism design system.
 //  Supports both Light and Dark mode via adaptive colors.
 //
 
@@ -17,7 +17,7 @@ import SwiftUI
 
 extension Color {
     /// Create an adaptive color that switches between light and dark mode.
-    fileprivate init(lightHex: String, darkHex: String) {
+    init(lightHex: String, darkHex: String) {
         #if canImport(UIKit)
             self.init(
                 uiColor: UIColor { traits in
@@ -31,7 +31,7 @@ extension Color {
     }
 
     /// Adaptive color from raw Color values.
-    fileprivate init(light: Color, dark: Color) {
+    init(light: Color, dark: Color) {
         #if canImport(UIKit)
             self.init(
                 uiColor: UIColor { traits in
@@ -45,32 +45,100 @@ extension Color {
     }
 }
 
+// MARK: - Color Themes
+
+enum AppColorTheme: String, CaseIterable, Identifiable {
+    case carbon = "carbon"
+    case ocean = "ocean"
+    case forest = "forest"
+    case sunset = "sunset"
+
+    var id: String { rawValue }
+
+    var brand: Color {
+        switch self {
+        case .carbon: Color(lightHex: "#111827", darkHex: "#F9FAFB")
+        case .ocean:  Color(lightHex: "#0C4A6E", darkHex: "#BAE6FD")
+        case .forest: Color(lightHex: "#14532D", darkHex: "#BBF7D0")
+        case .sunset: Color(lightHex: "#7C2D12", darkHex: "#FED7AA")
+        }
+    }
+    var brandLight: Color {
+        switch self {
+        case .carbon: Color(lightHex: "#374151", darkHex: "#D1D5DB")
+        case .ocean:  Color(lightHex: "#0369A1", darkHex: "#7DD3FC")
+        case .forest: Color(lightHex: "#166534", darkHex: "#86EFAC")
+        case .sunset: Color(lightHex: "#9A3412", darkHex: "#FDBA74")
+        }
+    }
+    var brandDark: Color {
+        switch self {
+        case .carbon: Color(lightHex: "#030712", darkHex: "#E5E7EB")
+        case .ocean:  Color(lightHex: "#082F49", darkHex: "#E0F2FE")
+        case .forest: Color(lightHex: "#052E16", darkHex: "#DCFCE7")
+        case .sunset: Color(lightHex: "#431407", darkHex: "#FFEDD5")
+        }
+    }
+    var brandSoft: Color {
+        switch self {
+        case .carbon: Color(lightHex: "#F3F4F6", darkHex: "#1F2937")
+        case .ocean:  Color(lightHex: "#E0F2FE", darkHex: "#082F49")
+        case .forest: Color(lightHex: "#DCFCE7", darkHex: "#052E16")
+        case .sunset: Color(lightHex: "#FFEDD5", darkHex: "#431407")
+        }
+    }
+    var accent: Color {
+        switch self {
+        case .carbon: Color(lightHex: "#DC2626", darkHex: "#EF4444")
+        case .ocean:  Color(lightHex: "#2563EB", darkHex: "#60A5FA")
+        case .forest: Color(lightHex: "#16A34A", darkHex: "#4ADE80")
+        case .sunset: Color(lightHex: "#EA580C", darkHex: "#FB923C")
+        }
+    }
+    var accentSoft: Color {
+        switch self {
+        case .carbon: Color(lightHex: "#FEE2E2", darkHex: "#450A0A")
+        case .ocean:  Color(lightHex: "#DBEAFE", darkHex: "#1E3A5F")
+        case .forest: Color(lightHex: "#DCFCE7", darkHex: "#052E16")
+        case .sunset: Color(lightHex: "#FFEDD5", darkHex: "#431407")
+        }
+    }
+    var previewColor: Color {
+        switch self {
+        case .carbon: Color(hex: "#111827")
+        case .ocean:  Color(hex: "#0C4A6E")
+        case .forest: Color(hex: "#14532D")
+        case .sunset: Color(hex: "#EA580C")
+        }
+    }
+}
+
 enum AppTheme {
 
-    // MARK: - Colors (Adaptive) — Sky-Blue/Teal Palette
+    // MARK: - Colors (Adaptive) — Dynamic Theme + Fixed Tokens
     enum Palette {
-        // Brand — Sky Blue gradient
-        static let brand = Color(hex: "#0EA5E9")
-        static let brandDark = Color(hex: "#0284C7")
-        static let brandLight = Color(hex: "#38BDF8")
-        static let brandSoft = Color(lightHex: "#E0F2FE", darkHex: "#0C1929")
+        // Brand — theme-driven dynamic tokens
+        static var brand: Color    { AppearanceManager.shared.currentColorTheme.brand }
+        static var brandDark: Color { AppearanceManager.shared.currentColorTheme.brandDark }
+        static var brandLight: Color { AppearanceManager.shared.currentColorTheme.brandLight }
+        static var brandSoft: Color { AppearanceManager.shared.currentColorTheme.brandSoft }
 
-        // Accent — Teal
-        static let accent = Color(hex: "#00CEC9")
-        static let accentSoft = Color(lightHex: "#E0FFFE", darkHex: "#0A2928")
+        // Accent — theme-driven
+        static var accent: Color    { AppearanceManager.shared.currentColorTheme.accent }
+        static var accentSoft: Color { AppearanceManager.shared.currentColorTheme.accentSoft }
 
         // Surfaces
-        static let surface = Color(lightHex: "#FFFFFF", darkHex: "#0F172A")
-        static let surfaceSecondary = Color(lightHex: "#F0F9FF", darkHex: "#1E293B")
+        static let surface = Color(lightHex: "#FFFFFF", darkHex: "#171717")
+        static let surfaceSecondary = Color(lightHex: "#F5F5F4", darkHex: "#262626")
         static let surfaceGlass = Color(
             light: .white.opacity(0.72),
-            dark: Color(hex: "#1E293B").opacity(0.65)
+            dark: Color(hex: "#1C1C1E").opacity(0.65)
         )
-        static let pageBackground = Color(lightHex: "#F8FAFC", darkHex: "#020617")
+        static let pageBackground = Color(lightHex: "#FAFAF9", darkHex: "#0A0A0A")
 
         // Border
         static let border = Color(
-            light: Color(hex: "#0EA5E9").opacity(0.10),
+            light: Color(hex: "#111827").opacity(0.10),
             dark: .white.opacity(0.10)
         )
         static let borderGlass = Color(
@@ -79,17 +147,31 @@ enum AppTheme {
         )
 
         // Text
-        static let textPrimary = Color(lightHex: "#0F172A", darkHex: "#F0F9FF")
-        static let textSecondary = Color(lightHex: "#64748B", darkHex: "#94A3B8")
-        static let textTertiary = Color(lightHex: "#9CA3AF", darkHex: "#6B7280")
+        static let textPrimary = Color(lightHex: "#111827", darkHex: "#F9FAFB")
+        static let textSecondary = Color(lightHex: "#525252", darkHex: "#A3A3A3")
+        static let textTertiary = Color(lightHex: "#A3A3A3", darkHex: "#737373")
 
         // Semantic
-        static let success = Color(hex: "#00B894")
-        static let successSoft = Color(lightHex: "#D5FFF5", darkHex: "#052E22")
-        static let warning = Color(hex: "#FDCB6E")
-        static let warningSoft = Color(lightHex: "#FFF8E1", darkHex: "#3D2E05")
-        static let danger = Color(hex: "#FF7675")
-        static let dangerSoft = Color(lightHex: "#FFE0E0", darkHex: "#3D0A0A")
+        static let success = Color(lightHex: "#059669", darkHex: "#10B981")
+        static let successSoft = Color(lightHex: "#D1FAE5", darkHex: "#064E3B")
+        static let warning = Color(lightHex: "#EAB308", darkHex: "#FACC15")
+        static let warningSoft = Color(lightHex: "#FEF9C3", darkHex: "#422006")
+        static let danger = Color(lightHex: "#B91C1C", darkHex: "#DC2626")
+        static let dangerSoft = Color(lightHex: "#FEE2E2", darkHex: "#450A0A")
+
+        // Section accents — har tab alohida identifikatsiya
+        static let homeAccent = Color(lightHex: "#F97316", darkHex: "#FB923C")
+        static let homeAccentSoft = Color(lightHex: "#FFEDD5", darkHex: "#431407")
+        static let bookingAccent = Color(lightHex: "#10B981", darkHex: "#34D399")
+        static let bookingAccentSoft = Color(lightHex: "#D1FAE5", darkHex: "#064E3B")
+        static let profileAccent = Color(lightHex: "#6366F1", darkHex: "#818CF8")
+        static let profileAccentSoft = Color(lightHex: "#EEF2FF", darkHex: "#1E1B4B")
+        static let adminAccent = Color(lightHex: "#374151", darkHex: "#9CA3AF")
+        static let adminAccentSoft = Color(lightHex: "#F3F4F6", darkHex: "#1F2937")
+        static let walletAccent = Color(lightHex: "#EAB308", darkHex: "#FACC15")
+        static let walletAccentSoft = Color(lightHex: "#FEF9C3", darkHex: "#422006")
+        static let favoriteAccent = Color(lightHex: "#E11D48", darkHex: "#FB7185")
+        static let favoriteAccentSoft = Color(lightHex: "#FFE4E6", darkHex: "#4C0519")
     }
 
     // MARK: - Typography
@@ -129,22 +211,22 @@ enum AppTheme {
 
     // MARK: - Shadow
     enum Shadow {
-        static func small(_ color: Color = Color(hex: "#0EA5E9").opacity(0.08)) -> (
+        static func small(_ color: Color = Color.black.opacity(0.08)) -> (
             color: Color, radius: CGFloat, x: CGFloat, y: CGFloat
         ) {
             (color, 6, 0, 3)
         }
-        static func medium(_ color: Color = Color(hex: "#0EA5E9").opacity(0.12)) -> (
+        static func medium(_ color: Color = Color.black.opacity(0.12)) -> (
             color: Color, radius: CGFloat, x: CGFloat, y: CGFloat
         ) {
             (color, 14, 0, 6)
         }
-        static func large(_ color: Color = Color(hex: "#0EA5E9").opacity(0.18)) -> (
+        static func large(_ color: Color = Color.black.opacity(0.18)) -> (
             color: Color, radius: CGFloat, x: CGFloat, y: CGFloat
         ) {
             (color, 24, 0, 10)
         }
-        static func glow(_ color: Color = Color(hex: "#0EA5E9").opacity(0.35)) -> (
+        static func glow(_ color: Color = Color(hex: "#DC2626").opacity(0.35)) -> (
             color: Color, radius: CGFloat, x: CGFloat, y: CGFloat
         ) {
             (color, 20, 0, 0)
@@ -174,7 +256,7 @@ enum AppTheme {
 
         static var brandDeep: LinearGradient {
             LinearGradient(
-                colors: [Color(hex: "#0369A1"), Palette.brand, Palette.brandLight],
+                colors: [Palette.brandDark, Palette.brand, Palette.brandLight],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -190,7 +272,7 @@ enum AppTheme {
 
         static var imageOverlay: LinearGradient {
             LinearGradient(
-                colors: [.clear, .clear, Color(hex: "#020617").opacity(0.6)],
+                colors: [.clear, .clear, Color.black.opacity(0.6)],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -198,7 +280,7 @@ enum AppTheme {
 
         static var cardOverlay: LinearGradient {
             LinearGradient(
-                colors: [.clear, Color(hex: "#020617").opacity(0.45)],
+                colors: [.clear, Color.black.opacity(0.45)],
                 startPoint: .center,
                 endPoint: .bottom
             )
@@ -220,9 +302,9 @@ enum AppTheme {
         static var mesh: LinearGradient {
             LinearGradient(
                 colors: [
-                    Color(hex: "#0EA5E9").opacity(0.20),
-                    Color(hex: "#38BDF8").opacity(0.12),
-                    Color(hex: "#00CEC9").opacity(0.08),
+                    Palette.accent.opacity(0.20),
+                    Palette.brand.opacity(0.12),
+                    Palette.brandLight.opacity(0.08),
                     Palette.pageBackground,
                 ],
                 startPoint: .top,
@@ -300,9 +382,7 @@ struct GlassCardModifier: ViewModifier {
                     )
             )
             .shadow(
-                color: colorScheme == .dark
-                    ? Color(hex: "#0EA5E9").opacity(0.15)
-                    : Color(hex: "#0EA5E9").opacity(0.08),
+                color: Color.black.opacity(colorScheme == .dark ? 0.30 : 0.08),
                 radius: 16,
                 x: 0,
                 y: 6
@@ -324,9 +404,7 @@ struct AppCardModifier: ViewModifier {
                     .stroke(AppTheme.Palette.border, lineWidth: 1)
             )
             .shadow(
-                color: colorScheme == .dark
-                    ? Color(hex: "#0EA5E9").opacity(0.18)
-                    : Color(hex: "#0EA5E9").opacity(0.06),
+                color: Color.black.opacity(colorScheme == .dark ? 0.25 : 0.06),
                 radius: colorScheme == .dark ? 8 : 14,
                 x: 0,
                 y: colorScheme == .dark ? 3 : 5
@@ -480,7 +558,32 @@ struct GradientButtonStyle: ButtonStyle {
 
 // MARK: - View Extensions
 
+struct ShakeModifier: ViewModifier {
+    let trigger: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .keyframeAnimator(initialValue: 0.0, trigger: trigger) { view, offset in
+                view.offset(x: offset)
+            } keyframes: { _ in
+                KeyframeTrack {
+                    LinearKeyframe(0, duration: 0.04)
+                    LinearKeyframe(-8, duration: 0.08)
+                    LinearKeyframe(8, duration: 0.08)
+                    LinearKeyframe(-6, duration: 0.08)
+                    LinearKeyframe(6, duration: 0.06)
+                    LinearKeyframe(-3, duration: 0.06)
+                    LinearKeyframe(0, duration: 0.06)
+                }
+            }
+    }
+}
+
 extension View {
+    func shakeEffect(trigger: Bool) -> some View {
+        modifier(ShakeModifier(trigger: trigger))
+    }
+
     func appCard() -> some View {
         modifier(AppCardModifier())
     }

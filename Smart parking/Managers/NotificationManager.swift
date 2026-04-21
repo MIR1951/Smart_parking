@@ -5,7 +5,8 @@
 //  Real-time notification manager - Supabase Realtime bilan
 //
 
-internal import Combine
+import Combine
+import os
 import Supabase
 import SwiftUI
 import UserNotifications
@@ -145,7 +146,7 @@ final class NotificationManager: ObservableObject {
                     }
                 }
             } catch {
-
+                Logger.auth.error("Notification realtime failed: \(error.localizedDescription)")
             }
         }
     }
@@ -185,7 +186,7 @@ final class NotificationManager: ObservableObject {
             showLocalNotification(notification)
 
         } catch {
-
+            Logger.auth.error("Notification decode failed: \(error.localizedDescription)")
         }
     }
 
@@ -211,7 +212,7 @@ final class NotificationManager: ObservableObject {
                 unreadCount = max(0, unreadCount - 1)
             }
         } catch {
-
+            Logger.auth.error("markAsRead failed: \(error.localizedDescription)")
         }
     }
 
@@ -235,7 +236,7 @@ final class NotificationManager: ObservableObject {
             }
             unreadCount = 0
         } catch {
-
+            Logger.auth.error("markAllAsRead failed: \(error.localizedDescription)")
         }
     }
 

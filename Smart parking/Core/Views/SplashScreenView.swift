@@ -5,7 +5,7 @@
 //  Premium animated splash screen with indigo gradient mesh
 //
 
-internal import Combine
+ import Combine
 import SwiftUI
 
 struct SplashScreenView: View {

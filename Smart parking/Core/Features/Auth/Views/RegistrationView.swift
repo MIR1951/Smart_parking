@@ -25,6 +25,7 @@ struct RegistrationView: View {
     @State private var passwordTouched = false
     @FocusState private var focusedField: RegField?
     @State private var appeared = false
+    @State private var shakeFields = false
 
     private enum RegField { case name, email, password }
 
@@ -59,12 +60,6 @@ struct RegistrationView: View {
     }
 
     // MARK: - Adaptive Colors
-    private var bgGradientColors: [Color] {
-        colorScheme == .dark
-            ? [Color(hex: "#020617"), Color(hex: "#0C1929"), Color(hex: "#0F293E")]
-            : [Color(hex: "#F0F9FF"), Color(hex: "#E0F2FE"), Color(hex: "#BAE6FD")]
-    }
-
     private var primaryText: Color { AppTheme.Palette.textPrimary }
     private var secondaryText: Color { AppTheme.Palette.textSecondary }
     private var accentColor: Color { AppTheme.Palette.brandLight }
@@ -93,40 +88,7 @@ struct RegistrationView: View {
 
     var body: some View {
         ZStack {
-            // Adaptive gradient background
-            LinearGradient(
-                colors: bgGradientColors,
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-
-            // Animated orbs
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            AppTheme.Palette.brandLight.opacity(colorScheme == .dark ? 0.20 : 0.10),
-                            .clear,
-                        ],
-                        center: .center, startRadius: 20, endRadius: 180
-                    )
-                )
-                .frame(width: 350, height: 350)
-                .offset(x: 100, y: -180)
-
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            Color(hex: "#00CEC9").opacity(colorScheme == .dark ? 0.12 : 0.08),
-                            .clear,
-                        ],
-                        center: .center, startRadius: 20, endRadius: 150
-                    )
-                )
-                .frame(width: 300, height: 300)
-                .offset(x: -100, y: 280)
+            AppAnimatedBackground()
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
@@ -268,6 +230,7 @@ struct RegistrationView: View {
                     )
                     .offset(y: appeared ? 0 : 30)
                     .opacity(appeared ? 1 : 0)
+                    .shakeEffect(trigger: shakeFields)
 
                     // Sign Up button
                     Button {
@@ -429,7 +392,11 @@ extension RegistrationView {
             password.count >= 6,
             agreedToTerms,
             !authManager.isLoading
-        else { return }
+        else {
+            AppTheme.Haptic.error()
+            shakeFields.toggle()
+            return
+        }
 
         Task {
             await authManager.signUp(
@@ -450,7 +417,7 @@ extension RegistrationView {
         Button {
             showInfo(loc.str(.loginSocialDisabled))
         } label: {
-            SocialSignInButton(imageName: imageName)
+            //SocialSignInButton(imageName: imageName)
         }
         .buttonStyle(.plain)
         .pressStyle()

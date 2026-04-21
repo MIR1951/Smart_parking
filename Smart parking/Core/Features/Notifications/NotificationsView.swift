@@ -6,11 +6,16 @@
 //
 
 import SwiftUI
-internal import Combine
+import Combine
 struct NotificationsView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var manager = NotificationManager.shared
     private let loc = LocalizationManager.shared
+
+    @State private var scrollOffset: CGFloat = 0
+
+    private var headerProgress: CGFloat { min(max(scrollOffset / 100, 0), 1) }
+    private var titleFontSize: CGFloat { 17 - headerProgress * 3 }
 
     private var todayNotifications: [UserNotification] {
         manager.notifications.filter { Calendar.current.isDateInToday($0.created_at) }
@@ -67,7 +72,7 @@ struct NotificationsView: View {
 
             VStack(spacing: 2) {
                 Text(loc.str(.notifTitle))
-                    .font(.headline)
+                    .font(.system(size: titleFontSize, weight: .bold, design: .rounded))
 
                 if manager.isLoading && !manager.notifications.isEmpty {
                     Text(loc.str(.notifLoading))
@@ -84,7 +89,7 @@ struct NotificationsView: View {
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
                     .background(AppTheme.Gradient.brand)
-                    .cornerRadius(12)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
 
             Spacer()
@@ -94,10 +99,18 @@ struct NotificationsView: View {
         .padding(.horizontal)
         .padding(.top, 10)
         .padding(.bottom, 8)
+        .animation(AppTheme.Anim.snappy, value: headerProgress)
     }
 
     private var scrollContent: some View {
         ScrollView(showsIndicators: false) {
+            GeometryReader { geo in
+                Color.clear.preference(
+                    key: ScrollOffsetPreferenceKey.self,
+                    value: -geo.frame(in: .named("notifScroll")).minY
+                )
+            }.frame(height: 0)
+
             VStack(alignment: .leading, spacing: 16) {
                 if manager.isLoading && manager.notifications.isEmpty {
                     loadingState
@@ -142,6 +155,10 @@ struct NotificationsView: View {
             .padding(.top, 16)
             .padding(.bottom, 24)
             .frame(maxWidth: .infinity, minHeight: 420, alignment: .top)
+        }
+        .coordinateSpace(name: "notifScroll")
+        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+            withAnimation(AppTheme.Anim.snappy) { scrollOffset = value }
         }
         .refreshable {
             await manager.load()

@@ -5,14 +5,16 @@
 //  Created by Kenjaboy Xajiyev on 30/11/25.
 //
 
-internal import Combine
+ import Combine
 import Supabase
 import SwiftUI
 
 struct ContentView: View {
 
     @Environment(AuthManager.self) private var authManager
+    @Environment(UserManager.self) private var userManager
     @Environment(LocalizationManager.self) private var loc
+    @Environment(AppearanceManager.self) private var appearance
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var availabilityStore = ParkingAvailabilityStore(client: SB.shared.client)
     @StateObject private var parkingsStore = ParkingsStore()
@@ -21,6 +23,7 @@ struct ContentView: View {
     @StateObject private var locationManager = LocationManager()
     @StateObject private var notificationManager = NotificationManager.shared
     @State private var appCoordinator = AppCoordinator.shared
+    @State private var adminStore = AdminStore()
 
     @State private var didStart = false
     @State private var didRunLaunchGate = false
@@ -29,6 +32,7 @@ struct ContentView: View {
     @State private var showSplash = true
     @State private var splashOpacity: Double = 1.0
     @State private var launchGateState: LaunchGateState = .idle
+    @State private var isBootstrappingAfterLogin = false
 
     enum LaunchGateState: Equatable {
         case idle
@@ -43,38 +47,60 @@ struct ContentView: View {
         ZStack {
             Group {
                 if authManager.currentUserID != nil {
-                    NavigationStack(path: $appCoordinator.path) {
-                        MainTabView()
-                            .navigationDestination(for: AppRoute.self) { route in
-                                routeDestination(for: route)
-                            }
-                    }
-                    .environment(appCoordinator)
-                    .environmentObject(parkingsStore)
-                    .environmentObject(reviewStore)
-                    .environmentObject(favoritesStore)
-                    .environmentObject(availabilityStore)
-                    .environmentObject(locationManager)
-                    .environmentObject(notificationManager)
-                    .fullScreenCover(
-                        item: $appCoordinator.fullScreenRoute,
-                        onDismiss: {
-                            appCoordinator.endBookingFlow()
-                        }
-                    ) { route in
-                        fullScreenDestination(for: route)
+                    if isBootstrappingAfterLogin {
+                        bootstrapLoadingView
+                            .transition(.opacity)
+                    } else if userManager.isOwner {
+                        AdminTabView(store: adminStore)
                             .environment(appCoordinator)
-                            .environmentObject(parkingsStore)
-                            .environmentObject(reviewStore)
-                            .environmentObject(favoritesStore)
-                            .environmentObject(availabilityStore)
-                            .environmentObject(locationManager)
-                            .environmentObject(notificationManager)
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .scale(scale: 0.98)),
+                                removal: .opacity
+                            ))
+                    } else {
+                        NavigationStack(path: $appCoordinator.path) {
+                            MainTabView()
+                                .navigationDestination(for: AppRoute.self) { route in
+                                    routeDestination(for: route)
+                                }
+                        }
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.98)),
+                            removal: .opacity
+                        ))
+                        .environment(appCoordinator)
+                        .environmentObject(parkingsStore)
+                        .environmentObject(reviewStore)
+                        .environmentObject(favoritesStore)
+                        .environmentObject(availabilityStore)
+                        .environmentObject(locationManager)
+                        .environmentObject(notificationManager)
+                        .fullScreenCover(
+                            item: $appCoordinator.fullScreenRoute,
+                            onDismiss: {
+                                appCoordinator.endBookingFlow()
+                            }
+                        ) { route in
+                            fullScreenDestination(for: route)
+                                .environment(appCoordinator)
+                                .environmentObject(parkingsStore)
+                                .environmentObject(reviewStore)
+                                .environmentObject(favoritesStore)
+                                .environmentObject(availabilityStore)
+                                .environmentObject(locationManager)
+                                .environmentObject(notificationManager)
+                        }
                     }
                 } else {
                     LoginView()
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.98)),
+                            removal: .opacity
+                        ))
                 }
             }
+            .animation(.easeInOut(duration: 0.3), value: authManager.currentUserID)
+            .id(appearance.themeVersion)
 
             // Splash screen overlay
             if showSplash {
@@ -94,6 +120,7 @@ struct ContentView: View {
                 if !availabilityStore.isRealtimeConnected {
                     availabilityStore.startRealtime()
                 }
+                parkingsStore.startRealtime(userLocation: locationManager.location)
             }
         }
         .onChange(of: locationManager.placeName) { _, newPlace in
@@ -105,17 +132,40 @@ struct ContentView: View {
         .onChange(of: authManager.currentUserID) { _, newValue in
             synchronizeSessionState(userID: newValue)
 
-            guard newValue != nil else { return }
+            guard newValue != nil else {
+                isBootstrappingAfterLogin = false
+                return
+            }
             guard didRunLaunchGate else { return }
             guard !isRunningLaunchGate else { return }
+
+            isBootstrappingAfterLogin = true
             Task {
                 try? await bootstrapAuthenticatedSessionIfNeeded(forceNetwork: false)
+                isBootstrappingAfterLogin = false
             }
         }
         .task {
             guard !didRunLaunchGate else { return }
             didRunLaunchGate = true
             await runLaunchGate()
+        }
+    }
+
+    @ViewBuilder
+    private var bootstrapLoadingView: some View {
+        ZStack {
+            AppAnimatedBackground()
+            VStack(spacing: 16) {
+                ProgressView()
+                    .scaleEffect(1.2)
+                    .tint(AppTheme.Palette.brand)
+                Text(loc.str(.launchLoading))
+                    .font(AppTheme.Typography.subheadline)
+                    .foregroundColor(AppTheme.Palette.textSecondary)
+            }
+            .padding(28)
+            .glassCard()
         }
     }
 
@@ -181,6 +231,7 @@ struct ContentView: View {
 
         do {
             try await bootstrapAuthenticatedSessionIfNeeded(forceNetwork: true)
+            isBootstrappingAfterLogin = false
             launchGateState = .ready
             await hideSplash()
         } catch {
@@ -199,6 +250,7 @@ struct ContentView: View {
     private func bootstrapAuthenticatedSessionIfNeeded(forceNetwork: Bool) async throws {
         guard !didStart || forceNetwork else { return }
 
+        await userManager.fetchCurrentUser()
         locationManager.requestPermission()
         try await parkingsStore.loadAndWait(
             userLocation: locationManager.location,
@@ -231,9 +283,19 @@ struct ContentView: View {
             didStart = false
             activeNotificationUserID = nil
             appCoordinator.resetForLogout()
-            availabilityStore.stopRealtime()
-            NotificationManager.shared.stopRealtime()
-            NotificationManager.shared.resetState()
+
+            let pStore = parkingsStore
+            let aStore = availabilityStore
+            let aAdminStore = adminStore
+            Task.detached(priority: .utility) {
+                await MainActor.run {
+                    pStore.stopRealtime()
+                    aStore.stopRealtime()
+                    NotificationManager.shared.stopRealtime()
+                    NotificationManager.shared.resetState()
+                    aAdminStore.stopRealtime()
+                }
+            }
             return
         }
 
@@ -268,7 +330,7 @@ struct ContentView: View {
     @ViewBuilder
     private func fullScreenDestination(for route: AppFullScreenRoute) -> some View {
         switch route {
-        case .bookingFlow(let parking):
+        case .bookingFlow(let parking, _):
             BookingFlowView(parking: parking)
         }
     }

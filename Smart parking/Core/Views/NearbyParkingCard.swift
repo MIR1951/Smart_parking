@@ -121,7 +121,7 @@ struct NearbyParkingCard: View {
                             .foregroundStyle(
                                 isFavorite
                                     ? LinearGradient(
-                                        colors: [AppTheme.Palette.danger, Color(hex: "#FF7675")],
+                                        colors: [AppTheme.Palette.favoriteAccent, AppTheme.Palette.danger],
                                         startPoint: .top, endPoint: .bottom)
                                     : LinearGradient(
                                         colors: [
@@ -130,6 +130,7 @@ struct NearbyParkingCard: View {
                                         ],
                                         startPoint: .top, endPoint: .bottom)
                             )
+                            .symbolEffect(.bounce, value: isFavorite)
                             .frame(width: 34, height: 34)
                             .contentTransition(.symbolEffect(.replace))
                     }

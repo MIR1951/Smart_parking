@@ -5,8 +5,9 @@
 //  Hamyon (wallet) boshqaruvi — Supabase asosida, UserDefaults fallback
 //
 
-internal import Combine
+ import Combine
 import Foundation
+import os
 import Supabase
 import SwiftUI
 
@@ -148,7 +149,7 @@ final class WalletManager {
             }
 
         } catch {
-            print("WalletManager sync error: \(error)")
+            Logger.wallet.error("Sync error: \(error.localizedDescription)")
         }
     }
 
@@ -188,9 +189,7 @@ final class WalletManager {
             saveLocalTransactions()
 
         } catch {
-            // Fallback: local
-            print("TopUp remote failed: \(error). Falling back to local.")
-            try localTopUp(amount: amount)
+            throw error
         }
     }
 
@@ -233,49 +232,8 @@ final class WalletManager {
             saveLocalTransactions()
 
         } catch {
-            // Fallback: local
-            print("Deduct remote failed: \(error). Falling back to local.")
-            try localDeduct(amount: amount, description: desc)
+            throw error
         }
-    }
-
-    // MARK: - Local Fallback Operations
-
-    private func localTopUp(amount: Double) throws {
-        let loc = LocalizationManager.shared
-        guard amount > 0 else { throw WalletError.readable(loc.str(.walletInvalidAmount)) }
-        balance += amount
-
-        let tx = WalletTransaction(
-            id: UUID(),
-            amount: amount,
-            type: .topUp,
-            description: loc.str(.walletTopUpDone),
-            date: Date()
-        )
-        transactions.insert(tx, at: 0)
-        saveLocalBalance()
-        saveLocalTransactions()
-    }
-
-    private func localDeduct(amount: Double, description: String) throws {
-        let loc = LocalizationManager.shared
-        guard amount > 0 else { throw WalletError.readable(loc.str(.walletInvalidAmount)) }
-        guard balance >= amount else {
-            throw WalletError.readable(loc.str(.walletInsufficientBalance))
-        }
-        balance -= amount
-
-        let tx = WalletTransaction(
-            id: UUID(),
-            amount: -amount,
-            type: .payment,
-            description: description,
-            date: Date()
-        )
-        transactions.insert(tx, at: 0)
-        saveLocalBalance()
-        saveLocalTransactions()
     }
 
     // MARK: - Formatting
@@ -291,7 +249,7 @@ final class WalletManager {
         formatter.groupingSeparator = " "
         formatter.maximumFractionDigits = 0
         let formatted = formatter.string(from: NSNumber(value: value)) ?? "\(Int(value))"
-        return "\(formatted) so'm"
+        return "\(formatted) \(LocalizationManager.shared.str(.walletCurrency))"
     }
 
     // MARK: - Transaction Date Formatting

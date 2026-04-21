@@ -1,6 +1,6 @@
-internal import Combine
+ import Combine
 import Foundation
-internal import PostgREST
+ import PostgREST
 import Supabase
 
 @MainActor
@@ -8,6 +8,44 @@ final class BookingsVM: ObservableObject {
     @Published var items: [BookingItem] = []
     @Published var isLoading = false
     @Published var error: String?
+
+    private var realtimeTask: Task<Void, Never>?
+    private var reservationsChannel: RealtimeChannelV2?
+
+    deinit {
+        realtimeTask?.cancel()
+    }
+
+    func startRealtime() {
+        guard realtimeTask == nil else { return }
+        let client = SB.shared.client
+
+        realtimeTask = Task { [weak self] in
+            guard let self else { return }
+            let channel = client.realtimeV2.channel("bookings:user")
+            let changes = channel.postgresChange(AnyAction.self, schema: "public", table: "reservations")
+
+            do {
+                try await channel.subscribeWithError()
+                self.reservationsChannel = channel
+
+                for await _ in changes {
+                    guard !Task.isCancelled else { break }
+                    await self.load()
+                }
+            } catch {
+                // Realtime failed — REST polling via refreshable continues
+            }
+        }
+    }
+
+    func stopRealtime() {
+        realtimeTask?.cancel()
+        realtimeTask = nil
+        let ch = reservationsChannel
+        reservationsChannel = nil
+        Task { await ch?.unsubscribe() }
+    }
 
     func load() async {
         isLoading = true

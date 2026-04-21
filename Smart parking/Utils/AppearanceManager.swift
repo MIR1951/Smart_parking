@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+// MARK: - AppAppearance
+
 enum AppAppearance: String, CaseIterable, Identifiable {
     case system = "system"
     case light = "light"
@@ -59,16 +61,29 @@ enum AppAppearance: String, CaseIterable, Identifiable {
 final class AppearanceManager {
     static let shared = AppearanceManager()
 
-    private let key = "app_appearance"
+    private let appearanceKey = "app_appearance"
+    private let themeKey = "app_color_theme"
 
     var currentAppearance: AppAppearance {
         didSet {
-            UserDefaults.standard.set(currentAppearance.rawValue, forKey: key)
+            UserDefaults.standard.set(currentAppearance.rawValue, forKey: appearanceKey)
         }
     }
 
+    var currentColorTheme: AppColorTheme {
+        didSet {
+            UserDefaults.standard.set(currentColorTheme.rawValue, forKey: themeKey)
+            themeVersion += 1
+        }
+    }
+
+    private(set) var themeVersion: Int = 0
+
     private init() {
-        let saved = UserDefaults.standard.string(forKey: key) ?? "system"
-        self.currentAppearance = AppAppearance(rawValue: saved) ?? .system
+        let savedAppearance = UserDefaults.standard.string(forKey: "app_appearance") ?? "system"
+        self.currentAppearance = AppAppearance(rawValue: savedAppearance) ?? .system
+
+        let savedTheme = UserDefaults.standard.string(forKey: "app_color_theme") ?? "carbon"
+        self.currentColorTheme = AppColorTheme(rawValue: savedTheme) ?? .carbon
     }
 }

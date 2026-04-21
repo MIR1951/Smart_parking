@@ -13,6 +13,7 @@ struct PaymentSuccessView: View {
     let selectedMinutes: Int
     let paymentMethod: PaymentMethod
     let reservationId: UUID
+    let reservationStartTime: Date
 
     // Callback to dismiss entire booking flow
     var onBackToHome: (() -> Void)?
@@ -55,6 +56,7 @@ struct PaymentSuccessView: View {
                 Image(systemName: "checkmark")
                     .font(.system(size: 50, weight: .bold))
                     .foregroundColor(.white)
+                    .symbolEffect(.bounce.up.byLayer, value: animateSuccess)
             }
             .appReveal(0.06)
 
@@ -114,11 +116,13 @@ struct PaymentSuccessView: View {
                 vehicle: vehicle,
                 selectedMinutes: selectedMinutes,
                 paymentMethod: paymentMethod,
-                reservationId: reservationId
+                reservationId: reservationId,
+                reservationStartTime: reservationStartTime
             )
         }
         .onAppear {
             animateSuccess = true
+            AppTheme.Haptic.success()
         }
     }
 }

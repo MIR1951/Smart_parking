@@ -29,6 +29,7 @@ struct BookingFlowView: View {
     @State private var selectedVehicle: Vehicle?
     @State private var selectedPaymentMethod: PaymentMethod?
     @State private var reservationId: UUID?
+    @State private var reservationStartTime: Date = Date()
     @State private var isProcessing = false
     @State private var showError = false
     @State private var errorMessage = ""
@@ -86,6 +87,7 @@ struct BookingFlowView: View {
                                 selectedMinutes: selectedMinutes,
                                 paymentMethod: payment,
                                 reservationId: resId,
+                                reservationStartTime: reservationStartTime,
                                 onBackToHome: {
                                     coordinator.goToHome()
                                 }
@@ -103,21 +105,23 @@ struct BookingFlowView: View {
 
                 // Loading overlay
                 if isProcessing {
-                    Color.black.opacity(0.3)
+                    Color.black.opacity(0.25)
                         .ignoresSafeArea()
+                        .transition(.opacity)
 
                     VStack(spacing: 16) {
                         ProgressView()
-                            .scaleEffect(1.5)
-                            .tint(.white)
+                            .scaleEffect(1.4)
+                            .tint(AppTheme.Palette.brand)
 
                         Text(loc.str(.bookingProcessing))
-                            .foregroundColor(.white)
+                            .font(AppTheme.Typography.subheadline)
+                            .foregroundColor(AppTheme.Palette.textPrimary)
                             .fontWeight(.medium)
                     }
                     .padding(32)
-                    .background(Color.black.opacity(0.7))
-                    .cornerRadius(16)
+                    .glassCard()
+                    .transition(.scale(scale: 0.88).combined(with: .opacity))
                 }
             }
             .navigationBarHidden(true)
@@ -131,47 +135,31 @@ struct BookingFlowView: View {
 
     private func processPayment() {
         guard selectedVehicle != nil,
-            let paymentMethod = selectedPaymentMethod
+            selectedPaymentMethod != nil
         else { return }
-
-        guard paymentMethod == .wallet else {
-            errorMessage = loc.str(.paymentWalletOnly)
-            showError = true
-            return
-        }
 
         isProcessing = true
 
         Task {
-            // 1) Wallet to'lov — mablag' yechish
-            if paymentMethod == .wallet {
-                let totalAmount = parking.price_per_hour * (Double(selectedMinutes) / 60.0)
-                do {
-                    try await WalletManager.shared.deduct(
-                        amount: totalAmount,
-                        description:
-                            "\(parking.name) - \(selectedMinutes) \(loc.str(.bookingMin))"
-                    )
-                } catch {
-                    await MainActor.run {
-                        isProcessing = false
-                        errorMessage = error.localizedDescription
-                        showError = true
-                    }
-                    return
-                }
-            }
-
-            // 2) Create reservation
             do {
                 let resId = try await ReservationManager.shared.createReservation(
                     parkingId: parking.id,
                     durationMinutes: selectedMinutes
                 )
+
+                // Server dan haqiqiy start_time ni olamiz
+                let startTime: Date
+                if let reservation = try? await ReservationManager.shared.fetchReservation(resId) {
+                    startTime = reservation.start_time
+                } else {
+                    startTime = Date()
+                }
+
                 await availabilityStore.refreshNow(force: true)
 
                 await MainActor.run {
                     reservationId = resId
+                    reservationStartTime = startTime
                     isProcessing = false
                     currentStep = .success
                 }
@@ -187,11 +175,7 @@ struct BookingFlowView: View {
     }
 
     private func handlePaymentConfirm() {
-        guard selectedPaymentMethod == .wallet else {
-            errorMessage = loc.str(.paymentWalletOnly)
-            showError = true
-            return
-        }
+        guard selectedPaymentMethod != nil else { return }
         currentStep = .review
     }
 }
@@ -255,7 +239,10 @@ private struct BookingDurationStepView: View {
                             title: labelFor(minutes: m),
                             isSelected: selectedMinutes == m
                         )
-                        .onTapGesture { selectedMinutes = m }
+                        .onTapGesture {
+                                AppTheme.Haptic.selection()
+                                withAnimation(AppTheme.Anim.snappy) { selectedMinutes = m }
+                            }
                     }
                 }
                 .padding(.horizontal)
@@ -268,7 +255,7 @@ private struct BookingDurationStepView: View {
                     .foregroundColor(AppTheme.Palette.textSecondary)
 
                 let amount = (Double(selectedMinutes) / 60.0) * parking.price_per_hour
-                Text("\(Int(amount)) so'm")
+                Text("\(Int(amount)) \(loc.str(.walletCurrency))")
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.Palette.textPrimary)
@@ -305,8 +292,18 @@ private struct DurationChipView: View {
             .font(.headline)
             .foregroundColor(isSelected ? .white : AppTheme.Palette.textPrimary)
             .frame(maxWidth: .infinity, minHeight: 46)
-            .background(isSelected ? AppTheme.Palette.brand : AppTheme.Palette.surface)
-            .cornerRadius(14)
-            .shadow(color: .black.opacity(0.05), radius: 4)
+            .background(
+                isSelected
+                    ? AnyShapeStyle(AppTheme.Gradient.brand)
+                    : AnyShapeStyle(AppTheme.Palette.surface)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .shadow(
+                color: isSelected ? AppTheme.Palette.brand.opacity(0.3) : .black.opacity(0.04),
+                radius: isSelected ? 8 : 4,
+                y: isSelected ? 4 : 2
+            )
+            .scaleEffect(isSelected ? 1.0 : 0.97)
+            .animation(AppTheme.Anim.snappy, value: isSelected)
     }
 }

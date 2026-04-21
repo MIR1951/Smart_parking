@@ -18,7 +18,7 @@ struct ParkingMarkerView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Bubble
-            Text("\(Int(price)) so'm")
+            Text("\(Int(price)) \(LocalizationManager.shared.str(.walletCurrency))")
                 .font(.system(size: 12, weight: .bold, design: .rounded))
                 .foregroundColor(.white)
                 .padding(.horizontal, 8)

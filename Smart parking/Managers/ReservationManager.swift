@@ -6,7 +6,7 @@
 //
 
 import Foundation
-internal import PostgREST
+ import PostgREST
 import Supabase
 
 struct CreateReservationParams: Sendable {
@@ -45,5 +45,15 @@ final class ReservationManager {
         try await SB.shared.client
             .rpc("cancel_reservation", params: params)
             .execute()
+    }
+
+    func fetchReservation(_ id: UUID) async throws -> Reservation {
+        try await SB.shared.client
+            .from("reservations")
+            .select("id,parking_id,user_id,start_time,end_time,actual_start_time,actual_end_time,status")
+            .eq("id", value: id)
+            .single()
+            .execute()
+            .value
     }
 }

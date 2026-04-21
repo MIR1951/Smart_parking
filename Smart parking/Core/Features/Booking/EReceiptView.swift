@@ -5,6 +5,7 @@
 //  Elektron chek sahifasi - PDF download bilan
 //
 
+import os
 import PDFKit
 import SwiftUI
 
@@ -14,6 +15,7 @@ struct EReceiptView: View {
     let selectedMinutes: Int
     let paymentMethod: PaymentMethod
     let reservationId: UUID
+    let reservationStartTime: Date
 
     @Environment(\.dismiss) private var dismiss
     @State private var showShareSheet = false
@@ -22,7 +24,7 @@ struct EReceiptView: View {
     private let loc = LocalizationManager.shared
 
     // Calculated values
-    private var startTime: Date { Date() }
+    private var startTime: Date { reservationStartTime }
     private var endTime: Date { startTime.addingTimeInterval(Double(selectedMinutes) * 60) }
     private var hours: Double { Double(selectedMinutes) / 60.0 }
     private var amount: Double { hours * parking.price_per_hour }
@@ -104,7 +106,7 @@ struct EReceiptView: View {
         }
         .padding()
         .background(AppTheme.Palette.surface)
-        .cornerRadius(16)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private func barcodeWidth(for index: Int) -> CGFloat {
@@ -140,7 +142,7 @@ struct EReceiptView: View {
             HStack {
                 Text(loc.str(.receiptRate))
                 Spacer()
-                Text("\(Int(parking.price_per_hour)) so'm")
+                Text("\(Int(parking.price_per_hour)) \(loc.str(.walletCurrency))")
                     .fontWeight(.medium)
                 Text("/hr")
                     .foregroundColor(AppTheme.Palette.textSecondary)
@@ -156,7 +158,7 @@ struct EReceiptView: View {
             HStack {
                 Text(loc.str(.receiptSubtotal))
                 Spacer()
-                Text("\(Int(amount)) so'm")
+                Text("\(Int(amount)) \(loc.str(.walletCurrency))")
                     .fontWeight(.medium)
             }
 
@@ -166,7 +168,7 @@ struct EReceiptView: View {
                 Text(loc.str(.reviewTotal))
                     .fontWeight(.semibold)
                 Spacer()
-                Text("\(Int(total)) so'm")
+                Text("\(Int(total)) \(loc.str(.walletCurrency))")
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.Palette.brand)
@@ -204,7 +206,7 @@ struct EReceiptView: View {
             .foregroundColor(.white)
             .frame(maxWidth: .infinity, minHeight: 52)
             .background(AppTheme.Gradient.brand)
-            .cornerRadius(26)
+            .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
         }
         .disabled(isGeneratingPDF)
         .pressStyle()
@@ -234,7 +236,7 @@ struct EReceiptView: View {
                 await MainActor.run {
                     self.isGeneratingPDF = false
                 }
-                print("PDF save error: \(error)")
+                Logger.storage.error("PDF save error: \(error.localizedDescription)")
             }
         }
     }
@@ -296,8 +298,8 @@ struct EReceiptView: View {
 
             yPosition += 20
 
-            drawRow("\(loc.str(.receiptRate)):", "\(Int(parking.price_per_hour)) so'm/hr")
-            drawRow("\(loc.str(.receiptSubtotal)):", "\(Int(amount)) so'm")
+            drawRow("\(loc.str(.receiptRate)):", "\(Int(parking.price_per_hour)) \(loc.str(.walletCurrency))/hr")
+            drawRow("\(loc.str(.receiptSubtotal)):", "\(Int(amount)) \(loc.str(.walletCurrency))")
 
             yPosition += 10
 
@@ -308,7 +310,7 @@ struct EReceiptView: View {
             ]
             "\(loc.str(.reviewTotal)):".draw(
                 at: CGPoint(x: margin, y: yPosition), withAttributes: valueAttributes)
-            "\(Int(total)) so'm".draw(
+            "\(Int(total)) \(loc.str(.walletCurrency))".draw(
                 at: CGPoint(x: pageWidth / 2, y: yPosition), withAttributes: totalAttributes)
             yPosition += 40
 

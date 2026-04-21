@@ -230,7 +230,7 @@ extension ParkingDetailView {
 
             HStack(spacing: 6) {
                 Image(systemName: "star.fill")
-                    .foregroundColor(.yellow)
+                    .foregroundColor(AppTheme.Palette.warning)
                     .font(.caption)
                 Text(String(format: "%.1f", reviewSummary.average > 0 ? reviewSummary.average : (parking.rating ?? 4.5)))
                     .font(.subheadline)
@@ -310,7 +310,7 @@ extension ParkingDetailView {
 
                 HStack(spacing: 4) {
                     Image(systemName: "dollarsign.circle")
-                    Text("\(Int(parking.price_per_hour)) so'm" + loc.str(.bookingsPerHour))
+                    Text("\(Int(parking.price_per_hour)) \(loc.str(.walletCurrency))" + loc.str(.bookingsPerHour))
                 }
                 .foregroundColor(AppTheme.Palette.brand)
             }
@@ -367,7 +367,7 @@ extension ParkingDetailView {
                     Spacer()
                     infoItem(
                         title: loc.str(.detailPrice),
-                        value: "\(Int(parking.price_per_hour)) so'm" + loc.str(.bookingsPerHour)
+                        value: "\(Int(parking.price_per_hour)) \(loc.str(.walletCurrency))" + loc.str(.bookingsPerHour)
                     )
                 }
             }
@@ -481,7 +481,7 @@ extension ParkingDetailView {
                     HStack(spacing: 2) {
                         ForEach(0..<5) { index in
                             Image(systemName: index < Int(reviewSummary.average.rounded(.down)) ? "star.fill" : "star")
-                                .foregroundColor(.yellow)
+                                .foregroundColor(AppTheme.Palette.warning)
                                 .font(.caption)
                         }
                     }
@@ -541,7 +541,7 @@ extension ParkingDetailView {
                 HStack(spacing: 2) {
                     ForEach(0..<5, id: \.self) { index in
                         Image(systemName: index < review.rating ? "star.fill" : "star")
-                            .foregroundColor(.yellow)
+                            .foregroundColor(AppTheme.Palette.warning)
                             .font(.caption)
                     }
                 }
@@ -668,7 +668,7 @@ private struct AddParkingReviewSheet: View {
                             } label: {
                                 Image(systemName: value <= rating ? "star.fill" : "star")
                                     .font(.title3)
-                                    .foregroundColor(.yellow)
+                                    .foregroundColor(AppTheme.Palette.warning)
                             }
                             .buttonStyle(.plain)
                         }

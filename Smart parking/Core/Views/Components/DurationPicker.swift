@@ -21,9 +21,9 @@ struct DurationPicker: View {
                         duration = m
                     }
                     .padding()
-                    .background(duration == m ? Color.blue : Color.gray.opacity(0.2))
-                    .foregroundColor(duration == m ? .white : .black)
-                    .cornerRadius(10)
+                    .background(duration == m ? AppTheme.Palette.brand : AppTheme.Palette.surfaceSecondary)
+                    .foregroundColor(duration == m ? AppTheme.Palette.surface : AppTheme.Palette.textPrimary)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
             }
 

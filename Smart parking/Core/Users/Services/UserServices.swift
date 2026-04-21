@@ -22,15 +22,14 @@ struct UserService {
             try await client
             .from("users")
             .select()
-            .eq("id", value: user.id.uuidString)
+            .eq("id", value: user.id)
             .single()
             .execute()
             .value
     }
 
     func updateProfileImageURL(_ imageURL: String) async throws {
-        guard let uid = client.auth.currentUser?.id.uuidString else {
-
+        guard let uid = client.auth.currentUser?.id else {
             throw URLError(.userAuthenticationRequired)
         }
 
@@ -39,11 +38,10 @@ struct UserService {
             .update(["profile_image_url": imageURL])
             .eq("id", value: uid)
             .execute()
-
     }
 
     func updateUsername(_ username: String) async throws {
-        guard let uid = client.auth.currentUser?.id.uuidString else {
+        guard let uid = client.auth.currentUser?.id else {
             throw URLError(.userAuthenticationRequired)
         }
 

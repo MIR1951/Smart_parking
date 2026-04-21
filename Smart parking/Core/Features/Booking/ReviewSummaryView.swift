@@ -101,7 +101,7 @@ struct ReviewSummaryView: View {
                 Rectangle().fill(Color.gray.opacity(0.2))
             }
             .frame(width: 100, height: 80)
-            .cornerRadius(12)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .clipped()
 
             VStack(alignment: .leading, spacing: 6) {
@@ -111,7 +111,7 @@ struct ReviewSummaryView: View {
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(AppTheme.Palette.brandSoft)
-                    .cornerRadius(8)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                 Text(parking.name)
                     .font(.headline)
@@ -133,7 +133,7 @@ struct ReviewSummaryView: View {
                 HStack(spacing: 2) {
                     Image(systemName: "star.fill")
                         .font(.caption)
-                        .foregroundColor(.yellow)
+                        .foregroundColor(AppTheme.Palette.warning)
                     Text(String(format: "%.1f", parking.rating ?? 4.9))
                         .font(.caption)
                         .fontWeight(.semibold)
@@ -142,7 +142,7 @@ struct ReviewSummaryView: View {
         }
         .padding()
         .background(AppTheme.Palette.surface)
-        .cornerRadius(16)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     // MARK: - Time & Vehicle Info
@@ -162,7 +162,7 @@ struct ReviewSummaryView: View {
             HStack {
                 Text(LocalizationManager.shared.str(.reviewAmount))
                 Spacer()
-                Text("\(Int(parking.price_per_hour)) so'm")
+                Text("\(Int(parking.price_per_hour)) \(loc.str(.walletCurrency))")
                     .fontWeight(.medium)
                 Text("/hr")
                     .foregroundColor(AppTheme.Palette.textSecondary)
@@ -181,7 +181,7 @@ struct ReviewSummaryView: View {
                 Text(LocalizationManager.shared.str(.reviewTotal))
                     .fontWeight(.semibold)
                 Spacer()
-                Text("\(Int(total)) so'm")
+                Text("\(Int(total)) \(loc.str(.walletCurrency))")
                     .font(.title3)
                     .fontWeight(.bold)
             }
@@ -210,7 +210,7 @@ struct ReviewSummaryView: View {
         }
         .padding()
         .background(AppTheme.Palette.surface)
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     // MARK: - Continue Button

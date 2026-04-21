@@ -53,6 +53,7 @@ final class ParkingService {
             let is_popular: Bool?
             let images: [String]?
             let features: [String]?
+            let owner_id: String?
         }
 
         struct LiveStats: Codable {
@@ -81,7 +82,8 @@ final class ParkingService {
                 description: item.description,
                 is_popular: item.is_popular ?? false,
                 images: item.images,
-                features: item.features
+                features: item.features,
+                owner_id: item.owner_id.flatMap { UUID(uuidString: $0) }
             )
         }
 

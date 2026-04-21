@@ -10,6 +10,7 @@ import CoreImage.CIFilterBuiltins
 import Supabase
 import SwiftUI
 
+
 // MARK: - Models
 struct BookingParking: Codable, Identifiable {
     let id: UUID
@@ -167,21 +168,49 @@ struct BookingsView: View {
     @State private var tab: BookingTab = .ongoing
     @State private var sheetItem: SheetItem?
     @State private var showCancelAlert = false
+    @State private var scrollOffset: CGFloat = 0
+
+    private var headerProgress: CGFloat {
+        min(max(scrollOffset / 150, 0), 1)
+    }
     @State private var showCancelError = false
     @State private var cancelErrorMessage = ""
     @State private var bookingToCancel: BookingItem?
-
+    private var currentFontSize: CGFloat {
+        CGFloat(28 - (headerProgress * 8))
+    }
     var body: some View {
+        
         ZStack {
             AppAnimatedBackground()
 
             VStack(spacing: 0) {
 
-                // Top segmented (Ongoing/Completed/Cancelled)
-                bookingTabs
+                // Shrinking title + tabs header
+                VStack(spacing: 0) {
+                    Group {
+                        Text(LocalizationManager.shared.str(.bookingsTitle))
+                    }
+                    .font(.system(size: currentFontSize, weight: .bold, design: .rounded))
+                    .foregroundColor(AppTheme.Palette.textPrimary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal)
+                    .padding(.top, 16)
+                    .padding(.bottom, 4)
+                    .opacity(headerProgress < 0.8 ? 1.0 : max(0.0, 1.0 - (headerProgress - 0.8) * 5.0))
+
+                    bookingTabs
+                }
+                .animation(AppTheme.Anim.snappy, value: headerProgress)
 
                 // Content
                 ScrollView(showsIndicators: false) {
+                    GeometryReader { geo in
+                        Color.clear.preference(
+                            key: ScrollOffsetPreferenceKey.self,
+                            value: -geo.frame(in: .named("bookingsScroll")).minY
+                        )
+                    }.frame(height: 0)
                     VStack(spacing: 16) {
                         if vm.isLoading && vm.items.isEmpty {
                             BookingsShimmerView()
@@ -219,10 +248,17 @@ struct BookingsView: View {
                     .padding(.top, 16)
                     .padding(.bottom, 24)
                 }
+                .coordinateSpace(name: "bookingsScroll")
+                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                    withAnimation(AppTheme.Anim.snappy) { scrollOffset = value }
+                }
+                .refreshable { await vm.load() }
             }
         }
-        .task { await vm.load() }
-        .refreshable { await vm.load() }
+        .task {
+            await vm.load()
+            vm.startRealtime()
+        }
         .alert(
             LocalizationManager.shared.str(.bookingsCancelTitle), isPresented: $showCancelAlert
         ) {
@@ -442,7 +478,7 @@ struct BookingCard: View {
                             HStack(spacing: 4) {
                                 Image(systemName: "star.fill")
                                     .font(.caption)
-                                    .foregroundColor(.yellow)
+                                    .foregroundColor(AppTheme.Palette.warning)
                                 Text(String(format: "%.1f", item.parking.rating ?? 4.5))
                                     .font(.caption)
                                     .foregroundColor(AppTheme.Palette.textSecondary)
@@ -467,7 +503,7 @@ struct BookingCard: View {
                         }
 
                         HStack(spacing: 4) {
-                            Text("\(Int(item.parking.price_per_hour)) so'm")
+                            Text("\(Int(item.parking.price_per_hour)) \(LocalizationManager.shared.str(.walletCurrency))")
                                 .font(.headline)
                                 .foregroundColor(AppTheme.Palette.brand)
                             Text(LocalizationManager.shared.str(.bookingsPerHour))
@@ -575,25 +611,25 @@ struct BookingCard: View {
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(AppTheme.Palette.brand.opacity(0.1))
-                .cornerRadius(8)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 8)
         .background(AppTheme.Palette.pageBackground)
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     // MARK: - Overtime Warning
     private var overtimeWarning: some View {
         HStack {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundColor(.orange)
+                .foregroundColor(AppTheme.Palette.warning)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(LocalizationManager.shared.str(.bookingsOvertime))
                     .font(.caption)
                     .fontWeight(.semibold)
-                    .foregroundColor(.orange)
+                    .foregroundColor(AppTheme.Palette.warning)
 
                 Text(
                     "\(LocalizationManager.shared.str(.bookingsExtraCharge)): $\(item.overtimeAmount, specifier: "%.2f")"
@@ -605,8 +641,8 @@ struct BookingCard: View {
             Spacer()
         }
         .padding(10)
-        .background(Color.orange.opacity(0.1))
-        .cornerRadius(10)
+        .background(AppTheme.Palette.warningSoft)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     private func formatTime(_ date: Date?) -> String {
@@ -685,17 +721,17 @@ struct BookingETicketView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(statusColor.opacity(0.1))
-                .cornerRadius(12)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
     }
 
     private var statusColor: Color {
         switch item.status {
-        case "active", "in_use": return .green
-        case "completed": return .blue
-        case "cancelled", "canceled": return .red
-        case "expired", "no_show": return .orange
-        default: return .gray
+        case "active", "in_use": return AppTheme.Palette.success
+        case "completed": return AppTheme.Palette.bookingAccent
+        case "cancelled", "canceled": return AppTheme.Palette.danger
+        case "expired", "no_show": return AppTheme.Palette.warning
+        default: return AppTheme.Palette.textSecondary
         }
     }
 
@@ -795,14 +831,14 @@ struct BookingETicketView: View {
             HStack {
                 Text(LocalizationManager.shared.str(.bookingsPricePerHour))
                 Spacer()
-                Text("\(Int(item.parking.price_per_hour)) so'm")
+                Text("\(Int(item.parking.price_per_hour)) \(LocalizationManager.shared.str(.walletCurrency))")
                     .fontWeight(.medium)
             }
 
             HStack {
                 Text(LocalizationManager.shared.str(.bookingsBaseAmount))
                 Spacer()
-                Text("\(Int(item.totalAmount)) so'm")
+                Text("\(Int(item.totalAmount)) \(LocalizationManager.shared.str(.walletCurrency))")
                     .fontWeight(.medium)
             }
 
@@ -810,9 +846,9 @@ struct BookingETicketView: View {
                 HStack {
                     Text(LocalizationManager.shared.str(.bookingsOvertimeCharge))
                     Spacer()
-                    Text("+\(Int(item.overtimeAmount)) so'm")
+                    Text("+\(Int(item.overtimeAmount)) \(LocalizationManager.shared.str(.walletCurrency))")
                         .fontWeight(.medium)
-                        .foregroundColor(.orange)
+                        .foregroundColor(AppTheme.Palette.warning)
                 }
             }
 
@@ -822,7 +858,7 @@ struct BookingETicketView: View {
                 Text(LocalizationManager.shared.str(.reviewTotal))
                     .fontWeight(.semibold)
                 Spacer()
-                Text("\(Int(item.totalAmount + item.overtimeAmount)) so'm")
+                Text("\(Int(item.totalAmount + item.overtimeAmount)) \(LocalizationManager.shared.str(.walletCurrency))")
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.Palette.brand)
@@ -905,17 +941,17 @@ struct BookingDetailSheet: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
                 .background(statusColor.opacity(0.12))
-                .cornerRadius(20)
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
     }
 
     private var statusColor: Color {
         switch item.status {
-        case "active", "in_use": return .green
-        case "completed": return .blue
-        case "cancelled", "canceled": return .red
-        case "expired", "no_show": return .orange
-        default: return .gray
+        case "active", "in_use": return AppTheme.Palette.success
+        case "completed": return AppTheme.Palette.bookingAccent
+        case "cancelled", "canceled": return AppTheme.Palette.danger
+        case "expired", "no_show": return AppTheme.Palette.warning
+        default: return AppTheme.Palette.textSecondary
         }
     }
 
@@ -972,14 +1008,14 @@ struct BookingDetailSheet: View {
             HStack {
                 Text(LocalizationManager.shared.str(.bookingsPricePerHour))
                 Spacer()
-                Text("\(Int(item.parking.price_per_hour)) so'm")
+                Text("\(Int(item.parking.price_per_hour)) \(LocalizationManager.shared.str(.walletCurrency))")
                     .fontWeight(.medium)
             }
 
             HStack {
                 Text(LocalizationManager.shared.str(.bookingsBaseAmount))
                 Spacer()
-                Text("\(Int(item.totalAmount)) so'm")
+                Text("\(Int(item.totalAmount)) \(LocalizationManager.shared.str(.walletCurrency))")
                     .fontWeight(.medium)
             }
 
@@ -987,9 +1023,9 @@ struct BookingDetailSheet: View {
                 HStack {
                     Text(LocalizationManager.shared.str(.bookingsOvertimeCharge))
                     Spacer()
-                    Text("+\(Int(item.overtimeAmount)) so'm")
+                    Text("+\(Int(item.overtimeAmount)) \(LocalizationManager.shared.str(.walletCurrency))")
                         .fontWeight(.medium)
-                        .foregroundColor(.orange)
+                        .foregroundColor(AppTheme.Palette.warning)
                 }
             }
 
@@ -999,7 +1035,7 @@ struct BookingDetailSheet: View {
                 Text(LocalizationManager.shared.str(.reviewTotal))
                     .fontWeight(.semibold)
                 Spacer()
-                Text("\(Int(item.totalAmount + item.overtimeAmount)) so'm")
+                Text("\(Int(item.totalAmount + item.overtimeAmount)) \(LocalizationManager.shared.str(.walletCurrency))")
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.Palette.brand)

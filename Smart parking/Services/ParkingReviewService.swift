@@ -144,9 +144,17 @@ final class ParkingReviewService {
             comment: trimmedComment
         )
 
-        _ = try await client
-            .from("parking_reviews")
-            .insert(payload)
-            .execute()
+        do {
+            _ = try await client
+                .from("parking_reviews")
+                .insert(payload)
+                .execute()
+        } catch {
+            let message = error.localizedDescription.lowercased()
+            if message.contains("unique") || message.contains("23505") || message.contains("duplicate") {
+                throw ParkingReviewError.alreadyReviewed
+            }
+            throw error
+        }
     }
 }

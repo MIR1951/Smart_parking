@@ -19,6 +19,12 @@ struct HomeView: View {
     @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
 
     @State private var searchText = ""
+    @State private var badgePulse = false
+    @State private var scrollOffset: CGFloat = 0
+
+    private var headerProgress: CGFloat {
+        min(max(scrollOffset / 200, 0), 1)
+    }
 
     private var popularParkings: [Parking] {
         filterBySearch(parkingsStore.popular)
@@ -42,6 +48,15 @@ struct HomeView: View {
                     }
                 } else {
                     ScrollView(showsIndicators: false) {
+                        GeometryReader { geo in
+                            Color.clear
+                                .preference(
+                                    key: ScrollOffsetPreferenceKey.self,
+                                    value: -geo.frame(in: .named("homeScroll")).minY
+                                )
+                        }
+                        .frame(height: 0)
+
                         VStack(spacing: 24) {
                             if !popularParkings.isEmpty {
                                 popularSection
@@ -65,6 +80,10 @@ struct HomeView: View {
                         .padding(.top, 16)
                         .padding(.bottom, 24)
                     }
+                    .coordinateSpace(name: "homeScroll")
+                    .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                        withAnimation(AppTheme.Anim.snappy) { scrollOffset = value }
+                    }
                     .refreshable {
                         await refreshAllHomeData()
                     }
@@ -85,6 +104,13 @@ struct HomeView: View {
         }
         .onChange(of: parkingsStore.availableCities) { _, _ in
             parkingsStore.bootstrapCity(using: locationManager.placeName, fallback: "Tashkent")
+        }
+        .onChange(of: notificationManager.unreadCount) { oldValue, newValue in
+            if newValue > oldValue {
+                AppTheme.Haptic.light()
+                badgePulse = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { badgePulse = true }
+            }
         }
         .toolbar(.hidden, for: .navigationBar)
     }
@@ -114,14 +140,19 @@ struct HomeView: View {
     }
 
     private var heroHeader: some View {
-        HStack(alignment: .top) {
+        let titleSize: CGFloat = 28 - (headerProgress * 8)   // 28 → 20
+        let bellSize: CGFloat = 46 - (headerProgress * 10)   // 46 → 36
+        let greetingOpacity: Double = max(0, min(1, Double(1 - headerProgress * 2)))
+
+        return HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(greeting)
                     .font(AppTheme.Typography.subheadline)
                     .foregroundColor(AppTheme.Palette.textSecondary)
+                    .opacity(greetingOpacity)
 
                 Text(userManager.currentUser?.username ?? loc.str(.homeGreeting))
-                    .font(AppTheme.Typography.title)
+                    .font(.system(size: titleSize, weight: .bold, design: .rounded))
                     .foregroundColor(AppTheme.Palette.textPrimary)
             }
 
@@ -132,15 +163,15 @@ struct HomeView: View {
             } label: {
                 ZStack(alignment: .topTrailing) {
                     Image(systemName: "bell.fill")
-                        .font(.system(size: 20))
+                        .font(.system(size: 20 - headerProgress * 4))
                         .foregroundStyle(
                             LinearGradient(
-                                colors: [AppTheme.Palette.brand, AppTheme.Palette.brandLight],
+                                colors: [AppTheme.Palette.brand, AppTheme.Palette.homeAccent],
                                 startPoint: .top,
                                 endPoint: .bottom
                             )
                         )
-                        .frame(width: 46, height: 46)
+                        .frame(width: bellSize, height: bellSize)
                         .background(AppTheme.Palette.surfaceGlass)
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         .overlay(
@@ -159,14 +190,18 @@ struct HomeView: View {
                                     .fill(
                                         LinearGradient(
                                             colors: [
-                                                AppTheme.Palette.danger, Color(hex: "#FF7675"),
+                                                AppTheme.Palette.danger, AppTheme.Palette.accent,
                                             ],
                                             startPoint: .top,
                                             endPoint: .bottom
                                         )
                                     )
                             )
+                            .scaleEffect(badgePulse ? 1.15 : 1.0)
+                            .shadow(color: AppTheme.Palette.danger.opacity(badgePulse ? 0.6 : 0.2), radius: badgePulse ? 6 : 2)
+                            .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: badgePulse)
                             .offset(x: 4, y: -4)
+                            .onAppear { badgePulse = true }
                     }
                 }
             }
@@ -276,6 +311,7 @@ struct HomeView: View {
                                 availability: availabilityStore.availability(for: parking.id),
                                 isFavorite: favoritesStore.isFavorite(parking.id),
                                 onToggleFavorite: {
+                                    AppTheme.Haptic.success()
                                     Task { @MainActor in
                                         favoritesStore.toggle(parking.id)
                                     }
@@ -322,6 +358,7 @@ struct HomeView: View {
                             availability: availabilityStore.availability(for: parking.id),
                             isFavorite: favoritesStore.isFavorite(parking.id),
                             onToggleFavorite: {
+                                AppTheme.Haptic.success()
                                 Task { @MainActor in
                                     favoritesStore.toggle(parking.id)
                                 }
@@ -369,8 +406,6 @@ struct HomeView: View {
         await parkingsStore.refresh(userLocation: locationManager.location)
         await availabilityStore.refreshNow(force: true)
         await notificationManager.load()
-        await WalletManager.shared.syncFromSupabase()
-        await VehiclesStore.shared.syncFromSupabase()
         parkingsStore.bootstrapCity(using: locationManager.placeName, fallback: "Tashkent")
         parkingsStore.applyFilters(userLocation: locationManager.location)
     }

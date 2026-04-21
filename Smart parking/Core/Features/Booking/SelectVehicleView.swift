@@ -163,7 +163,7 @@ private struct VehicleRow: View {
         }
         .padding()
         .background(AppTheme.Palette.surface)
-        .cornerRadius(16)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private var colorForVehicle: Color {

@@ -121,7 +121,7 @@ struct PaymentMethodsView: View {
                 .background(
                     isEnabled ? AppTheme.Palette.brandSoft : AppTheme.Palette.surfaceSecondary
                 )
-                .cornerRadius(10)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(method.displayName)
@@ -161,7 +161,7 @@ struct PaymentMethodsView: View {
         }
         .padding()
         .background(AppTheme.Palette.surface)
-        .cornerRadius(16)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .opacity(isEnabled ? 1 : 0.65)
         .onTapGesture {
             if isEnabled {
@@ -180,7 +180,7 @@ struct PaymentMethodsView: View {
                 .foregroundColor(AppTheme.Palette.textTertiary)
                 .frame(width: 40, height: 40)
                 .background(AppTheme.Palette.surfaceSecondary)
-                .cornerRadius(10)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(loc.str(.paymentAddCard))
@@ -199,7 +199,7 @@ struct PaymentMethodsView: View {
         }
         .padding()
         .background(AppTheme.Palette.surface)
-        .cornerRadius(16)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .opacity(0.7)
         .onTapGesture {
             showComingSoonWarning = true

@@ -15,8 +15,11 @@ final class SB {
     let client: SupabaseClient
     
     private init() {
+        guard let url = URL(string: Constants.projectURLString) else {
+            fatalError("[SB] SUPABASE_URL in Info.plist is not a valid URL. Got: '\(Constants.projectURLString)'")
+        }
         self.client = SupabaseClient(
-            supabaseURL: URL(string: Constants.projectURLString)!,
+            supabaseURL: url,
             supabaseKey: Constants.projectAPIKey
         )
     }

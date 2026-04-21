@@ -87,7 +87,7 @@ struct AddVehicleView: View {
                         }
                         .padding()
                         .background(AppTheme.Palette.surface)
-                        .cornerRadius(12)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
                                 .stroke(Color.gray.opacity(0.2), lineWidth: 1)
@@ -115,7 +115,7 @@ struct AddVehicleView: View {
                         }
                         .padding()
                         .background(AppTheme.Palette.surface)
-                        .cornerRadius(12)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
                                 .stroke(Color.gray.opacity(0.2), lineWidth: 1)
@@ -135,7 +135,7 @@ struct AddVehicleView: View {
                         .textFieldStyle(.plain)
                         .padding()
                         .background(AppTheme.Palette.surface)
-                        .cornerRadius(12)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
                                 .stroke(Color.gray.opacity(0.2), lineWidth: 1)
@@ -216,7 +216,7 @@ struct AddVehicleView: View {
                         Color.gray
                     }
                 }
-                .cornerRadius(26)
+                .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
         }
         .disabled(!isValid)
         .pressStyle()

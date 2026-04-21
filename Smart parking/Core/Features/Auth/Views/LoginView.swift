@@ -15,12 +15,11 @@ struct LoginView: View {
     @State private var password: String = ""
     @State private var isPasswordVisible: Bool = false
     @State private var showAuthError = false
-    @State private var showInfoAlert = false
-    @State private var infoMessage = ""
     @State private var emailTouched = false
     @State private var passwordTouched = false
     @FocusState private var focusedField: AuthField?
     @State private var appeared = false
+    @State private var shakeFields = false
 
     private enum AuthField { case email, password }
 
@@ -45,30 +44,8 @@ struct LoginView: View {
     }
 
     // MARK: - Adaptive Colors
-    private var bgGradientColors: [Color] {
-        colorScheme == .dark
-            ? [Color(hex: "#020617"), Color(hex: "#0C1929"), Color(hex: "#0F293E")]
-            : [Color(hex: "#F0F9FF"), Color(hex: "#E0F2FE"), Color(hex: "#BAE6FD")]
-    }
-
-    private var orbColor1: Color {
-        colorScheme == .dark
-            ? Color(hex: "#0EA5E9").opacity(0.25) : Color(hex: "#0EA5E9").opacity(0.12)
-    }
-
-    private var orbColor2: Color {
-        colorScheme == .dark
-            ? Color(hex: "#00CEC9").opacity(0.12) : Color(hex: "#00CEC9").opacity(0.08)
-    }
-
-    private var primaryText: Color {
-        AppTheme.Palette.textPrimary
-    }
-
-    private var secondaryText: Color {
-        AppTheme.Palette.textSecondary
-    }
-
+    private var primaryText: Color { AppTheme.Palette.textPrimary }
+    private var secondaryText: Color { AppTheme.Palette.textSecondary }
     private var accentColor: Color { AppTheme.Palette.brandLight }
 
     private var inputBg: Color {
@@ -79,9 +56,7 @@ struct LoginView: View {
         colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08)
     }
 
-    private var inputFocusBorder: Color {
-        AppTheme.Palette.brand.opacity(0.6)
-    }
+    private var inputFocusBorder: Color { AppTheme.Palette.brand.opacity(0.6) }
 
     private var cardBg: Color {
         colorScheme == .dark ? Color.white.opacity(0.05) : Color.white.opacity(0.7)
@@ -96,34 +71,7 @@ struct LoginView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Adaptive gradient background
-                LinearGradient(
-                    colors: bgGradientColors,
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
-
-                // Animated orbs
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [orbColor1, .clear],
-                            center: .center, startRadius: 20, endRadius: 180
-                        )
-                    )
-                    .frame(width: 350, height: 350)
-                    .offset(x: -100, y: -200)
-
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [orbColor2, .clear],
-                            center: .center, startRadius: 20, endRadius: 150
-                        )
-                    )
-                    .frame(width: 300, height: 300)
-                    .offset(x: 120, y: 250)
+                AppAnimatedBackground()
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 28) {
@@ -312,6 +260,7 @@ struct LoginView: View {
                         )
                         .offset(y: appeared ? 0 : 30)
                         .opacity(appeared ? 1 : 0)
+                        .shakeEffect(trigger: shakeFields)
 
                         // Sign In button
                         Button {
@@ -353,26 +302,6 @@ struct LoginView: View {
                         .disabled(!isValidCredentials || authManager.isLoading)
                         .pressStyle()
 
-                        // Divider
-                        HStack(spacing: 14) {
-                            Rectangle()
-                                .fill(secondaryText.opacity(0.2))
-                                .frame(height: 1)
-                            Text(loc.str(.loginOrWith))
-                                .font(.caption)
-                                .foregroundColor(secondaryText)
-                            Rectangle()
-                                .fill(secondaryText.opacity(0.2))
-                                .frame(height: 1)
-                        }
-
-                        // Social buttons
-                        HStack(spacing: 20) {
-                            socialButton("applelogo")
-                            socialButton("google")
-                            socialButton("facebook")
-                        }
-
                         // Sign up link
                         NavigationLink {
                             RegistrationView()
@@ -409,66 +338,7 @@ struct LoginView: View {
             } message: {
                 Text(authManager.authError ?? loc.str(.error))
             }
-            .alert(loc.str(.info), isPresented: $showInfoAlert) {
-                Button(loc.str(.ok)) {}
-            } message: {
-                Text(infoMessage)
-            }
         }
-    }
-}
-
-// Social sign-in button (adaptive glassmorphism style)
-struct SocialSignInButton: View {
-    let imageName: String
-    @Environment(\.colorScheme) private var colorScheme
-
-    private var iconBg: Color {
-        colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04)
-    }
-
-    private var iconBorder: Color {
-        colorScheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.08)
-    }
-
-    var body: some View {
-        Group {
-            if imageName == "applelogo" {
-                Image(systemName: imageName)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 20, height: 20)
-                    .foregroundColor(AppTheme.Palette.textPrimary)
-            } else if imageName == "google" {
-                Text("G")
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [
-                                Color(hex: "#EA4335"), Color(hex: "#4285F4"), Color(hex: "#34A853"),
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-            } else if imageName == "facebook" {
-                Text("f")
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
-                    .foregroundColor(Color(hex: "#4285F4"))
-            } else {
-                Text(imageName.prefix(1).uppercased())
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .foregroundColor(AppTheme.Palette.textPrimary)
-            }
-        }
-        .frame(width: 56, height: 56)
-        .background(iconBg)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(iconBorder, lineWidth: 1)
-        )
     }
 }
 
@@ -477,27 +347,15 @@ extension LoginView {
         emailTouched = true
         passwordTouched = true
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedEmail.isEmpty, password.count >= 6, !authManager.isLoading else { return }
+        guard !trimmedEmail.isEmpty, password.count >= 6, !authManager.isLoading else {
+            AppTheme.Haptic.error()
+            shakeFields.toggle()
+            return
+        }
 
         Task {
             await authManager.signIn(email: trimmedEmail, password: password)
         }
-    }
-
-    fileprivate func showInfo(_ message: String) {
-        infoMessage = message
-        showInfoAlert = true
-    }
-
-    @ViewBuilder
-    fileprivate func socialButton(_ imageName: String) -> some View {
-        Button {
-            showInfo(loc.str(.loginSocialDisabled))
-        } label: {
-            SocialSignInButton(imageName: imageName)
-        }
-        .buttonStyle(.plain)
-        .pressStyle()
     }
 }
 

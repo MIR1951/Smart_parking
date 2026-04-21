@@ -16,12 +16,12 @@ enum AppRoute: Hashable {
 }
 
 enum AppFullScreenRoute: Hashable, Identifiable {
-    case bookingFlow(Parking)
+    case bookingFlow(Parking, UUID)
 
     var id: String {
         switch self {
-        case .bookingFlow(let parking):
-            return "booking_\(parking.id.uuidString)"
+        case .bookingFlow(let parking, let sessionID):
+            return "booking_\(parking.id.uuidString)_\(sessionID.uuidString)"
         }
     }
 }
@@ -88,7 +88,7 @@ final class AppCoordinator {
     }
 
     func startBookingFlow(_ parking: Parking) {
-        fullScreenRoute = .bookingFlow(parking)
+        fullScreenRoute = .bookingFlow(parking, UUID())
     }
 
     func endBookingFlow() {

@@ -7,6 +7,7 @@
 
 import Foundation
 import Observation
+import os
 
 @Observable
 @MainActor
@@ -48,16 +49,12 @@ class AuthManager {
         }
     }
     func signOut() async {
-        isLoading = true
         authError = nil
-        defer { isLoading = false }
-
+        currentUserID = nil  // Navigate away immediately
         do {
             try await authService.signOut()
-            currentUserID = nil
         } catch {
-            authError = error.localizedDescription
-
+            Logger.auth.error("SignOut error: \(error.localizedDescription)")
         }
     }
 
@@ -65,7 +62,7 @@ class AuthManager {
         do {
             self.currentUserID = try await authService.getCurrentUserSession()
         } catch {
-
+            Logger.auth.info("No active session: \(error.localizedDescription)")
             currentUserID = nil
         }
     }

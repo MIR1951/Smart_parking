@@ -8,16 +8,43 @@
 import Foundation
 import Supabase
 
+enum StorageError: LocalizedError {
+    case fileTooLarge(maxMB: Int)
+    case invalidImageFormat
+
+    var errorDescription: String? {
+        switch self {
+        case .fileTooLarge(let maxMB):
+            return "File size exceeds \(maxMB)MB limit"
+        case .invalidImageFormat:
+            return "Invalid image format. Only JPEG is supported."
+        }
+    }
+}
+
 struct SupabaseStorageManager {
     private let client: SupabaseClient
-    
+    private let maxFileSize = 5 * 1024 * 1024 // 5 MB
+
     init() {
         self.client = SB.shared.client
     }
-    
+
+    private func validateImage(_ data: Data) throws {
+        guard data.count <= maxFileSize else {
+            throw StorageError.fileTooLarge(maxMB: 5)
+        }
+        guard data.count >= 2,
+              data[0] == 0xFF,
+              data[1] == 0xD8 else {
+            throw StorageError.invalidImageFormat
+        }
+    }
+
     func uploadProfilePhoto(for user: User, imageData : Data) async throws -> String {
+        try validateImage(imageData)
         let path = "\(user.id)/avatars/latest.jpg"
-        
+
         try await client.storage
             .from("avatars")
             .upload(
@@ -45,6 +72,7 @@ struct SupabaseStorageManager {
         parkingSlug: String,
         fileName: String = UUID().uuidString + ".jpg"
     ) async throws -> String {
+        try validateImage(imageData)
         let normalizedCity = sanitizePathComponent(city.lowercased())
         let normalizedSlug = sanitizePathComponent(parkingSlug.lowercased())
         let path = "\(normalizedCity)/\(normalizedSlug)/\(fileName)"
