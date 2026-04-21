@@ -50,9 +50,8 @@ struct MainTabView: View {
     private func configureTabBarAppearance() {
         #if canImport(UIKit)
             let appearance = UITabBarAppearance()
-            appearance.configureWithDefaultBackground()
-            appearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterial)
-            appearance.backgroundColor = UIColor(AppTheme.Palette.surface).withAlphaComponent(0.82)
+            appearance.configureWithOpaqueBackground()
+            appearance.backgroundColor = UIColor(AppTheme.Palette.surface)
             appearance.stackedLayoutAppearance.normal.iconColor = UIColor(
                 AppTheme.Palette.textSecondary)
             appearance.stackedLayoutAppearance.normal.titleTextAttributes = [

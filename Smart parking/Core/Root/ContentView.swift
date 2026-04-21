@@ -100,7 +100,6 @@ struct ContentView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: authManager.currentUserID)
-            .id(appearance.themeVersion)
 
             // Splash screen overlay
             if showSplash {

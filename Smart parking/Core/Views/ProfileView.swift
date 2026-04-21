@@ -208,7 +208,7 @@ struct ProfileView: View {
                 Circle()
                     .stroke(
                         LinearGradient(
-                            colors: [AppTheme.Palette.brand, AppTheme.Palette.brandDark],
+                            colors: [AppTheme.Palette.brand, AppTheme.Palette.brandDeep],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),

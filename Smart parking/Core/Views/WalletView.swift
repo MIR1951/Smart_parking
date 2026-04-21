@@ -106,7 +106,7 @@ struct WalletView: View {
         .background(
             LinearGradient(
                 colors: [
-                    AppTheme.Palette.brand, AppTheme.Palette.brandDark,
+                    AppTheme.Palette.brand, AppTheme.Palette.brandDeep,
                     AppTheme.Palette.brandLight.opacity(0.6),
                 ],
                 startPoint: .topLeading,

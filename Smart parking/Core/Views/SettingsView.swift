@@ -2,8 +2,6 @@
 //  SettingsView.swift
 //  Smart parking
 //
-//  Created by Smart Parking on 12/02/26.
-//
 
 import SwiftUI
 
@@ -15,7 +13,7 @@ struct SettingsView: View {
         let lang = loc.currentLanguage
 
         ZStack {
-            AppAnimatedBackground()
+            AppTheme.Palette.pageBackground.ignoresSafeArea()
 
             List {
                 // MARK: - Language Section
@@ -51,58 +49,6 @@ struct SettingsView: View {
                     }
                 } header: {
                     Label(loc.str(.settingsLanguage), systemImage: "globe")
-                        .font(AppTheme.Typography.captionBold)
-                        .foregroundColor(AppTheme.Palette.textSecondary)
-                        .textCase(nil)
-                }
-
-                // MARK: - Color Theme Section
-                Section {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
-                        ForEach(AppColorTheme.allCases) { theme in
-                            Button {
-                                withAnimation(AppTheme.Anim.snappy) {
-                                    appearance.currentColorTheme = theme
-                                }
-                                AppTheme.Haptic.selection()
-                            } label: {
-                                VStack(spacing: 6) {
-                                    Circle()
-                                        .fill(theme.previewColor)
-                                        .frame(width: 44, height: 44)
-                                        .overlay(
-                                            Circle()
-                                                .stroke(
-                                                    appearance.currentColorTheme == theme
-                                                        ? AppTheme.Palette.brand
-                                                        : Color.clear,
-                                                    lineWidth: 3
-                                                )
-                                        )
-                                        .overlay(
-                                            appearance.currentColorTheme == theme
-                                            ? Image(systemName: "checkmark")
-                                                .font(.caption.bold())
-                                                .foregroundColor(.white)
-                                            : nil
-                                        )
-
-                                    Text(themeDisplayName(theme, lang: lang))
-                                        .font(.system(size: 10, weight: .medium, design: .rounded))
-                                        .foregroundColor(
-                                            appearance.currentColorTheme == theme
-                                                ? AppTheme.Palette.brand
-                                                : AppTheme.Palette.textSecondary
-                                        )
-                                        .lineLimit(1)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .padding(.vertical, 4)
-                } header: {
-                    Label(loc.str(.settingsColorTheme), systemImage: "swatchpalette")
                         .font(AppTheme.Typography.captionBold)
                         .foregroundColor(AppTheme.Palette.textSecondary)
                         .textCase(nil)
@@ -160,15 +106,6 @@ struct SettingsView: View {
         case .system: return AppTheme.Palette.brand
         case .light: return .orange
         case .dark: return .indigo
-        }
-    }
-
-    private func themeDisplayName(_ theme: AppColorTheme, lang: AppLanguage) -> String {
-        switch theme {
-        case .carbon: return loc.str(.themeCarbon)
-        case .ocean:  return loc.str(.themeOcean)
-        case .forest: return loc.str(.themeForest)
-        case .sunset: return loc.str(.themeSunset)
         }
     }
 }
