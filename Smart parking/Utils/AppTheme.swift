@@ -346,6 +346,28 @@ struct PressButtonStyle: ButtonStyle {
     }
 }
 
+// MARK: - Tap Bounce (any View)
+
+struct TapBounceModifier: ViewModifier {
+    let haptic: () -> Void
+    let action: () -> Void
+    @State private var pressed = false
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(pressed ? 0.96 : 1.0)
+            .animation(AppTheme.Anim.quick, value: pressed)
+            .onTapGesture {
+                haptic()
+                pressed = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                    pressed = false
+                    action()
+                }
+            }
+    }
+}
+
 // MARK: - Shadow Modifier
 
 struct AppShadowModifier: ViewModifier {
@@ -475,5 +497,10 @@ extension View {
 
     func brandGlow() -> some View {
         shadow(color: AppTheme.Palette.brand.opacity(0.28), radius: 16, y: 6)
+    }
+
+    /// Har qanday View'ga haptic + scale bounce qo'shadi — tap gesture bilan.
+    func tapBounce(haptic: @escaping () -> Void = { AppTheme.Haptic.light() }, action: @escaping () -> Void) -> some View {
+        modifier(TapBounceModifier(haptic: haptic, action: action))
     }
 }

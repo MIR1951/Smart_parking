@@ -113,6 +113,7 @@ final class AdminStore {
 
         let newParking = try await service.createParking(params)
         ownedParkings.append(newParking)
+        ParkingCache.shared.clear()
     }
 
     // MARK: - Update parking
@@ -149,6 +150,7 @@ final class AdminStore {
         if let index = ownedParkings.firstIndex(where: { $0.id == id }) {
             ownedParkings[index] = updated
         }
+        ParkingCache.shared.clear()
     }
 
     // MARK: - Delete parking
@@ -156,6 +158,7 @@ final class AdminStore {
     func deleteParking(id: UUID) async throws {
         try await service.deleteParking(id: id)
         ownedParkings.removeAll { $0.id == id }
+        ParkingCache.shared.clear()
     }
 
     // MARK: - Cancel reservation
@@ -195,11 +198,19 @@ final class AdminStore {
             guard let self else { return }
 
             do {
-                let pChannel = client.realtimeV2.channel("admin:parkings")
-                let parkingChanges = pChannel.postgresChange(AnyAction.self, schema: "public", table: "parkings")
+                let userId = try await client.auth.session.user.id.uuidString
 
-                let rChannel = client.realtimeV2.channel("admin:reservations")
-                let reservationChanges = rChannel.postgresChange(AnyAction.self, schema: "public", table: "reservations")
+                // owner_id filter ile faqat o'z parkinglari (xavfsizlik + bandwidth)
+                let pChannel = client.realtimeV2.channel("admin:parkings:\(userId)")
+                let parkingChanges = pChannel.postgresChange(
+                    AnyAction.self, schema: "public", table: "parkings",
+                    filter: .eq("owner_id", value: userId)
+                )
+
+                let rChannel = client.realtimeV2.channel("admin:reservations:\(userId)")
+                let reservationChanges = rChannel.postgresChange(
+                    AnyAction.self, schema: "public", table: "reservations"
+                )
 
                 try await pChannel.subscribeWithError()
                 try await rChannel.subscribeWithError()
@@ -209,19 +220,23 @@ final class AdminStore {
                 self.isRealtimeConnected = true
                 self.reconnectAttempt = 0
 
-                Logger.admin.info("Admin realtime connected")
+                Logger.admin.info("Admin realtime connected (owner: \(userId))")
 
                 await withTaskGroup(of: Void.self) { group in
                     group.addTask {
                         for await _ in parkingChanges {
-                            await self.refreshParkings()
-                            await self.refreshStats()
+                            // parking o'zgarganda faqat parkings + stats yangilanadi
+                            async let p = self.refreshParkings()
+                            async let s = self.refreshStats()
+                            _ = await (p, s)
                         }
                     }
                     group.addTask {
                         for await _ in reservationChanges {
-                            await self.refreshAllReservations()
-                            await self.refreshStats()
+                            // reservation o'zgarganda faqat reservations + stats
+                            async let r = self.refreshAllReservations()
+                            async let s = self.refreshStats()
+                            _ = await (r, s)
                         }
                     }
                 }

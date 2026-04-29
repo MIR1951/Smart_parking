@@ -162,9 +162,8 @@ struct ReviewSummaryView: View {
             HStack {
                 Text(LocalizationManager.shared.str(.reviewAmount))
                 Spacer()
-                Text("\(Int(parking.price_per_hour)) \(loc.str(.walletCurrency))")
+                Text("\(Int(parking.price_per_hour)) \(loc.str(.walletCurrency))\(loc.str(.bookingsPerHour))")
                     .fontWeight(.medium)
-                Text("/hr")
                     .foregroundColor(AppTheme.Palette.textSecondary)
             }
 

@@ -147,7 +147,7 @@ struct ParkingDetailView: View {
     }
 
     private var shareText: String {
-        "\(parking.name)\n\(parking.address ?? "")\n\(loc.str(.detailPrice)): \(Int(parking.price_per_hour)) so'm\(loc.str(.bookingsPerHour))"
+        "\(parking.name)\n\(parking.address ?? "")\n\(loc.str(.detailPrice)): \(Int(parking.price_per_hour)) \(loc.str(.walletCurrency))\(loc.str(.bookingsPerHour))"
     }
 
     private func submitReview(rating: Int, comment: String) async {
@@ -371,7 +371,80 @@ extension ParkingDetailView {
                     )
                 }
             }
+
+            additionalInfoSection
         }
+    }
+
+    @ViewBuilder
+    private var additionalInfoSection: some View {
+        let hasAny = parking.working_hours != nil || parking.phone != nil
+            || parking.covered != nil || parking.max_height_cm != nil
+        if hasAny {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(loc.str(.detailAdditionalInfo))
+                    .font(.headline)
+
+                VStack(spacing: 6) {
+                    if let hours = parking.working_hours {
+                        additionalInfoRow(
+                            icon: "clock.fill",
+                            label: loc.str(.detailWorkingHours),
+                            value: hours
+                        )
+                    }
+                    if let phone = parking.phone, !phone.isEmpty {
+                        if let url = URL(string: "tel:\(phone.filter { !$0.isWhitespace })") {
+                            Link(destination: url) {
+                                additionalInfoRow(
+                                    icon: "phone.fill",
+                                    label: loc.str(.detailPhone),
+                                    value: phone,
+                                    isLink: true
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    if let covered = parking.covered {
+                        additionalInfoRow(
+                            icon: covered ? "umbrella.fill" : "sun.max.fill",
+                            label: loc.str(.detailCovered),
+                            value: covered ? loc.str(.yesLabel) : loc.str(.noLabel)
+                        )
+                    }
+                    if let maxH = parking.max_height_cm {
+                        additionalInfoRow(
+                            icon: "arrow.up.to.line",
+                            label: loc.str(.detailMaxHeight),
+                            value: "\(maxH) sm"
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private func additionalInfoRow(
+        icon: String, label: String, value: String, isLink: Bool = false
+    ) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .foregroundColor(AppTheme.Palette.brand)
+                .frame(width: 20)
+            Text(label)
+                .font(.subheadline)
+                .foregroundColor(AppTheme.Palette.textSecondary)
+            Spacer()
+            Text(value)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(isLink ? AppTheme.Palette.brand : AppTheme.Palette.textPrimary)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(AppTheme.Palette.brandSoft)
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous))
     }
 
     private func featureItem(icon: String, title: String) -> some View {
@@ -562,7 +635,7 @@ extension ParkingDetailView {
                 Text(loc.str(.detailTotalPrice))
                     .foregroundColor(AppTheme.Palette.textSecondary)
                     .font(.caption)
-                Text("\(Int(parking.price_per_hour)) so'm \(loc.str(.bookingsPerHour))")
+                Text("\(Int(parking.price_per_hour)) \(loc.str(.walletCurrency))\(loc.str(.bookingsPerHour))")
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.Palette.textPrimary)

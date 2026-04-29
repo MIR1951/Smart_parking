@@ -25,7 +25,12 @@ struct AdminParkingService {
 
         let parkings: [Parking] = try await SB.shared.client
             .from("parkings")
-            .select()
+            .select("""
+                id, name, city, address, latitude, longitude,
+                price_per_hour, rating, thumbnail_url, total_spots,
+                description, is_popular, images, features, owner_id,
+                working_hours, phone, covered, max_height_cm, created_at
+                """)
             .eq("owner_id", value: userId)
             .order("name")
             .execute()
@@ -111,7 +116,11 @@ struct AdminParkingService {
     func fetchReservationsForParking(_ parkingId: UUID) async throws -> [Reservation] {
         let reservations: [Reservation] = try await SB.shared.client
             .from("reservations")
-            .select()
+            .select("""
+                id, user_id, parking_id, start_time, end_time, status,
+                prepaid_minutes, rate_per_hour, prepaid_amount,
+                actual_start_time, actual_end_time, created_at
+                """)
             .eq("parking_id", value: parkingId)
             .order("start_time", ascending: false)
             .limit(100)

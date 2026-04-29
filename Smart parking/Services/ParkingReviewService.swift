@@ -2,8 +2,6 @@
 //  ParkingReviewService.swift
 //  Smart parking
 //
-//  Created by Smart Parking on 20/02/26.
-//
 
 import Foundation
 import Supabase
@@ -36,8 +34,8 @@ private struct ReservationCandidate: Codable {
     let end_time: Date?
 }
 
-private struct ExistingReview: Codable {
-    let id: UUID
+private struct ReviewedID: Codable {
+    let reservation_id: UUID
 }
 
 private struct CreateParkingReviewPayload: Encodable {
@@ -51,7 +49,7 @@ private struct CreateParkingReviewPayload: Encodable {
 final class ParkingReviewService {
     private let client = SB.shared.client
 
-    func fetchReviews(parkingId: UUID) async throws -> [ParkingReview] {
+    func fetchReviews(parkingId: UUID, limit: Int = 50) async throws -> [ParkingReview] {
         try await client
             .from("parking_reviews")
             .select(
@@ -69,77 +67,58 @@ final class ParkingReviewService {
             )
             .eq("parking_id", value: parkingId.uuidString)
             .order("created_at", ascending: false)
+            .limit(limit)
             .execute()
             .value
     }
 
+    // N+1 yo'q: bitta status query + bitta batch review check
     func reviewEligibility(parkingId: UUID) async throws -> ReviewEligibility {
         let userID = try await client.auth.session.user.id.uuidString
 
-        let completedRows: [ReservationCandidate] = try await client
+        // 1. completed + expired — bitta query
+        let candidates: [ReservationCandidate] = try await client
             .from("reservations")
             .select("id,end_time")
             .eq("user_id", value: userID)
             .eq("parking_id", value: parkingId.uuidString)
-            .eq("status", value: "completed")
+            .in("status", values: ["completed", "expired"])
             .order("end_time", ascending: false)
-            .limit(20)
+            .limit(40)
             .execute()
             .value
 
-        let expiredRows: [ReservationCandidate] = try await client
-            .from("reservations")
-            .select("id,end_time")
-            .eq("user_id", value: userID)
-            .eq("parking_id", value: parkingId.uuidString)
-            .eq("status", value: "expired")
-            .order("end_time", ascending: false)
-            .limit(20)
+        guard !candidates.isEmpty else { return .needsBooking }
+
+        // 2. Batch review check — bitta query (N+1 yo'q)
+        let candidateIds = candidates.map(\.id.uuidString)
+        let reviewed: [ReviewedID] = try await client
+            .from("parking_reviews")
+            .select("reservation_id")
+            .in("reservation_id", values: candidateIds)
             .execute()
             .value
 
-        let candidates = (completedRows + expiredRows).sorted {
+        let reviewedSet = Set(reviewed.map(\.reservation_id))
+        let sortedCandidates = candidates.sorted {
             ($0.end_time ?? .distantPast) > ($1.end_time ?? .distantPast)
         }
 
-        guard !candidates.isEmpty else {
-            return .needsBooking
+        if let first = sortedCandidates.first(where: { !reviewedSet.contains($0.id) }) {
+            return .eligible(first.id)
         }
-
-        for candidate in candidates {
-            let existing: [ExistingReview] = try await client
-                .from("parking_reviews")
-                .select("id")
-                .eq("reservation_id", value: candidate.id.uuidString)
-                .limit(1)
-                .execute()
-                .value
-
-            if existing.isEmpty {
-                return .eligible(candidate.id)
-            }
-        }
-
         return .alreadyReviewed
     }
 
-    func submitReview(parkingId: UUID, rating: Int, comment: String) async throws {
+    func submitReview(reservationId: UUID, parkingId: UUID, rating: Int, comment: String) async throws {
         let trimmedComment = comment.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedComment.isEmpty else { throw ParkingReviewError.emptyComment }
-
-        let eligibility = try await reviewEligibility(parkingId: parkingId)
-        guard case .eligible(let reservationID) = eligibility else {
-            if case .alreadyReviewed = eligibility {
-                throw ParkingReviewError.alreadyReviewed
-            }
-            throw ParkingReviewError.noEligibleReservation
-        }
 
         let userID = try await client.auth.session.user.id
         let payload = CreateParkingReviewPayload(
             parking_id: parkingId,
             user_id: userID,
-            reservation_id: reservationID,
+            reservation_id: reservationId,
             rating: max(1, min(5, rating)),
             comment: trimmedComment
         )

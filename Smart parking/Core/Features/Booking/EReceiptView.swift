@@ -142,9 +142,8 @@ struct EReceiptView: View {
             HStack {
                 Text(loc.str(.receiptRate))
                 Spacer()
-                Text("\(Int(parking.price_per_hour)) \(loc.str(.walletCurrency))")
+                Text("\(Int(parking.price_per_hour)) \(loc.str(.walletCurrency))\(loc.str(.bookingsPerHour))")
                     .fontWeight(.medium)
-                Text("/hr")
                     .foregroundColor(AppTheme.Palette.textSecondary)
             }
 

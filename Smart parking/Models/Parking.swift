@@ -23,6 +23,10 @@ struct Parking: Identifiable, Codable {
     let images: [String]?
     let features: [String]?
     let owner_id: UUID?
+    let working_hours: String?
+    let phone: String?
+    let covered: Bool?
+    let max_height_cm: Int?
 
     init(
         id: UUID,
@@ -40,7 +44,11 @@ struct Parking: Identifiable, Codable {
         is_popular: Bool?,
         images: [String]?,
         features: [String]?,
-        owner_id: UUID? = nil
+        owner_id: UUID? = nil,
+        working_hours: String? = nil,
+        phone: String? = nil,
+        covered: Bool? = nil,
+        max_height_cm: Int? = nil
     ) {
         self.id = id
         self.name = name
@@ -58,13 +66,17 @@ struct Parking: Identifiable, Codable {
         self.images = images
         self.features = features
         self.owner_id = owner_id
+        self.working_hours = working_hours
+        self.phone = phone
+        self.covered = covered
+        self.max_height_cm = max_height_cm
     }
 
     enum CodingKeys: String, CodingKey {
         case id, name, city, address, latitude, longitude
         case price_per_hour, rating, thumbnail_url, total_spots
         case live_occupancy, description, is_popular, images, features
-        case owner_id
+        case owner_id, working_hours, phone, covered, max_height_cm
     }
 
     init(from decoder: Decoder) throws {
@@ -85,5 +97,9 @@ struct Parking: Identifiable, Codable {
         images = try container.decodeIfPresent([String].self, forKey: .images)
         features = try container.decodeIfPresent([String].self, forKey: .features)
         owner_id = try container.decodeIfPresent(UUID.self, forKey: .owner_id)
+        working_hours = try container.decodeIfPresent(String.self, forKey: .working_hours)
+        phone = try container.decodeIfPresent(String.self, forKey: .phone)
+        covered = try container.decodeIfPresent(Bool.self, forKey: .covered)
+        max_height_cm = try container.decodeIfPresent(Int.self, forKey: .max_height_cm)
     }
 }

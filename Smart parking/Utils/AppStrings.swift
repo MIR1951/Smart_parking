@@ -193,6 +193,13 @@ enum StringKey: String {
     case detailParkingInfo
     case detailAvailable
     case detailPrice
+    case detailAdditionalInfo
+    case detailWorkingHours
+    case detailPhone
+    case detailMaxHeight
+    case yesLabel
+    case noLabel
+    case splashTagline
     case detailTotalPrice
     case detailBookSlot
     case detailFullyBooked
@@ -685,6 +692,13 @@ enum StringKey: String {
         case .detailParkingInfo: return "Parking ma'lumotlari"
         case .detailAvailable: return "Mavjud"
         case .detailPrice: return "Narx"
+        case .detailAdditionalInfo: return "Qo'shimcha ma'lumot"
+        case .detailWorkingHours: return "Ish vaqti"
+        case .detailPhone: return "Telefon"
+        case .detailMaxHeight: return "Max balandlik"
+        case .yesLabel: return "Ha"
+        case .noLabel: return "Yo'q"
+        case .splashTagline: return "Top • Band qil • Joylash"
         case .detailTotalPrice: return "Umumiy narx"
         case .detailBookSlot: return "Band qilish"
         case .detailFullyBooked: return "Joy yo'q"
@@ -1175,6 +1189,13 @@ enum StringKey: String {
         case .detailParkingInfo: return "Parking Info"
         case .detailAvailable: return "Available"
         case .detailPrice: return "Price"
+        case .detailAdditionalInfo: return "Additional Info"
+        case .detailWorkingHours: return "Hours"
+        case .detailPhone: return "Phone"
+        case .detailMaxHeight: return "Max Height"
+        case .yesLabel: return "Yes"
+        case .noLabel: return "No"
+        case .splashTagline: return "Find • Book • Park"
         case .detailTotalPrice: return "Total Price"
         case .detailBookSlot: return "Book Slot"
         case .detailFullyBooked: return "Fully Booked"
@@ -1664,6 +1685,13 @@ enum StringKey: String {
         case .detailParkingInfo: return "О парковке"
         case .detailAvailable: return "Свободно"
         case .detailPrice: return "Цена"
+        case .detailAdditionalInfo: return "Доп. информация"
+        case .detailWorkingHours: return "Часы работы"
+        case .detailPhone: return "Телефон"
+        case .detailMaxHeight: return "Макс. высота"
+        case .yesLabel: return "Да"
+        case .noLabel: return "Нет"
+        case .splashTagline: return "Найти • Забронировать • Парковать"
         case .detailTotalPrice: return "Общая цена"
         case .detailBookSlot: return "Забронировать"
         case .detailFullyBooked: return "Мест нет"

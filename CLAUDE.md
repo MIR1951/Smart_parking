@@ -175,6 +175,49 @@ AppTheme.Typography.body  // matn turi
 - Animatsiya: `AppTheme.Anim.spring`, `.snappy`, `.bouncy`
 - Haptics: `AppTheme.Haptics.light()`, `.success()`, `.error()`
 
+#### Palette tokenlar (light-first purple)
+| Token | Light | Dark | Ishlatish |
+|-------|-------|------|-----------|
+| `brand` | `#7C5CFF` | `#9B82FF` | Asosiy tugmalar, ikonlar |
+| `brandDeep` | `#6246EA` | `#7C5CFF` | Gradient boshi, emphasis |
+| `brandLight` | `#9B82FF` | `#BBA9FF` | Subtle highlights |
+| `brandSoft` | `#EDE9FE` | `#2D2455` | Background chips, badge |
+| `success/Soft` | `#059669/D1FAE5` | `#10B981/064E3B` | Confirmed, completed |
+| `warning/Soft` | `#EAB308/FEF9C3` | `#FACC15/422006` | Pending, wallet |
+| `danger/Soft` | `#EF4444/FEE2E2` | `#F87171/450A0A` | Error, cancel, favorite |
+| `walletAccent` | warning | warning | Wallet tab accent |
+| `favoriteAccent` | danger | danger | Favorites tab accent |
+
+Section accent tokenlar: `homeAccent`, `bookingAccent`, `profileAccent`, `adminAccent` — barchasi `brand` ga teng. `walletAccent` → `warning`. `favoriteAccent` → `danger`.
+
+**Qoida:** `.cornerRadius(_:)` deprecated — har doim `.clipShape(RoundedRectangle(cornerRadius:))` ishlatng.
+
+### ShrinkingHeaderScroll Pattern
+`Utils/ShrinkingHeaderScroll.swift` — sticky header ni scroll bilan kichraytirish uchun universal container.
+
+```swift
+ShrinkingHeaderScroll(collapseRange: 200) { progress in
+    // progress: 0.0 (expanded) → 1.0 (collapsed)
+    VStack {
+        Text("Sarlavha")
+            .font(.system(size: 22 - 4 * progress, weight: .bold))
+        if progress < 0.5 {
+            Text("Subtitle") // scroll bilan yashirish
+                .opacity(1 - progress * 2)
+        }
+    }
+    .padding()
+} content: {
+    // Scroll content
+    LazyVStack { ... }
+}
+```
+- `collapseRange` — scroll masofasi (odatda 80–200 pt)
+- `progress` — 0→1, header animatsiyasi uchun
+- `ScrollOffsetPreferenceKey` — `Utils/ScrollOffsetPreferenceKey.swift` da
+
+Qo'llanilgan viewlar: `HomeView`, `BookingsView`, `FavoriteView`, `NotificationsView`, `AdminDashboardView`, `AdminParkingListView`, `AdminReservationsView`.
+
 ### Logging
 ```swift
 // To'g'ri:
@@ -323,3 +366,5 @@ xcodebuild test -project "Smart parking.xcodeproj" -scheme "Smart parking" \
 10. **Concurrency:** `@MainActor` annotation, `Task {}` async work, `Sendable` cross-actor params
 11. **VehiclesStore mutations:** Har doim `let snapshot = vehicles` olb, `catch` da `vehicles = snapshot` bilan rollback qiling
 12. **Navigation:** `AppCoordinator` orqali — deep view lardan to'g'ridan-to'g'ri `NavigationLink` ishlatmang
+13. **cornerRadius:** `.cornerRadius(_:)` deprecated — har doim `.clipShape(RoundedRectangle(cornerRadius:))` ishlatng
+14. **Shrinking header:** Scroll content bo'lgan yangi viewlarda `ShrinkingHeaderScroll` ishlatng — alohida `ScrollView` emas

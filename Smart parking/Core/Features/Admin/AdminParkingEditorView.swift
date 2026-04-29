@@ -104,7 +104,7 @@ struct AdminParkingEditorView: View {
                 }
             }
             .alert(loc.str(.adminError), isPresented: $showError) {
-                Button("OK") {}
+                Button(loc.str(.ok)) {}
             } message: {
                 Text(errorMessage)
             }

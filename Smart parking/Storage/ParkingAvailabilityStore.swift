@@ -7,6 +7,7 @@
 
  import Combine
 import Foundation
+import os
 import Supabase
 
 @MainActor
@@ -74,6 +75,32 @@ final class ParkingAvailabilityStore: ObservableObject, Sendable {
         } catch {
             errorMessage = "Availability yuklanmadi"
             throw error
+        }
+    }
+
+    // Shahar bo'yicha scope qilingan refresh — faqat tegishli parking_id lar
+    func refreshForParkings(_ ids: [UUID]) async {
+        guard !ids.isEmpty else { return }
+        do {
+            let idStrings = ids.map(\.uuidString)
+            let rows: [ParkingAvailability] =
+                try await client
+                .from("parking_availability")
+                .select()
+                .in("parking_id", values: idStrings)
+                .execute()
+                .value
+
+            var map = byParkingId
+            var avail = available
+            rows.forEach {
+                map[$0.parkingId] = $0
+                avail[$0.parkingId] = $0.availableSpots
+            }
+            byParkingId = map
+            available = avail
+        } catch {
+            Logger.parking.error("Scoped availability refresh failed: \(error.localizedDescription)")
         }
     }
 

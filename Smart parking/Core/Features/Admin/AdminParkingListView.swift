@@ -193,6 +193,8 @@ private struct AdminParkingCard: View {
     let onEdit: () -> Void
     let onDelete: () -> Void
 
+    private let loc = LocalizationManager.shared
+
     private var occupancyRatio: Double {
         let occupancy = parking.live_occupancy ?? 0
         let total = parking.total_spots
@@ -274,7 +276,7 @@ private struct AdminParkingCard: View {
                 .frame(height: 5)
 
                 HStack(spacing: 16) {
-                    Label("\(Int(parking.price_per_hour)) so'm/soat", systemImage: "banknote")
+                    Label("\(Int(parking.price_per_hour)) \(loc.str(.walletCurrency))\(loc.str(.bookingsPerHour))", systemImage: "banknote")
                         .font(AppTheme.Typography.caption)
                         .foregroundColor(AppTheme.Palette.brand)
                         .fontWeight(.medium)

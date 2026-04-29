@@ -50,7 +50,9 @@ final class ParkingCache {
 
     // MARK: - Load from Cache
 
-    func load() -> [Parking]? {
+    /// `requireFresh: true` bo'lsa, TTL o'tgan bo'lsa nil qaytaradi.
+    /// `requireFresh: false` (default) bo'lsa, stale bo'lsa ham qaytaradi — background refresh uchun.
+    func load(requireFresh: Bool = false) -> [Parking]? {
         guard fileManager.fileExists(atPath: cacheFilePath.path) else { return nil }
 
         do {
@@ -59,15 +61,10 @@ final class ParkingCache {
             decoder.dateDecodingStrategy = .iso8601
             let entry = try decoder.decode(CacheEntry.self, from: data)
 
-            // TTL tekshirish
-            if Date().timeIntervalSince(entry.timestamp) > cacheTTL {
-                // Cache eskirgan, lekin stale data qaytaramiz (background da yangilanadi)
-                return entry.parkings
-            }
-
+            let isStale = Date().timeIntervalSince(entry.timestamp) > cacheTTL
+            if isStale && requireFresh { return nil }
             return entry.parkings
         } catch {
-
             return nil
         }
     }

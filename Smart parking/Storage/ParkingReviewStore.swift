@@ -67,10 +67,19 @@ final class ParkingReviewStore: ObservableObject {
     }
 
     func submit(parkingId: UUID, rating: Int, comment: String) async throws {
+        guard case .eligible(let reservationId) = eligibilityByParking[parkingId] else {
+            throw ParkingReviewError.noEligibleReservation
+        }
+
         submittingParkingIDs.insert(parkingId)
         defer { submittingParkingIDs.remove(parkingId) }
 
-        try await service.submitReview(parkingId: parkingId, rating: rating, comment: comment)
+        try await service.submitReview(
+            reservationId: reservationId,
+            parkingId: parkingId,
+            rating: rating,
+            comment: comment
+        )
         await load(parkingId: parkingId)
     }
 }

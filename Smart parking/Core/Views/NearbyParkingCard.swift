@@ -11,6 +11,7 @@ struct NearbyParkingCard: View {
     @Environment(LocalizationManager.self) private var loc
     let parking: Parking
     let availability: ParkingAvailability?
+    var distance: Double? = nil
     var isFavorite: Bool = false
     var onToggleFavorite: (() -> Void)? = nil
 
@@ -73,6 +74,15 @@ struct NearbyParkingCard: View {
                         .font(AppTheme.Typography.caption)
                         .foregroundColor(AppTheme.Palette.textSecondary)
                         .lineLimit(1)
+
+                    if let distance {
+                        DistanceBadge(meters: distance)
+                    }
+                }
+
+                if let availability {
+                    OccupancyBar(available: availability.available, total: availability.total)
+                        .padding(.top, 2)
                 }
 
                 HStack {
