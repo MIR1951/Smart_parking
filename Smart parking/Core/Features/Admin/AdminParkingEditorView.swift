@@ -1,15 +1,7 @@
-//
-//  AdminParkingEditorView.swift
-//  Smart parking
-//
-//  Parking qo'shish / tahrirlash formasi — map picker + rasm yuklash + shahar tanlash
-//
-
 import MapKit
 import os
 import PhotosUI
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct AdminParkingEditorView: View {
     @Bindable var store: AdminStore
@@ -28,33 +20,17 @@ struct AdminParkingEditorView: View {
     @State private var showCityPicker = false
 
     // Map
-    @State private var mapPosition: MapCameraPosition = .region(
-        MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 41.2995, longitude: 69.2401),
-            span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
-        )
-    )
     @State private var pinCoordinate: CLLocationCoordinate2D?
-    @State private var searchQuery = ""
-    @State private var searchResults: [MKMapItem] = []
-    @State private var isSearching = false
-    @State private var resolvedAddress = ""
 
     // Images
     @State private var selectedPhotoItems: [PhotosPickerItem] = []
     @State private var selectedImages: [UIImage] = []
     @State private var existingImageURLs: [String] = []
-    @State private var isDroppingImages = false
 
     // State
     @State private var isProcessing = false
     @State private var showError = false
     @State private var errorMessage = ""
-
-    private let availableFeatures = [
-        "CCTV", "24/7", "Covered", "EV Charging", "Disabled Access",
-        "Security Guard", "WiFi", "Car Wash", "Valet",
-    ]
 
     private var isEditing: Bool { parking != nil }
 
@@ -80,7 +56,6 @@ struct AdminParkingEditorView: View {
                     imagesSection
                         .appReveal(0.25)
 
-                    // Save Button
                     AppPrimaryButton(
                         title: isProcessing
                             ? loc.str(.adminSaving)
@@ -118,7 +93,6 @@ struct AdminParkingEditorView: View {
         formSection(title: loc.str(.adminBasicInfo), icon: "info.circle") {
             formField(loc.str(.adminParkingName), text: $name)
 
-            // City picker
             Button {
                 showCityPicker.toggle()
             } label: {
@@ -177,135 +151,12 @@ struct AdminParkingEditorView: View {
 
     private var locationSection: some View {
         formSection(title: loc.str(.adminLocation), icon: "mappin.circle") {
-            VStack(spacing: 10) {
-                // Search bar
-                HStack(spacing: 8) {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(AppTheme.Palette.textTertiary)
-                    TextField(loc.str(.adminSearchLocation), text: $searchQuery)
-                        .font(AppTheme.Typography.body)
-                        .onSubmit { searchLocation() }
-                    if isSearching {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                    } else if !searchQuery.isEmpty {
-                        Button {
-                            searchQuery = ""
-                            searchResults = []
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(AppTheme.Palette.textTertiary)
-                        }
-                    }
-                }
-                .padding(10)
-                .background(AppTheme.Palette.surfaceSecondary)
-                .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous))
-
-                // Search results
-                if !searchResults.isEmpty {
-                    VStack(spacing: 4) {
-                        ForEach(searchResults.prefix(5), id: \.self) { item in
-                            Button {
-                                selectSearchResult(item)
-                            } label: {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "mappin.circle.fill")
-                                        .foregroundColor(AppTheme.Palette.brand)
-                                        .font(.caption)
-                                    VStack(alignment: .leading, spacing: 1) {
-                                        Text(item.name ?? "")
-                                            .font(AppTheme.Typography.caption)
-                                            .fontWeight(.medium)
-                                            .foregroundColor(AppTheme.Palette.textPrimary)
-                                            .lineLimit(1)
-                                        if let subtitle = item.placemark.formattedAddress {
-                                            Text(subtitle)
-                                                .font(.system(size: 10))
-                                                .foregroundColor(AppTheme.Palette.textTertiary)
-                                                .lineLimit(1)
-                                        }
-                                    }
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 8)
-                            }
-                        }
-                    }
-                    .background(AppTheme.Palette.surfaceSecondary.opacity(0.5))
-                    .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous))
-                }
-
-                // Map
-                MapReader { proxy in
-                    Map(position: $mapPosition) {
-                        if let coord = pinCoordinate {
-                            Annotation("", coordinate: coord) {
-                                Image(systemName: "mappin.circle.fill")
-                                    .font(.title)
-                                    .foregroundColor(AppTheme.Palette.brand)
-                                    .background(Circle().fill(.white).frame(width: 20, height: 20))
-                            }
-                        }
-                    }
-                    .mapControls {
-                        MapCompass()
-                        MapScaleView()
-                    }
-                    .frame(height: 220)
-                    .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
-                    .gesture(
-                        LongPressGesture(minimumDuration: 0.35)
-                            .sequenced(before: DragGesture(minimumDistance: 0))
-                            .onEnded { value in
-                                if case .second(true, let drag?) = value {
-                                    if let coord = proxy.convert(drag.location, from: .local) {
-                                        AppTheme.Haptic.success()
-                                        setPin(at: coord)
-                                        reverseGeocode(coord)
-                                    }
-                                }
-                            }
-                    )
-                    .onTapGesture { screenCoord in
-                        if let coordinate = proxy.convert(screenCoord, from: .local) {
-                            AppTheme.Haptic.selection()
-                            setPin(at: coordinate)
-                            reverseGeocode(coordinate)
-                        }
-                    }
-                }
-
-                // Info text
-                Text(loc.str(.adminTapMapHint))
-                    .font(AppTheme.Typography.caption)
-                    .foregroundColor(AppTheme.Palette.textTertiary)
-
-                // Resolved coordinates
-                if let coord = pinCoordinate {
-                    HStack(spacing: 12) {
-                        Label(
-                            String(format: "%.5f, %.5f", coord.latitude, coord.longitude),
-                            systemImage: "location.fill"
-                        )
-                        .font(AppTheme.Typography.caption)
-                        .foregroundColor(AppTheme.Palette.brand)
-
-                        Spacer()
-
-                        if !resolvedAddress.isEmpty {
-                            Text(resolvedAddress)
-                                .font(AppTheme.Typography.caption)
-                                .foregroundColor(AppTheme.Palette.textSecondary)
-                                .lineLimit(1)
-                        }
-                    }
-                    .padding(10)
-                    .background(AppTheme.Palette.brandSoft)
-                    .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.xSmall, style: .continuous))
-                }
-            }
+            EditorMapSection(
+                pinCoordinate: $pinCoordinate,
+                availableCities: store.availableCities,
+                onAddressResolved: { addr in if address.isEmpty { address = addr } },
+                onCityResolved: { c in if city.isEmpty { city = c } }
+            )
         }
     }
 
@@ -340,14 +191,7 @@ struct AdminParkingEditorView: View {
 
     private var featuresSection: some View {
         formSection(title: loc.str(.adminFeatures), icon: "star.circle") {
-            LazyVGrid(
-                columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
-                spacing: 10
-            ) {
-                ForEach(availableFeatures, id: \.self) { feature in
-                    featureChip(feature)
-                }
-            }
+            EditorFeaturesSection(selectedFeatures: $selectedFeatures)
         }
     }
 
@@ -355,126 +199,11 @@ struct AdminParkingEditorView: View {
 
     private var imagesSection: some View {
         formSection(title: loc.str(.adminImages), icon: "photo.on.rectangle") {
-            VStack(spacing: 12) {
-                // Existing images
-                if !existingImageURLs.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(Array(existingImageURLs.enumerated()), id: \.element) { index, url in
-                                ZStack(alignment: .topTrailing) {
-                                    CachedAsyncImage(url: URL(string: url)) { image in
-                                        image.resizable().scaledToFill()
-                                    } placeholder: {
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(AppTheme.Palette.surfaceSecondary)
-                                    }
-                                    .frame(width: 80, height: 80)
-                                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                                    .clipped()
-
-                                    Button {
-                                        existingImageURLs.remove(at: index)
-                                    } label: {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .font(.caption)
-                                            .foregroundStyle(.white)
-                                            .shadow(radius: 2)
-                                    }
-                                    .offset(x: 4, y: -4)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // New selected images
-                if !selectedImages.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(Array(selectedImages.enumerated()), id: \.offset) { index, image in
-                                ZStack(alignment: .topTrailing) {
-                                    Image(uiImage: image)
-                                        .resizable().scaledToFill()
-                                        .frame(width: 80, height: 80)
-                                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                                        .clipped()
-
-                                    Button {
-                                        selectedImages.remove(at: index)
-                                        if index < selectedPhotoItems.count {
-                                            selectedPhotoItems.remove(at: index)
-                                        }
-                                    } label: {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .font(.caption)
-                                            .foregroundStyle(.white)
-                                            .shadow(radius: 2)
-                                    }
-                                    .offset(x: 4, y: -4)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                let totalImages = existingImageURLs.count + selectedImages.count
-                let maxNewImages = max(0, 5 - totalImages)
-                PhotosPicker(
-                    selection: $selectedPhotoItems,
-                    maxSelectionCount: max(1, maxNewImages),
-                    matching: .images
-                ) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "photo.badge.plus")
-                        Text(loc.str(.adminAddImage))
-                    }
-                    .font(AppTheme.Typography.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(AppTheme.Palette.brand)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .background(AppTheme.Palette.brandSoft)
-                    .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous))
-                }
-                .disabled(totalImages >= 5)
-                .opacity(totalImages >= 5 ? 0.5 : 1)
-                .pressStyle()
-                .onChange(of: selectedPhotoItems) { _, newItems in
-                    Task { await loadSelectedImages(from: newItems) }
-                }
-
-                Text(loc.str(.adminImageHint))
-                    .font(AppTheme.Typography.caption)
-                    .foregroundColor(AppTheme.Palette.textTertiary)
-
-                // Drag & Drop zone
-                if totalImages < 5 {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: AppTheme.Radius.small)
-                            .strokeBorder(
-                                isDroppingImages ? AppTheme.Palette.brand : AppTheme.Palette.textTertiary.opacity(0.4),
-                                style: StrokeStyle(lineWidth: 1.5, dash: [6])
-                            )
-                            .background(
-                                RoundedRectangle(cornerRadius: AppTheme.Radius.small)
-                                    .fill(isDroppingImages ? AppTheme.Palette.brandSoft : Color.clear)
-                            )
-                            .frame(height: 64)
-
-                        HStack(spacing: 8) {
-                            Image(systemName: "arrow.down.to.line")
-                                .font(.title3)
-                                .foregroundColor(isDroppingImages ? AppTheme.Palette.brand : AppTheme.Palette.textTertiary)
-                            Text(loc.str(.adminDropHint))
-                                .font(AppTheme.Typography.caption)
-                                .foregroundColor(isDroppingImages ? AppTheme.Palette.brand : AppTheme.Palette.textTertiary)
-                        }
-                    }
-                    .onDrop(of: [UTType.image], isTargeted: $isDroppingImages) { providers in
-                        handleDroppedImages(providers)
-                    }
-                }
-            }
+            EditorImageSection(
+                existingImageURLs: $existingImageURLs,
+                selectedImages: $selectedImages,
+                selectedPhotoItems: $selectedPhotoItems
+            )
         }
     }
 
@@ -513,139 +242,7 @@ struct AdminParkingEditorView: View {
             .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous))
     }
 
-    private func featureChip(_ feature: String) -> some View {
-        let isSelected = selectedFeatures.contains(feature)
-        return Text(feature)
-            .font(AppTheme.Typography.caption)
-            .fontWeight(.medium)
-            .foregroundColor(isSelected ? .white : AppTheme.Palette.textPrimary)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(
-                isSelected
-                    ? AnyShapeStyle(
-                        LinearGradient(
-                            colors: [AppTheme.Palette.brand, AppTheme.Palette.brandLight],
-                            startPoint: .leading, endPoint: .trailing
-                        ))
-                    : AnyShapeStyle(AppTheme.Palette.surfaceSecondary)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .onTapGesture {
-                withAnimation(AppTheme.Anim.quick) {
-                    if isSelected { selectedFeatures.remove(feature) }
-                    else { selectedFeatures.insert(feature) }
-                }
-            }
-    }
-
-    // MARK: - Map / Location
-
-    private func setPin(at coordinate: CLLocationCoordinate2D) {
-        withAnimation(AppTheme.Anim.snappy) {
-            pinCoordinate = coordinate
-            mapPosition = .region(
-                MKCoordinateRegion(
-                    center: coordinate,
-                    span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
-                )
-            )
-        }
-    }
-
-    private func searchLocation() {
-        guard !searchQuery.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-        isSearching = true
-        let request = MKLocalSearch.Request()
-        request.naturalLanguageQuery = searchQuery
-        request.region = MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 41.2995, longitude: 69.2401),
-            span: MKCoordinateSpan(latitudeDelta: 2, longitudeDelta: 2)
-        )
-
-        Task {
-            let search = MKLocalSearch(request: request)
-            do {
-                let response = try await search.start()
-                searchResults = response.mapItems
-            } catch {
-                searchResults = []
-            }
-            isSearching = false
-        }
-    }
-
-    private func selectSearchResult(_ item: MKMapItem) {
-        let coord = item.placemark.coordinate
-        setPin(at: coord)
-        searchQuery = item.name ?? ""
-        searchResults = []
-
-        if let addr = item.placemark.formattedAddress {
-            resolvedAddress = addr
-            if address.isEmpty { address = addr }
-        }
-        // Shaharni avtomatik to'ldirish
-        if city.isEmpty, let localityName = item.placemark.locality {
-            let matched = store.availableCities.first {
-                $0.localizedCaseInsensitiveContains(localityName)
-                    || localityName.localizedCaseInsensitiveContains($0)
-            }
-            city = matched ?? localityName
-        }
-    }
-
-    private func reverseGeocode(_ coordinate: CLLocationCoordinate2D) {
-        let geocoder = CLGeocoder()
-        let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
-        Task {
-            if let placemark = try? await geocoder.reverseGeocodeLocation(location).first {
-                let parts = [placemark.thoroughfare, placemark.subThoroughfare, placemark.locality].compactMap { $0 }
-                resolvedAddress = parts.joined(separator: ", ")
-                if address.isEmpty { address = resolvedAddress }
-                // Shaharni avtomatik to'ldirish
-                if city.isEmpty, let localityName = placemark.locality {
-                    let matched = store.availableCities.first {
-                        $0.localizedCaseInsensitiveContains(localityName)
-                            || localityName.localizedCaseInsensitiveContains($0)
-                    }
-                    city = matched ?? localityName
-                }
-            }
-        }
-    }
-
-    // MARK: - Image Helpers
-
-    @discardableResult
-    private func handleDroppedImages(_ providers: [NSItemProvider]) -> Bool {
-        let total = existingImageURLs.count + selectedImages.count
-        let canAdd = max(0, 5 - total)
-        guard canAdd > 0 else { return false }
-
-        var added = 0
-        for provider in providers.prefix(canAdd) {
-            provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
-                guard let data, let image = UIImage(data: data) else { return }
-                DispatchQueue.main.async {
-                    self.selectedImages.append(image)
-                }
-                added += 1
-            }
-        }
-        return true
-    }
-
-    private func loadSelectedImages(from items: [PhotosPickerItem]) async {
-        var images: [UIImage] = []
-        for item in items {
-            if let data = try? await item.loadTransferable(type: Data.self),
-               let image = UIImage(data: data) {
-                images.append(image)
-            }
-        }
-        await MainActor.run { selectedImages = images }
-    }
+    // MARK: - Image Upload
 
     private func uploadImages() async throws -> [String] {
         let storageManager = SupabaseStorageManager()
@@ -677,15 +274,7 @@ struct AdminParkingEditorView: View {
         description = parking.description ?? ""
         if let features = parking.features { selectedFeatures = Set(features) }
         existingImageURLs = parking.images ?? []
-
-        let coord = CLLocationCoordinate2D(latitude: parking.latitude, longitude: parking.longitude)
-        pinCoordinate = coord
-        mapPosition = .region(
-            MKCoordinateRegion(
-                center: coord,
-                span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-            )
-        )
+        pinCoordinate = CLLocationCoordinate2D(latitude: parking.latitude, longitude: parking.longitude)
     }
 
     private func save() {
@@ -700,30 +289,35 @@ struct AdminParkingEditorView: View {
                     allImageURLs.append(contentsOf: newURLs)
                 }
 
+                let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                let trimmedCity = city.trimmingCharacters(in: .whitespacesAndNewlines)
+                let trimmedAddr = address.trimmingCharacters(in: .whitespacesAndNewlines)
+                let trimmedDesc = description.trimmingCharacters(in: .whitespacesAndNewlines)
+
                 if let parking {
                     try await store.updateParking(
                         id: parking.id,
-                        name: name.trimmed,
-                        city: city.trimmed.isEmpty ? nil : city.trimmed,
-                        address: address.trimmed.isEmpty ? nil : address.trimmed,
+                        name: trimmedName,
+                        city: trimmedCity.isEmpty ? nil : trimmedCity,
+                        address: trimmedAddr.isEmpty ? nil : trimmedAddr,
                         latitude: coord.latitude,
                         longitude: coord.longitude,
                         pricePerHour: Double(pricePerHour),
                         totalSpots: Int(totalSpots),
-                        description: description.trimmed.isEmpty ? nil : description.trimmed,
+                        description: trimmedDesc.isEmpty ? nil : trimmedDesc,
                         features: selectedFeatures.isEmpty ? nil : Array(selectedFeatures),
                         images: allImageURLs.isEmpty ? nil : allImageURLs
                     )
                 } else {
                     try await store.createParking(
-                        name: name.trimmed,
-                        city: city.trimmed,
-                        address: address.trimmed.isEmpty ? nil : address.trimmed,
+                        name: trimmedName,
+                        city: trimmedCity,
+                        address: trimmedAddr.isEmpty ? nil : trimmedAddr,
                         latitude: coord.latitude,
                         longitude: coord.longitude,
                         pricePerHour: Double(pricePerHour) ?? 0,
                         totalSpots: Int(totalSpots) ?? 0,
-                        description: description.trimmed.isEmpty ? nil : description.trimmed,
+                        description: trimmedDesc.isEmpty ? nil : trimmedDesc,
                         features: selectedFeatures.isEmpty ? nil : Array(selectedFeatures),
                         images: allImageURLs.isEmpty ? nil : allImageURLs
                     )
@@ -743,25 +337,9 @@ struct AdminParkingEditorView: View {
             return storageErr.localizedDescription
         }
         let raw = String(describing: error)
-        // PostgREST / Supabase API error details
         if raw.contains("message") || raw.contains("code") || raw.contains("hint") {
             return raw
         }
         return error.localizedDescription
-    }
-}
-
-// MARK: - Helpers
-
-private extension String {
-    var trimmed: String {
-        trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-}
-
-private extension CLPlacemark {
-    var formattedAddress: String? {
-        let parts = [thoroughfare, subThoroughfare, locality, administrativeArea].compactMap { $0 }
-        return parts.isEmpty ? nil : parts.joined(separator: ", ")
     }
 }
