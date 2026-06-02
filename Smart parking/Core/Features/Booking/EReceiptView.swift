@@ -35,8 +35,7 @@ struct EReceiptView: View {
             VStack(spacing: 0) {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 20) {
-                        // Barcode
-                        barcodeSection
+                        qrCodeSection
                             .appReveal(0.03)
 
                         // Vehicle Info
@@ -86,34 +85,39 @@ struct EReceiptView: View {
         }
     }
 
-    // MARK: - Barcode Section
-    private var barcodeSection: some View {
-        VStack(spacing: 8) {
-            // Barcode (deterministic based on reservation ID)
-            HStack(spacing: 2) {
-                ForEach(0..<40, id: \.self) { i in
-                    let width = barcodeWidth(for: i)
-                    Rectangle()
-                        .fill(Color.black)
-                        .frame(width: width, height: 60)
-                }
+    // MARK: - QR Code Section
+    private var qrCodeSection: some View {
+        VStack(spacing: 12) {
+            if let qrImage = AppQRCodeGenerator.image(from: receiptText) {
+                Image(uiImage: qrImage)
+                    .interpolation(.none)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 180, height: 180)
+            } else {
+                Image(systemName: "qrcode")
+                    .font(.system(size: 100))
+                    .foregroundColor(AppTheme.Palette.textTertiary)
             }
-            .padding(.vertical, 8)
 
             Text(reservationId.uuidString.prefix(12).uppercased())
-                .font(.caption)
+                .font(AppTheme.Typography.caption)
                 .foregroundColor(AppTheme.Palette.textSecondary)
+                .tracking(2)
         }
         .padding()
+        .frame(maxWidth: .infinity)
         .background(AppTheme.Palette.surface)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
-    private func barcodeWidth(for index: Int) -> CGFloat {
-        // Deterministic width based on reservation ID
-        let hash = reservationId.hashValue
-        let seed = abs(hash >> (index % 8)) % 4
-        return CGFloat(seed + 1)
+    private var receiptText: String {
+        """
+         \(parking.name)
+        \(loc.str(.bookingsStart)): \(startTime.fullDateTime)
+        \(loc.str(.bookingsEnd)): \(endTime.fullDateTime)
+         \(reservationId.uuidString)
+        """
     }
 
     // MARK: - Vehicle Info Section
@@ -261,6 +265,11 @@ struct EReceiptView: View {
             let title = loc.str(.receiptTitle)
             title.draw(at: CGPoint(x: margin, y: yPosition), withAttributes: titleAttributes)
             yPosition += 40
+
+            if let qrImage = AppQRCodeGenerator.image(from: receiptText) {
+                qrImage.draw(in: CGRect(x: pageWidth - margin - 110, y: margin, width: 110, height: 110))
+                yPosition = max(yPosition, margin + 125)
+            }
 
             // Divider
             let dividerPath = UIBezierPath()

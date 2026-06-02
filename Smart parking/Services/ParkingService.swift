@@ -43,6 +43,18 @@ final class ParkingService {
             .value
     }
 
+    func fetchDistinctCities() async throws -> [String] {
+        struct Row: Decodable { let city: String }
+        let rows: [Row] = try await client
+            .from("parkings")
+            .select("city")
+            .execute()
+            .value
+        let unique = Set(rows.map { $0.city.trimmingCharacters(in: .whitespacesAndNewlines) })
+            .filter { !$0.isEmpty }
+        return unique.sorted()
+    }
+
     // Barcha shaharlar — cache-first UX uchun (ParkingsStore ishlatadi)
     func fetchParkings() async throws -> [Parking] {
         let response = try await client

@@ -424,7 +424,6 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Smart-parking-Info.plist";
-				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Nearby parkinglarni ko‘rsatish uchun lokatsiya kerak.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Profil rasmini tanlash uchun Photo Library ruxsati kerak.";
 				INFOPLIST_KEY_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhYW5vcHF1cHNmd3h2cWtpcW9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0NDc0NTIsImV4cCI6MjA4MDAyMzQ1Mn0.BkgRWEEjjWkVeX7hIuIgG8-180ZUq-0o9_ktIBxt3Zc";
@@ -463,7 +462,6 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Smart-parking-Info.plist";
-				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Nearby parkinglarni ko‘rsatish uchun lokatsiya kerak.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Profil rasmini tanlash uchun Photo Library ruxsati kerak.";
 				INFOPLIST_KEY_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhYW5vcHF1cHNmd3h2cWtpcW9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0NDc0NTIsImV4cCI6MjA4MDAyMzQ1Mn0.BkgRWEEjjWkVeX7hIuIgG8-180ZUq-0o9_ktIBxt3Zc";

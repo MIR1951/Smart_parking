@@ -107,6 +107,7 @@ struct ContentView: View {
                     .opacity(splashOpacity)
                     .transition(.opacity)
                     .zIndex(100)
+                    .ignoresSafeArea(.all)
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
@@ -172,6 +173,7 @@ struct ContentView: View {
     private var splashOverlay: some View {
         ZStack {
             SplashScreenView()
+                .ignoresSafeArea(.all)
 
             VStack {
                 Spacer()
@@ -251,6 +253,7 @@ struct ContentView: View {
 
         await userManager.fetchCurrentUser()
         locationManager.requestPermission()
+        await parkingsStore.loadAvailableCities()
         try await parkingsStore.loadAndWait(
             userLocation: locationManager.location,
             force: forceNetwork

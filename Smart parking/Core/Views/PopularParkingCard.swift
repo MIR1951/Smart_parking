@@ -25,7 +25,7 @@ struct PopularParkingCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Image with overlays
-            ZStack(alignment: .topLeading) {
+            ZStack(alignment: .top) {
                 CachedAsyncImage(url: parking.imageUrl) { image in
                     image
                         .resizable()
@@ -47,35 +47,33 @@ struct PopularParkingCard: View {
                                 .foregroundColor(AppTheme.Palette.brand.opacity(0.3))
                         )
                 }
-                .frame(width: 220, height: 140)
+                .frame(width: 300, height: 150)
                 .clipped()
                 .overlay(AppTheme.Gradient.cardOverlay)
 
-                // Rating badge
-                if let rating = parking.rating {
-                    HStack(spacing: 4) {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 10))
-                        Text(String(format: "%.1f", rating))
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                // Top row: rating badge left, heart right
+                HStack {
+                    if let rating = parking.rating {
+                        HStack(spacing: 4) {
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 10))
+                            Text(String(format: "%.1f", rating))
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .background(
+                            Capsule()
+                                .fill(Color.white.opacity(0.15))
+                                .background(Capsule().fill(.ultraThinMaterial))
+                        )
+                        .clipShape(Capsule())
                     }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
-                    .background(
-                        Capsule()
-                            .fill(Color.white.opacity(0.15))
-                            .background(
-                                Capsule().fill(.ultraThinMaterial)
-                            )
-                    )
-                    .clipShape(Capsule())
-                    .padding(10)
-                }
 
-                if let onToggleFavorite {
-                    HStack {
-                        Spacer()
+                    Spacer()
+
+                    if let onToggleFavorite {
                         Button {
                             AppTheme.Haptic.light()
                             onToggleFavorite()
@@ -86,14 +84,10 @@ struct PopularParkingCard: View {
                                     isFavorite
                                         ? LinearGradient(
                                             colors: [AppTheme.Palette.favoriteAccent, AppTheme.Palette.danger],
-                                            startPoint: .top,
-                                            endPoint: .bottom
-                                        )
+                                            startPoint: .top, endPoint: .bottom)
                                         : LinearGradient(
                                             colors: [.white, .white.opacity(0.92)],
-                                            startPoint: .top,
-                                            endPoint: .bottom
-                                        )
+                                            startPoint: .top, endPoint: .bottom)
                                 )
                                 .symbolEffect(.bounce, value: isFavorite)
                                 .frame(width: 32, height: 32)
@@ -101,8 +95,15 @@ struct PopularParkingCard: View {
                                 .clipShape(Circle())
                         }
                         .buttonStyle(.plain)
-                        .padding(10)
                     }
+                }
+                .padding(10)
+            }
+            // Distance badge — bottom right of image
+            .overlay(alignment: .bottomTrailing) {
+                if let distance {
+                    DistanceBadge(meters: distance)
+                        .padding(10)
                 }
             }
 
@@ -113,7 +114,7 @@ struct PopularParkingCard: View {
                     .foregroundColor(AppTheme.Palette.textPrimary)
                     .lineLimit(1)
 
-                HStack(spacing: 6) {
+                HStack(spacing: 5) {
                     Image(systemName: "mappin.circle.fill")
                         .font(.system(size: 11))
                         .foregroundColor(AppTheme.Palette.brandLight)
@@ -121,19 +122,24 @@ struct PopularParkingCard: View {
                         .font(AppTheme.Typography.caption)
                         .foregroundColor(AppTheme.Palette.textSecondary)
                         .lineLimit(1)
-
-                    if let distance {
-                        Spacer(minLength: 4)
-                        DistanceBadge(meters: distance)
-                    }
                 }
 
                 if let availability {
-                    OccupancyBar(available: availability.available, total: availability.total)
+                    HStack(spacing: 8) {
+                        OccupancyBar(available: availability.available, total: availability.total)
+
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(availabilityColor)
+                                .frame(width: 5, height: 5)
+                            Text(spotsText)
+                                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                .foregroundColor(AppTheme.Palette.textSecondary)
+                        }
+                    }
                 }
 
-                HStack {
-                    // Price
+                (
                     Text(parking.formattedPrice)
                         .font(.system(size: 15, weight: .bold, design: .rounded))
                         .foregroundStyle(
@@ -142,33 +148,15 @@ struct PopularParkingCard: View {
                                 startPoint: .leading, endPoint: .trailing
                             )
                         )
-                        + Text("/\(loc.str(.bookingsPerHour))")
+                    + Text(" /\(loc.str(.bookingsPerHour))")
                         .font(.system(size: 11, weight: .medium, design: .rounded))
                         .foregroundColor(AppTheme.Palette.textSecondary)
-
-                    Spacer()
-
-                    // Availability
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(availabilityColor)
-                            .frame(width: 6, height: 6)
-                        Text(spotsText)
-                            .font(.system(size: 11, weight: .semibold, design: .rounded))
-                            .foregroundColor(AppTheme.Palette.textSecondary)
-                    }
-                }
+                )
             }
             .padding(14)
         }
-        .frame(width: 220)
-        .background(AppTheme.Palette.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.large, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: AppTheme.Radius.large, style: .continuous)
-                .stroke(AppTheme.Palette.border, lineWidth: 1)
-        )
-        .appShadow(AppTheme.Shadow.medium())
+        .frame(width: 300)
+        .glassCard()
     }
 
     private var availabilityColor: Color {

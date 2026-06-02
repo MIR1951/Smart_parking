@@ -13,6 +13,7 @@ struct FavoriteView: View {
     @EnvironmentObject var parkingsStore: ParkingsStore
     @EnvironmentObject var favoritesStore: FavoritesStore
     @EnvironmentObject var availabilityStore: ParkingAvailabilityStore
+    @EnvironmentObject var locationManager: LocationManager
 
     @State private var parkingToRemove: Parking?
     @State private var scrollOffset: CGFloat = 0
@@ -66,6 +67,8 @@ struct FavoriteView: View {
 
                 if favoriteParkings.isEmpty && !parkingsStore.isLoading {
                     emptyState
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                        .padding(.bottom, 80)
                 } else {
                     ScrollView(showsIndicators: false) {
                         GeometryReader { geo in
@@ -82,6 +85,7 @@ struct FavoriteView: View {
                                     NearbyParkingCard(
                                         parking: parking,
                                         availability: availabilityStore.availability(for: parking.id),
+                                        distance: parking.distance(from: locationManager.location),
                                         isFavorite: true,
                                         onToggleFavorite: {
                                             parkingToRemove = parking

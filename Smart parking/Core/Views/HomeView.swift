@@ -309,6 +309,7 @@ struct HomeView: View {
                             PopularParkingCard(
                                 parking: parking,
                                 availability: availabilityStore.availability(for: parking.id),
+                                distance: parking.distance(from: locationManager.location),
                                 isFavorite: favoritesStore.isFavorite(parking.id),
                                 onToggleFavorite: {
                                     AppTheme.Haptic.success()
@@ -356,6 +357,7 @@ struct HomeView: View {
                         NearbyParkingCard(
                             parking: parking,
                             availability: availabilityStore.availability(for: parking.id),
+                            distance: parking.distance(from: locationManager.location),
                             isFavorite: favoritesStore.isFavorite(parking.id),
                             onToggleFavorite: {
                                 AppTheme.Haptic.success()
@@ -403,6 +405,7 @@ struct HomeView: View {
 
     @MainActor
     private func refreshAllHomeData() async {
+        await parkingsStore.loadAvailableCities()
         await parkingsStore.refresh(userLocation: locationManager.location)
         await availabilityStore.refreshNow(force: true)
         await notificationManager.load()

@@ -92,12 +92,6 @@ final class ParkingsStore: ObservableObject {
             updateParkings(items, userLocation: userLocation)
             hasLoadedOnce = true
             reloadToken = UUID()
-
-            // availableCities — DB'dagi shaharlar + static fallback
-            if availableCities.isEmpty {
-                let merged = Set(UzbekistanCities.all + items.map { normalizeCity($0.city) })
-                availableCities = merged.sorted()
-            }
         } catch {
             guard !Task.isCancelled, activeRequestID == requestID else { return }
             if let urlError = error as? URLError, urlError.code == .cancelled {
@@ -112,16 +106,25 @@ final class ParkingsStore: ObservableObject {
     }
 
     private func updateParkings(_ items: [Parking], userLocation: CLLocation?) {
-        if availableCities.isEmpty {
-            availableCities = Array(Set(UzbekistanCities.all)).sorted()
-        }
         applyFilters(items: items, userLocation: userLocation)
     }
 
     func refresh(userLocation: CLLocation?) async {
         loadTask?.cancel()
-        cityCache[selectedCity] = nil
-        try? await performLoad(userLocation: userLocation, force: true, cacheFirst: false)
+        do {
+            try await performLoad(userLocation: userLocation, force: true, cacheFirst: false)
+        } catch {
+            Logger.parking.error("Refresh failed: \(error.localizedDescription)")
+        }
+    }
+
+    func loadAvailableCities() async {
+        do {
+            let cities = try await service.fetchDistinctCities()
+            availableCities = cities
+        } catch {
+            Logger.parking.error("Cities fetch failed: \(error.localizedDescription)")
+        }
     }
 
     // MARK: - Yaqin parkinglar (earthdistance RPC)
@@ -290,7 +293,7 @@ final class ParkingsStore: ObservableObject {
         guard !resolvedInitialCity else { return }
 
         let requested = cityFrom(placeName: placeName) ?? normalizeCity(fallback)
-        let allCities = availableCities.isEmpty ? UzbekistanCities.all : availableCities
+        let allCities = availableCities
 
         let match = allCities.first(where: { cityMatches($0, requested) })
             ?? allCities.first(where: { cityMatches($0, fallback) })

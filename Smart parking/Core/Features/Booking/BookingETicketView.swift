@@ -1,5 +1,3 @@
-import CoreImage
-import CoreImage.CIFilterBuiltins
 import SwiftUI
 
 struct BookingETicketView: View {
@@ -11,7 +9,7 @@ struct BookingETicketView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    barcodeSection
+                    qrCodeSection
                     statusBadge
                     parkingInfoSection
                     Divider()
@@ -74,10 +72,10 @@ struct BookingETicketView: View {
         }
     }
 
-    // MARK: - Barcode Section
-    private var barcodeSection: some View {
+    // MARK: - QR Code Section
+    private var qrCodeSection: some View {
         VStack(spacing: 12) {
-            if let qrImage = generateQRCode(from: ticketText) {
+            if let qrImage = AppQRCodeGenerator.image(from: ticketText) {
                 Image(uiImage: qrImage)
                     .interpolation(.none)
                     .resizable()
@@ -98,23 +96,6 @@ struct BookingETicketView: View {
         .frame(maxWidth: .infinity)
         .background(AppTheme.Palette.surface)
         .cornerRadius(AppTheme.Radius.large)
-    }
-
-    private func generateQRCode(from string: String) -> UIImage? {
-        guard let data = string.data(using: .utf8),
-              let filter = CIFilter(name: "CIQRCodeGenerator")
-        else { return nil }
-        filter.setValue(data, forKey: "inputMessage")
-        filter.setValue("M", forKey: "inputCorrectionLevel")
-
-        guard let ciImage = filter.outputImage else { return nil }
-        let scale = CGAffineTransform(scaleX: 10, y: 10)
-        let scaledImage = ciImage.transformed(by: scale)
-        let context = CIContext()
-        guard let cgImage = context.createCGImage(scaledImage, from: scaledImage.extent) else {
-            return nil
-        }
-        return UIImage(cgImage: cgImage)
     }
 
     // MARK: - Parking Info

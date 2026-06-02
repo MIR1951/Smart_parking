@@ -161,16 +161,12 @@ struct ParkingDetailView: View {
     }
 
     private func handleAddReviewTap() {
-        if !reviewStore.hasEligibility(parkingId: parking.id) {
-            Task {
-                await reviewStore.load(parkingId: parking.id)
-                await MainActor.run {
-                    presentReviewComposerOrWarning()
-                }
+        Task {
+            await reviewStore.load(parkingId: parking.id)
+            await MainActor.run {
+                presentReviewComposerOrWarning()
             }
-            return
         }
-        presentReviewComposerOrWarning()
     }
 
     private func presentReviewComposerOrWarning() {
@@ -687,4 +683,3 @@ extension ParkingDetailView {
         .pressStyle()
     }
 }
-

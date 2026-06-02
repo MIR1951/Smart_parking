@@ -114,6 +114,7 @@ final class AdminStore {
         let newParking = try await service.createParking(params)
         ownedParkings.append(newParking)
         ParkingCache.shared.clear()
+        await refreshStats()
     }
 
     // MARK: - Update parking
@@ -151,6 +152,7 @@ final class AdminStore {
             ownedParkings[index] = updated
         }
         ParkingCache.shared.clear()
+        await refreshStats()
     }
 
     // MARK: - Delete parking
@@ -159,6 +161,7 @@ final class AdminStore {
         try await service.deleteParking(id: id)
         ownedParkings.removeAll { $0.id == id }
         ParkingCache.shared.clear()
+        await refreshStats()
     }
 
     // MARK: - Cancel reservation

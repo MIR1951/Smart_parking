@@ -89,12 +89,12 @@ struct BookingItem: Codable, Identifiable {
     }
 
     var isCompleted: Bool {
-        status == "completed" || status == "expired" || status == "no_show"
+        status == "completed" || status == "expired"
             || (status == "active" && (end_time ?? Date()) <= Date())
     }
 
     var isCancelled: Bool {
-        status == "canceled" || status == "cancelled"
+        status == "canceled" || status == "cancelled" || status == "no_show"
     }
 
     var canCancel: Bool {
