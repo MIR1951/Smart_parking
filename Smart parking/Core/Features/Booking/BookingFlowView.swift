@@ -135,19 +135,40 @@ struct BookingFlowView: View {
 
     private func processPayment() {
         guard selectedVehicle != nil,
-            selectedPaymentMethod != nil
+            let method = selectedPaymentMethod
         else { return }
 
         isProcessing = true
 
         Task {
             do {
-                let resId = try await ReservationManager.shared.createReservation(
-                    parkingId: parking.id,
-                    durationMinutes: selectedMinutes
-                )
+                // 1) Wallet to'lov
+                if method == .wallet {
+                    let totalAmount = parking.price_per_hour * (Double(selectedMinutes) / 60.0)
+                    let desc = "\(parking.name) – \(selectedMinutes) \(loc.str(.bookingMin))"
+                    try await WalletManager.shared.deduct(amount: totalAmount, description: desc)
+                }
 
-                // Server dan haqiqiy start_time ni olamiz
+                // 2) Reservation yaratish
+                let resId: UUID
+                do {
+                    resId = try await ReservationManager.shared.createReservation(
+                        parkingId: parking.id,
+                        durationMinutes: selectedMinutes
+                    )
+                } catch {
+                    // Reservation muvaffaqiyatsiz → pulni qaytarish
+                    if method == .wallet {
+                        let totalAmount = parking.price_per_hour * (Double(selectedMinutes) / 60.0)
+                        try? await WalletManager.shared.topUp(
+                            amount: totalAmount,
+                         
+                        )
+                    }
+                    throw error
+                }
+
+                // 3) Server dan haqiqiy start_time ni olamiz
                 let startTime: Date
                 if let reservation = try? await ReservationManager.shared.fetchReservation(resId) {
                     startTime = reservation.start_time

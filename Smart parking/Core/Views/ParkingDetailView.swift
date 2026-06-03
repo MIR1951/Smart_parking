@@ -193,7 +193,8 @@ extension ParkingDetailView {
             } placeholder: {
                 Rectangle().fill(Color.gray.opacity(0.2))
             }
-            .frame(height: 260)
+            .frame(maxWidth: .infinity, minHeight: 260, maxHeight: 260)
+            .clipped()
             .clipShape(
                 UnevenRoundedRectangle(
                     bottomLeadingRadius: AppTheme.Radius.large,
@@ -323,6 +324,7 @@ extension ParkingDetailView {
                     Image(systemName: "chevron.right")
                         .font(.caption)
                 }
+                .frame(maxWidth: .infinity)
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.Palette.brand)
@@ -370,6 +372,7 @@ extension ParkingDetailView {
 
             additionalInfoSection
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder
@@ -391,7 +394,9 @@ extension ParkingDetailView {
                     }
                     if let phone = parking.phone, !phone.isEmpty {
                         if let url = URL(string: "tel:\(phone.filter { !$0.isWhitespace })") {
-                            Link(destination: url) {
+                            Button {
+                                UIApplication.shared.open(url)
+                            } label: {
                                 additionalInfoRow(
                                     icon: "phone.fill",
                                     label: loc.str(.detailPhone),
@@ -436,7 +441,9 @@ extension ParkingDetailView {
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .foregroundColor(isLink ? AppTheme.Palette.brand : AppTheme.Palette.textPrimary)
+                .lineLimit(1)
         }
+        .frame(maxWidth: .infinity)
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(AppTheme.Palette.brandSoft)

@@ -118,10 +118,9 @@ final class BookingsVM: ObservableObject {
         case .completed:
             return items.filter { item in
                 switch item.status {
-                case "completed", "expired":
+                case "completed", "expired", "no_show":
                     return true
                 case "active":
-                    // active bo'lib turib end_time o'tib ketgan bo'lsa
                     return (item.end_time ?? now) <= now
                 default:
                     return false
@@ -129,7 +128,7 @@ final class BookingsVM: ObservableObject {
             }
 
         case .cancelled:
-            return items.filter { $0.status == "cancelled" || $0.status == "canceled" || $0.status == "no_show" }
+            return items.filter { $0.status == "cancelled" || $0.status == "canceled" }
         }
     }
 }
